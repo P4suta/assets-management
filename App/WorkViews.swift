@@ -44,6 +44,7 @@ struct WorkListView: View {
             }
         }
         .listStyle(.insetGrouped)
+        .id(notices.reminder)
         .navigationTitle(completed ? "完了した対応" : "対応")
         .navigationBarTitleDisplayMode(textSize.isAccessibilitySize ? .inline : .large)
         .navigationSubtitle(Text(Date(), format: .dateTime.year().month().day()))
@@ -94,8 +95,8 @@ struct WorkListView: View {
     private func changeStatus(_ item: WorkItem) {
         Task {
             do {
-                notices.reminder = try await ReminderService.setStatus(item.status == .completed ? .inProgress : .completed,
-                                                                      for: item.id, store: store)
+                try await notices.setStatus(item.status == .completed ? .inProgress : .completed,
+                                            for: item.id, store: store)
             } catch { failure = errorMessage(error) }
         }
     }
@@ -150,6 +151,7 @@ struct WorkDetailView: View {
                 ContentUnavailableView("記録が見つかりません", systemImage: "exclamationmark.circle")
             }
         }
+        .id(notices.reminder)
         .navigationTitle(item.map { $0.kind.title + "の詳細" } ?? "対応")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
@@ -167,7 +169,7 @@ struct WorkDetailView: View {
                 Task {
                     do {
                         try await store.save { try $0.confirmingRenewal(workID) }
-                        await ReminderService.cancel(workID)
+                        await notices.synchronize(store.records, reporting: workID)
                     } catch { failure = errorMessage(error) }
                 }
             }
@@ -233,7 +235,7 @@ struct WorkDetailView: View {
     private func setStatus(_ status: WorkStatus) {
         Task {
             do {
-                notices.reminder = try await ReminderService.setStatus(status, for: workID, store: store)
+                try await notices.setStatus(status, for: workID, store: store)
             } catch { failure = errorMessage(error) }
         }
     }

@@ -45,6 +45,17 @@
             parallelizable = "NO">
             <BuildableReference
                BuildableIdentifier = "primary"
+               BlueprintIdentifier = "ED626066C4B41CCD19FCAB30"
+               BuildableName = "PropertyRecordsAppTests.xctest"
+               BlueprintName = "PropertyRecordsAppTests"
+               ReferencedContainer = "container:PropertyRecords.xcodeproj">
+            </BuildableReference>
+         </TestableReference>
+         <TestableReference
+            skipped = "NO"
+            parallelizable = "NO">
+            <BuildableReference
+               BuildableIdentifier = "primary"
                BlueprintIdentifier = "AEC6114EF489FFE157AA8C83"
                BuildableName = "PropertyRecordsUITests.xctest"
                BlueprintName = "PropertyRecordsUITests"

@@ -3,77 +3,103 @@ import PropertyCore
 import SwiftUI
 import UserNotifications
 
-enum ReminderResult: Equatable {
-    case none, denied, pastDate, failed
-}
-
 @MainActor @Observable
 final class AppNotices {
     var reminder: ReminderResult = .none
+    private var reportedWorkID: UUID?
+    @ObservationIgnored private var generation: UInt64 = 0
+    @ObservationIgnored private let coordinator: ReminderCoordinator
+
+    init(center: any ReminderNotificationCenter = SystemReminderCenter()) {
+        coordinator = ReminderCoordinator(center: center)
+    }
+
+    func sceneChanged(to phase: ScenePhase, store: RecordsStore) async {
+        guard phase == .active, !store.isLoading, store.loadError == nil else { return }
+        await synchronize(store.records)
+    }
+
+    func setStatus(_ status: WorkStatus, for id: UUID, store: RecordsStore) async throws {
+        try await store.save { try $0.settingStatus(status, for: id) }
+        await synchronize(store.records, reporting: id)
+    }
+
+    func synchronize(_ records: Records, reporting id: UUID? = nil) async {
+        generation &+= 1
+        let current = generation
+        if let id { reportedWorkID = id }
+        let report = await coordinator.synchronize(records, requestingAuthorizationFor: id)
+        guard current == generation, let reportedWorkID else { return }
+        reminder = report.result(for: reportedWorkID)
+    }
+
+    func retry(_ records: Records) async {
+        await synchronize(records, reporting: reportedWorkID)
+    }
+
+    func dismissReminder() {
+        generation &+= 1
+        reportedWorkID = nil
+        reminder = .none
+    }
 }
 
-@MainActor
-enum ReminderService {
-    static func setStatus(_ status: WorkStatus, for id: UUID, store: RecordsStore) async throws -> ReminderResult {
-        try await store.save { try $0.settingStatus(status, for: id) }
-        guard let item = store.records.work.first(where: { $0.id == id }) else { return .none }
-        return await schedule(item)
+struct SystemReminderCenter: ReminderNotificationCenter {
+    func authorization() async -> ReminderAuthorization {
+        switch await UNUserNotificationCenter.current().notificationSettings().authorizationStatus {
+        case .authorized, .provisional, .ephemeral: .authorized
+        case .notDetermined: .notDetermined
+        case .denied: .denied
+        @unknown default: .denied
+        }
     }
 
-    static func cancel(_ id: UUID) async {
-        UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: identifiers(id))
+    func requestAuthorization() async throws -> ReminderAuthorization {
+        _ = try await UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound])
+        return await authorization()
     }
 
-    static func schedule(_ item: WorkItem) async -> ReminderResult {
-        let center = UNUserNotificationCenter.current()
-        await cancel(item.id)
-        guard item.status != .completed, item.reminderEnabled || item.visitReminderEnabled else { return .none }
-        do {
-            var settings = await center.notificationSettings()
-            if settings.authorizationStatus == .notDetermined {
-                _ = try await center.requestAuthorization(options: [.alert, .sound])
-                settings = await center.notificationSettings()
-            }
-            guard settings.authorizationStatus == .authorized || settings.authorizationStatus == .provisional else { return .denied }
-            var dates: [(String, Date)] = []
-            if item.reminderEnabled, let due = item.dueDate,
-               let date = Calendar.current.date(bySettingHour: 9, minute: 0, second: 0, of: due) {
-                dates.append((identifiers(item.id)[0], date))
-            }
-            if item.visitReminderEnabled, let visit = item.nextVisit { dates.append((identifiers(item.id)[1], visit)) }
-            let future = dates.filter { $0.1 > Date() }
-            for (identifier, date) in future {
-                let content = UNMutableNotificationContent()
-                content.title = item.title
-                content.body = identifier.hasSuffix(".visit") ? "予定の時刻です。" : "対応の期限です。"
-                content.sound = .default
-                let components = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute], from: date)
-                let trigger = UNCalendarNotificationTrigger(dateMatching: components, repeats: false)
-                try await center.add(UNNotificationRequest(identifier: identifier, content: content, trigger: trigger))
-            }
-            return future.count == dates.count ? .none : .pastDate
-        } catch { return .failed }
+    func pendingIdentifiers() async -> [String] {
+        await UNUserNotificationCenter.current().pendingNotificationRequests().map(\.identifier)
     }
 
-    private static func identifiers(_ id: UUID) -> [String] {
-        [id.uuidString + ".deadline", id.uuidString + ".visit"]
+    func remove(identifiers: [String]) async {
+        UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: identifiers)
+    }
+
+    func add(_ request: ReminderRequest) async throws {
+        let content = UNMutableNotificationContent()
+        content.title = request.title
+        content.body = request.kind == .visit ? "予定の時刻です。" : "対応の期限です。"
+        content.sound = .default
+        let trigger = UNCalendarNotificationTrigger(dateMatching: request.components, repeats: false)
+        try await UNUserNotificationCenter.current().add(UNNotificationRequest(identifier: request.identifier,
+                                                                            content: content, trigger: trigger))
     }
 }
 
 struct ReminderReport: View {
     @Environment(AppNotices.self) private var notices
-    @Environment(\.openURL) private var openURL
+    @Environment(RecordsStore.self) private var store
 
     var body: some View {
         if notices.reminder != .none {
             Section("通知") {
-                Text(message).foregroundStyle(Color.secondary)
+                Text(message).font(.body).foregroundStyle(Color.primary)
+                    .fixedSize(horizontal: false, vertical: true)
                 if notices.reminder == .denied {
                     Button("設定を開く") {
-                        if let url = URL(string: UIApplication.openSettingsURLString) { openURL(url) }
+                        if let url = URL(string: UIApplication.openNotificationSettingsURLString) {
+                            Task { await UIApplication.shared.open(url) }
+                        }
                     }
                 }
-                Button("閉じる") { notices.reminder = .none }
+                if notices.reminder == .failed {
+                    Button("通知を再試行", systemImage: "arrow.clockwise") {
+                        Task { await notices.retry(store.records) }
+                    }
+                }
+                Button("閉じる") { notices.dismissReminder() }
             }
         }
     }
@@ -81,9 +107,9 @@ struct ReminderReport: View {
     private var message: String {
         switch notices.reminder {
         case .none: ""
-        case .denied: "記録は保存できましたが、通知は許可されていません。設定で通知を許可した後、期限や予定を保存し直してください。"
+        case .denied: "通知は許可されていません。記録は保存済みです。"
         case .pastDate: "過去の日時には通知を予約できません。記録は保存済みです。通知する場合は期限や予定の日時を変更してください。"
-        case .failed: "記録は保存できましたが、通知を予約できませんでした。期限や予定の編集から保存し直してください。"
+        case .failed: "記録は保存できましたが、通知を予約できませんでした。通知を再試行してください。"
         }
     }
 }

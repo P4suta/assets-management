@@ -3,11 +3,20 @@ import SwiftUI
 
 @main
 struct PropertyRecordsApp: App {
+    @Environment(\.scenePhase) private var scenePhase
     @State private var store: RecordsStore
     @State private var notices = AppNotices()
 
     init() {
-        _store = State(initialValue: RecordsStore(repository: RepositoryFactory.make()))
+        _store = State(initialValue: RecordsStore(repository: RepositoryFactory.make(), trace: StorageDiagnostics.record))
+        let notices = AppNotices()
+        #if DEBUG
+        if ProcessInfo.processInfo.arguments.contains("--ui-testing"),
+           ProcessInfo.processInfo.environment["UITEST_NOTICE"] == "denied" {
+            notices.reminder = .denied
+        }
+        #endif
+        _notices = State(initialValue: notices)
     }
 
     var body: some Scene {
@@ -18,6 +27,14 @@ struct PropertyRecordsApp: App {
                 .tint(Color("AccentColor"))
                 .environment(\.locale, Locale(identifier: "ja_JP"))
                 .task { await store.load() }
+                .onChange(of: store.isLoading) { _, loading in
+                    if !loading {
+                        Task { await notices.sceneChanged(to: scenePhase, store: store) }
+                    }
+                }
+                .onChange(of: scenePhase) { _, phase in
+                    Task { await notices.sceneChanged(to: phase, store: store) }
+                }
         }
     }
 }

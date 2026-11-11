@@ -89,7 +89,7 @@ struct WorkEditor: View {
         if item.dueDate == nil { item.reminderEnabled = false }
         if item.buildingID != baseline.buildingID || item.roomID != baseline.roomID { item.renewalDraft = nil }
         try await store.save { try $0.savingWork(item) }
-        notices.reminder = await ReminderService.schedule(item)
+        await notices.synchronize(store.records, reporting: item.id)
     }
 }
 
@@ -158,7 +158,7 @@ struct ScheduleEditor: View {
                 records.work.upsert(item)
                 return records
             }
-            notices.reminder = await ReminderService.schedule(item)
+            await notices.synchronize(store.records, reporting: item.id)
         }) {
             Section {
                 Toggle("予定を設定", isOn: $enabled)
@@ -208,7 +208,7 @@ struct RenewalEditor: View {
                 records.work.upsert(item)
                 return records
             }
-            notices.reminder = await ReminderService.schedule(item)
+            await notices.synchronize(store.records, reporting: item.id)
         }) {
             Section("更新後の契約（下書き）") {
                 DatePicker("契約開始日", selection: $start, displayedComponents: .date)

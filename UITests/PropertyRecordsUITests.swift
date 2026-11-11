@@ -141,7 +141,39 @@ final class PropertyRecordsUITests: XCTestCase {
         XCTAssertEqual(app.buttons["work.status"].value as? String, "完了")
     }
 
-    func testNotificationDenialKeepsTheSavedSchedule() {
+    func testNotificationDenialKeepsTheSavedSchedule() throws {
+        let app = saveScheduleWithDeniedNotifications()
+        let schedule = app.buttons["work.schedule"]
+        let settings = app.buttons["設定を開く"]
+        reveal(settings, app: app)
+        XCTAssertTrue(settings.waitForExistence(timeout: 5))
+        // Notification guidance remains in the Repair list with the same native scroll edges.
+        try audit(app, name: "Repair")
+        reveal(schedule, app: app)
+        schedule.tap()
+        XCTAssertEqual(app.switches["予定を通知"].value as? String, "1")
+        app.buttons["editor.cancel"].tap()
+        reveal(settings, app: app)
+        let preferences = XCUIApplication(bundleIdentifier: "com.apple.Preferences")
+        settings.tap()
+        XCTAssertTrue(preferences.wait(for: .runningForeground, timeout: 5))
+        app.activate()
+        XCTAssertTrue(settings.waitForExistence(timeout: 5))
+        reveal(schedule, app: app)
+        schedule.tap()
+        XCTAssertEqual(app.switches["予定を通知"].value as? String, "1")
+        app.buttons["editor.cancel"].tap()
+    }
+
+    func testSavedScheduleAccessibilityAfterClosingTheNotice() throws {
+        let app = saveScheduleWithDeniedNotifications()
+        let close = app.buttons["閉じる"]
+        reveal(close, app: app)
+        close.tap()
+        try audit(app, name: "Repair")
+    }
+
+    private func saveScheduleWithDeniedNotifications() -> XCUIApplication {
         let monitor = addUIInterruptionMonitor(withDescription: "Deny notification access") { alert in
             for title in ["許可しない", "Don’t Allow", "Don't Allow"] where alert.buttons[title].exists {
                 alert.buttons[title].tap()
@@ -170,10 +202,7 @@ final class PropertyRecordsUITests: XCTestCase {
         let settings = app.buttons["設定を開く"]
         reveal(settings, app: app)
         XCTAssertTrue(settings.waitForExistence(timeout: 5))
-        reveal(schedule, app: app)
-        schedule.tap()
-        XCTAssertEqual(app.switches["予定を通知"].value as? String, "1")
-        app.buttons["editor.cancel"].tap()
+        return app
     }
 
     func testLongPropertyNameAndKeyboardRemainReachable() throws {
@@ -282,11 +311,18 @@ final class PropertyRecordsUITests: XCTestCase {
         app.buttons["editor.cancel"].tap()
     }
 
-    private func launch(seeded: Bool = false, failFirstSave: Bool = false) -> XCUIApplication {
+    func testReminderNoticeAccessibilityAfterLaunch() throws {
+        let app = launch(seeded: true, reminderNotice: true)
+        tap("給湯器から水漏れ", app: app)
+        try audit(app, name: "Repair")
+    }
+
+    private func launch(seeded: Bool = false, failFirstSave: Bool = false, reminderNotice: Bool = false) -> XCUIApplication {
         let app = XCUIApplication()
         app.launchArguments = ["--ui-testing", "-AppleLanguages", "(ja)", "-AppleLocale", "ja_JP"]
             + (seeded ? ["--seeded"] : []) + (failFirstSave ? ["--fail-first-save"] : [])
         app.launchEnvironment["UITEST_STORAGE_ID"] = UUID().uuidString
+        if reminderNotice { app.launchEnvironment["UITEST_NOTICE"] = "denied" }
         app.launch()
         XCTAssertTrue(app.tabBars.firstMatch.waitForExistence(timeout: 10))
         return app

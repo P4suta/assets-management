@@ -40,8 +40,20 @@ targets:
         INFOPLIST_KEY_UIFileSharingEnabled: YES
         INFOPLIST_KEY_LSSupportsOpeningDocumentsInPlace: YES
     scheme:
-      testTargets: [PropertyRecordsUITests]
+      testTargets: [PropertyRecordsAppTests, PropertyRecordsUITests]
       gatherCoverageData: true
+  PropertyRecordsAppTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources: [AppTests]
+    dependencies:
+      - target: PropertyRecords
+      - package: PropertyRecordsCore
+        product: PropertyCore
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        PRODUCT_BUNDLE_IDENTIFIER: com.p4suta.PropertyRecordsAppTests
   PropertyRecordsUITests:
     type: bundle.ui-testing
     platform: iOS
