@@ -22,3 +22,6 @@ jobs:
           persist-credentials: false
       - uses: jdx/mise-action@5228313ee0372e111a38da051671ca30fc5a96db
       - run: mise x -- just check
+      - run: mise x -- just app-test
+        env:
+          SIMULATOR_DESTINATION: platform=iOS Simulator,name=iPhone 17 Pro,OS=latest
