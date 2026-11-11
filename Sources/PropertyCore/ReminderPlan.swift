@@ -1,6 +1,6 @@
 import Foundation
 
-public enum ReminderResult: Equatable, Sendable {
+public enum ReminderResult: Hashable, Sendable {
     case none, denied, pastDate, failed
 }
 
