@@ -16,7 +16,7 @@ public actor FileRecordsRepository: RecordsRepository {
     public static let maximumAttachmentBytes = 25 * 1_024 * 1_024
     private let directory: URL
     private var snapshotURL: URL { directory.appendingPathComponent("records.json") }
-    private var attachmentDirectory: URL { directory.appendingPathComponent("Attachments", isDirectory: true) }
+    private var attachmentDirectory: URL { directory.appending(component: "Attachments", directoryHint: .isDirectory) }
 
     public init(directory: URL) { self.directory = directory.standardizedFileURL.resolvingSymlinksInPath() }
 

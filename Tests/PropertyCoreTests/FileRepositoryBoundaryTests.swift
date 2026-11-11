@@ -20,12 +20,15 @@ private func repositorySandbox() -> URL {
         #expect(try Data(contentsOf: url) == data)
     }
 
-    @Test func anUnknownStoredEnumFailsClosed() async throws {
+    @Test(arguments: ["selfManaged", "renewal", "notStarted", "phone", "document"])
+    func anUnknownStoredEnumFailsClosed(token: String) async throws {
         let directory = repositorySandbox()
         defer { try? FileManager.default.removeItem(at: directory) }
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
-        let encoded = try JSONEncoder().encode(fixtureRecords())
-        let text = String(decoding: encoded, as: UTF8.self).replacingOccurrences(of: "\"notStarted\"", with: "\"unknown\"")
+        let encoded = try JSONEncoder().encode(completeRecords())
+        let original = String(decoding: encoded, as: UTF8.self)
+        let text = original.replacingOccurrences(of: "\"" + token + "\"", with: "\"unknown\"")
+        #expect(text != original)
         let data = Data(text.utf8)
         let url = directory.appendingPathComponent("records.json")
         try data.write(to: url)
@@ -134,8 +137,12 @@ private func repositorySandbox() -> URL {
         let directory = repositorySandbox()
         defer { try? FileManager.default.removeItem(at: directory) }
         let repository = FileRecordsRepository(directory: directory)
-        let data = Data(repeating: 0x61, count: FileRecordsRepository.maximumAttachmentBytes)
+        #expect(FileRecordsRepository.maximumAttachmentBytes == 26_214_400)
+        let data = Data(repeating: 0x61, count: 26_214_400)
         let name = try await repository.writeAttachment(data, extension: "txt")
         #expect(try Data(contentsOf: await repository.attachmentURL(named: name)) == data)
+        await #expect(throws: StorageError.attachmentTooLarge) {
+            try await repository.writeAttachment(Data(repeating: 0x61, count: 26_214_401), extension: "txt")
+        }
     }
 }

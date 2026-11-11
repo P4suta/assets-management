@@ -2,7 +2,7 @@ import Foundation
 import Testing
 @testable import PropertyCore
 
-private func completeRecords() throws -> Records {
+func completeRecords() throws -> Records {
     var records = try fixtureRecords()
     let contact = Contact(name: "連絡先")
     records.contacts = [contact]

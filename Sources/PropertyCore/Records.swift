@@ -129,15 +129,7 @@ public struct Records: Codable, Equatable, Sendable {
             let room = rooms.first { $0.id == item.roomID }?.number ?? ""
             return query.isEmpty || [item.title, item.notes, building, room]
                 .contains { $0.localizedStandardContains(query) }
-        }.sorted {
-            switch ($0.dueDate, $1.dueDate) {
-            case (.some, .none): return true
-            case (.none, .some): return false
-            case (.some(let left), .some(let right)) where left != right: return left < right
-            default: break
-            }
-            return $0.receivedAt < $1.receivedAt
-        }
+        }.sorted { $0.compareForDisplay(to: $1) == .orderedAscending }
     }
 
     public static func safeStoredName(_ name: String) -> Bool {
@@ -178,6 +170,22 @@ public struct Records: Codable, Equatable, Sendable {
 
     private func finite(_ date: Date?) throws {
         if let date, !date.timeIntervalSince1970.isFinite { throw DomainError.invalidDates }
+    }
+}
+
+extension WorkItem {
+    func compareForDisplay(to other: Self) -> ComparisonResult {
+        switch (dueDate, other.dueDate) {
+        case (.some, .none): return .orderedAscending
+        case (.none, .some): return .orderedDescending
+        case (.some(let left), .some(let right)):
+            let order = left.compare(right)
+            if order != .orderedSame { return order }
+        default: break
+        }
+        let order = receivedAt.compare(other.receivedAt)
+        if order != .orderedSame { return order }
+        return id.uuidString.compare(other.id.uuidString)
     }
 }
 

@@ -14,6 +14,12 @@ public struct ReminderRequest: Equatable, Sendable {
     public let components: DateComponents
     public var identifier: String { workID.uuidString + "." + kind.rawValue }
 
+    func compareForRegistration(to other: Self) -> ComparisonResult {
+        let order = fireDate.compare(other.fireDate)
+        if order != .orderedSame { return order }
+        return identifier.compare(other.identifier)
+    }
+
     public static func owns(_ identifier: String) -> Bool {
         Kind.allCases.contains { kind in
             let suffix = "." + kind.rawValue
@@ -52,9 +58,7 @@ public struct ReminderPlan: Equatable, Sendable {
                                                 fireDate: date, components: components))
             }
         }
-        self.requests = requests.sorted {
-            $0.fireDate == $1.fireDate ? $0.identifier < $1.identifier : $0.fireDate < $1.fireDate
-        }
+        self.requests = requests.sorted { $0.compareForRegistration(to: $1) == .orderedAscending }
         expiredWorkIDs = expired
     }
 }
