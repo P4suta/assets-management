@@ -378,4 +378,23 @@ private actor ControlledNotificationCenter: ReminderNotificationCenter {
         #expect(!(await syncing.value).isSuperseded)
         #expect(await center.requests.count == 2)
     }
+
+    @Test func expirationDuringRegistrationReportsTheUnscheduledReminder() async throws {
+        let records = try reminderFixture()
+        let calendar = try reminderCalendar()
+        let plan = try ReminderPlan(records: records, now: reminderNow, calendar: calendar)
+        let deadline = try #require(plan.requests.first { $0.kind == .deadline })
+        let clock = OSAllocatedUnfairLock(initialState: reminderNow)
+        let center = ControlledNotificationCenter(suspended: [.add])
+        let coordinator = ReminderCoordinator(center: center, now: { clock.withLock { $0 } }, calendar: { calendar })
+        let syncing = Task { await coordinator.synchronize(records) }
+        guard await reaches(.add, center: center, during: syncing) else {
+            Issue.record("Synchronization ended before registering the first reminder.")
+            return
+        }
+        clock.withLock { $0 = deadline.fireDate }
+        await center.release(.add)
+        #expect(await syncing.value.result(for: records.work[0].id) == .pastDate)
+        #expect(await center.requests[deadline.identifier] == nil)
+    }
 }
