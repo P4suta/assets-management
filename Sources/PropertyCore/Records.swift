@@ -34,11 +34,12 @@ public struct Records: Codable, Equatable, Sendable {
         var result = self
         guard let workIndex = work.firstIndex(where: { $0.id == id }),
               work[workIndex].kind == .renewal,
-              let draft = work[workIndex].renewalDraft,
               let roomID = work[workIndex].roomID,
               let roomIndex = rooms.firstIndex(where: { $0.id == roomID }) else {
             throw DomainError.missingRenewal
         }
+        if work[workIndex].status == .completed { return try validated() }
+        guard let draft = work[workIndex].renewalDraft else { throw DomainError.missingRenewal }
         result.rooms[roomIndex].contract = draft
         result.work[workIndex].status = .completed
         return try result.validated()
@@ -73,12 +74,15 @@ public struct Records: Codable, Equatable, Sendable {
         for room in rooms {
             try required(room.number, .roomNumber)
             guard buildingIDs.contains(room.buildingID) else { throw DomainError.invalidReference }
-            let key = room.buildingID.uuidString + ":" + room.number.trimmingCharacters(in: .whitespaces).lowercased()
+            let key = room.buildingID.uuidString + ":" + room.number.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
             guard roomKeys.insert(key).inserted else { throw DomainError.duplicateRoom }
             try reference(room.residentID, in: contactIDs)
             if let contract = room.contract { try validate(contract) }
             try unique(room.equipment.map(\.id))
-            for equipment in room.equipment { try required(equipment.name, .equipmentName) }
+            for equipment in room.equipment {
+                try required(equipment.name, .equipmentName)
+                try finite(equipment.installedOn)
+            }
         }
         for contact in contacts { try required(contact.name, .contactName) }
         for item in work {
@@ -87,6 +91,9 @@ public struct Records: Codable, Equatable, Sendable {
             if item.kind == .renewal, item.roomID == nil { throw DomainError.missingRenewal }
             try reference(item.contractorID, in: contactIDs)
             try amount(item.estimate)
+            try finite(item.receivedAt)
+            try finite(item.dueDate)
+            try finite(item.nextVisit)
             if let draft = item.renewalDraft {
                 guard item.kind == .renewal, item.roomID != nil else { throw DomainError.missingRenewal }
                 try validate(draft)
@@ -96,8 +103,10 @@ public struct Records: Codable, Equatable, Sendable {
             try required(entry.text, .historyText)
             guard workIDs.contains(entry.workID) else { throw DomainError.invalidReference }
             try reference(entry.contactID, in: contactIDs)
+            try finite(entry.date)
         }
         for attachment in attachments {
+            try finite(attachment.createdAt)
             try location(buildingID: attachment.buildingID, roomID: attachment.roomID)
             try reference(attachment.workID, in: workIDs)
             if let id = attachment.workID, let item = work.first(where: { $0.id == id }) {
@@ -121,7 +130,12 @@ public struct Records: Codable, Equatable, Sendable {
             return query.isEmpty || [item.title, item.notes, building, room]
                 .contains { $0.localizedStandardContains(query) }
         }.sorted {
-            if $0.dueDate != $1.dueDate { return ($0.dueDate ?? .distantFuture) < ($1.dueDate ?? .distantFuture) }
+            switch ($0.dueDate, $1.dueDate) {
+            case (.some, .none): return true
+            case (.none, .some): return false
+            case (.some(let left), .some(let right)) where left != right: return left < right
+            default: break
+            }
             return $0.receivedAt < $1.receivedAt
         }
     }
@@ -156,8 +170,14 @@ public struct Records: Codable, Equatable, Sendable {
     }
 
     private func validate(_ contract: Contract) throws {
+        try finite(contract.start)
+        try finite(contract.end)
         guard contract.end >= contract.start else { throw DomainError.invalidDates }
         try amount(contract.monthlyRent)
+    }
+
+    private func finite(_ date: Date?) throws {
+        if let date, !date.timeIntervalSince1970.isFinite { throw DomainError.invalidDates }
     }
 }
 
