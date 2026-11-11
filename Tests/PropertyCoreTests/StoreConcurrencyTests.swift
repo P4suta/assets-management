@@ -3,11 +3,11 @@ import Testing
 
 @testable import PropertyCore
 
-private enum RepositoryOperation: Hashable, Sendable {
+enum RepositoryOperation: Hashable, Sendable {
   case load, save, write, remove
 }
 
-private actor ControlledRepository: RecordsRepository {
+actor ControlledRepository: RecordsRepository {
   private(set) var stored: Records
   private(set) var files: [String: Data] = [:]
   private var suspended: Set<RepositoryOperation>
@@ -81,6 +81,8 @@ private actor ControlledRepository: RecordsRepository {
     let original = try fixtureRecords()
     let repository = ControlledRepository(original)
     let store = RecordsStore(repository: repository)
+    #expect(store.isLoading)
+    #expect(!store.isSaving)
     await #expect(throws: StoreError.notLoaded) {
       try await store.save { try $0.registering(RegistrationDraft(name: "追加", roomNumber: "1")) }
     }
@@ -142,6 +144,8 @@ private actor ControlledRepository: RecordsRepository {
       try await store.save { try $0.settingStatus(.completed, for: original.work[0].id) }
     }
     await repository.waitFor(.save)
+    #expect(store.isSaving)
+    #expect(!store.isLoading)
     #expect(store.records == original)
     await #expect(throws: StoreError.busy) { try await store.save { $0 } }
     await #expect(throws: StoreError.busy) {
@@ -207,7 +211,8 @@ private actor ControlledRepository: RecordsRepository {
     let original = try fixtureRecords()
     let repository = ControlledRepository(
       original, failures: [.save: .unwritable, .remove: .missingAttachment])
-    let store = RecordsStore(repository: repository)
+    var events: [RecordsEvent] = []
+    let store = RecordsStore(repository: repository) { events.append($0) }
     await store.load()
     do {
       try await store.importAttachment(
@@ -221,6 +226,7 @@ private actor ControlledRepository: RecordsRepository {
     #expect(store.records == original)
     #expect(await repository.stored == original)
     #expect(!store.isSaving)
+    #expect(events == [.attachmentRollbackFailed(errorType: String(reflecting: StorageError.self))])
   }
 
   @Test func attachmentImportsRequireLoadedRecords() async throws {

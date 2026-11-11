@@ -1,9 +1,16 @@
 import Foundation
 import Observation
-import OSLog
 
 public enum StoreError: Error, Equatable, Sendable {
     case busy, notLoaded
+}
+
+public enum RecordsEvent: Equatable, Sendable {
+    case loadFailed(errorType: String)
+    case saving(operationID: UUID)
+    case saved(operationID: UUID)
+    case saveFailed(operationID: UUID, errorType: String)
+    case attachmentRollbackFailed(errorType: String)
 }
 
 public struct AttachmentRollbackError: Error {
@@ -40,9 +47,12 @@ public final class RecordsStore {
         if case .failed(let error) = phase { error } else { nil }
     }
     @ObservationIgnored private let repository: any RecordsRepository
-    @ObservationIgnored private let logger = Logger(subsystem: "com.p4suta.PropertyRecords", category: "Storage")
+    @ObservationIgnored private let trace: @MainActor (RecordsEvent) -> Void
 
-    public init(repository: any RecordsRepository) { self.repository = repository }
+    public init(repository: any RecordsRepository, trace: @escaping @MainActor (RecordsEvent) -> Void = { _ in }) {
+        self.repository = repository
+        self.trace = trace
+    }
 
     public func load() async {
         switch phase { case .loading, .saving: return; default: break }
@@ -55,23 +65,23 @@ public final class RecordsStore {
             phase = .ready
         } catch {
             phase = .failed(error)
-            logger.error("records.load failed errorType=\(String(reflecting: type(of: error)), privacy: .public)")
+            trace(.loadFailed(errorType: String(reflecting: type(of: error))))
         }
     }
 
     public func save(_ transform: (Records) throws -> Records) async throws {
         try beginSaving()
         defer { phase = .ready }
-        let operationID = UUID().uuidString
-        logger.debug("records.save started operation=\(operationID, privacy: .public)")
+        let operationID = UUID()
+        trace(.saving(operationID: operationID))
         do {
             let proposed = try transform(records).validated()
             try Task.checkCancellation()
             try await repository.save(proposed)
             records = proposed
-            logger.debug("records.save committed operation=\(operationID, privacy: .public)")
+            trace(.saved(operationID: operationID))
         } catch {
-            logger.error("records.save failed operation=\(operationID, privacy: .public) errorType=\(String(reflecting: type(of: error)), privacy: .public)")
+            trace(.saveFailed(operationID: operationID, errorType: String(reflecting: type(of: error))))
             throw error
         }
     }
@@ -96,7 +106,7 @@ public final class RecordsStore {
         } catch {
             do { try await repository.removeAttachment(named: storedName) }
             catch let cleanup {
-                logger.error("attachment.rollback failed errorType=\(String(reflecting: type(of: cleanup)), privacy: .public)")
+                trace(.attachmentRollbackFailed(errorType: String(reflecting: type(of: cleanup))))
                 throw AttachmentRollbackError(primary: error, cleanup: cleanup)
             }
             throw error
