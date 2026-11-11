@@ -16,10 +16,14 @@ test:
 sanitize:
     swift test --sanitize thread --jobs 2 --scratch-path .build/thread-sanitizer
 
-mutation-plan:
+[private]
+mutation-results:
+    @mkdir -p .results
+
+mutation-plan: mutation-results
     swift-mutation-testing plan --output .results/mutation-plan.json
 
-mutation-scan:
+mutation-scan: mutation-results
     swift-mutation-testing run
 
 build: generate
