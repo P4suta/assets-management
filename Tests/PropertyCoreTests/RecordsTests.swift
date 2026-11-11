@@ -3,13 +3,16 @@ import Testing
 @testable import PropertyCore
 
 func fixtureRecords() throws -> Records {
-    var records = try Records().registering(RegistrationDraft(name: "桜通りレジデンス", roomNumber: "203"))
-    let building = try #require(records.buildings.first)
-    var room = try #require(records.rooms.first)
+    var records = Records()
+    let building = Building(id: UUID(uuid: (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1)), name: "桜通りレジデンス")
+    var room = Room(id: UUID(uuid: (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2)), buildingID: building.id, number: "203")
     room.contract = Contract(start: Date(timeIntervalSince1970: 1_700_000_000),
                              end: Date(timeIntervalSince1970: 1_800_000_000), monthlyRent: 82_000)
-    records.rooms[0] = room
-    records.work = [WorkItem(buildingID: building.id, roomID: room.id, title: "給湯器から水漏れ", estimate: 38_500)]
+    records.buildings = [building]
+    records.rooms = [room]
+    records.work = [WorkItem(id: UUID(uuid: (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3)),
+                            buildingID: building.id, roomID: room.id, title: "給湯器から水漏れ",
+                            receivedAt: Date(timeIntervalSince1970: 1_700_000_000), estimate: 38_500)]
     return records
 }
 
