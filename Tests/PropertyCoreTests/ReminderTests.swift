@@ -28,7 +28,8 @@ private actor ControlledNotificationCenter: ReminderNotificationCenter {
     private var failAdd = false
     private var failPermission = false
     private var counts: [NotificationOperation: Int] = [:]
-    private var arrivals: [NotificationOperation: [CheckedContinuation<Void, Never>]] = [:]
+    private var arrivals: [NotificationOperation: [CheckedContinuation<Bool, Never>]] = [:]
+    private var ended: Set<NotificationOperation> = []
     private var resumes: [NotificationOperation: [CheckedContinuation<Void, Never>]] = [:]
     private(set) var requests: [String: ReminderRequest] = [:]
     private(set) var foreignIdentifiers: [String] = ["unrelated-feature"]
@@ -75,9 +76,15 @@ private actor ControlledNotificationCenter: ReminderNotificationCenter {
     }
     func count(_ operation: NotificationOperation) -> Int { counts[operation, default: 0] }
 
-    func waitFor(_ operation: NotificationOperation) async {
-        if counts[operation, default: 0] > 0 { return }
-        await withCheckedContinuation { arrivals[operation, default: []].append($0) }
+    func waitFor(_ operation: NotificationOperation) async -> Bool {
+        if counts[operation, default: 0] > 0 { return true }
+        if ended.contains(operation) { return false }
+        return await withCheckedContinuation { arrivals[operation, default: []].append($0) }
+    }
+
+    func finishWaiting(for operation: NotificationOperation) {
+        ended.insert(operation)
+        for continuation in arrivals.removeValue(forKey: operation) ?? [] { continuation.resume(returning: false) }
     }
 
     func release(_ operation: NotificationOperation) {
@@ -87,11 +94,22 @@ private actor ControlledNotificationCenter: ReminderNotificationCenter {
 
     private func checkpoint(_ operation: NotificationOperation) async {
         counts[operation, default: 0] += 1
-        for continuation in arrivals.removeValue(forKey: operation) ?? [] { continuation.resume() }
+        for continuation in arrivals.removeValue(forKey: operation) ?? [] { continuation.resume(returning: true) }
         if suspended.contains(operation) {
             await withCheckedContinuation { resumes[operation, default: []].append($0) }
         }
     }
+}
+
+@MainActor private func reaches(_ operation: NotificationOperation, center: ControlledNotificationCenter,
+                               during task: Task<ReminderSyncReport, Never>) async -> Bool {
+    let completion = Task {
+        _ = await task.value
+        if !Task.isCancelled { await center.finishWaiting(for: operation) }
+    }
+    let reached = await center.waitFor(operation)
+    completion.cancel()
+    return reached
 }
 
 @Suite @MainActor struct ReminderTests {
@@ -193,12 +211,16 @@ private actor ControlledNotificationCenter: ReminderNotificationCenter {
         let calendar = try reminderCalendar()
         let coordinator = ReminderCoordinator(center: center, now: { reminderNow }, calendar: { calendar })
         let first = Task { await coordinator.synchronize(records, requestingAuthorizationFor: id) }
-        await center.waitFor(operation)
+        guard await reaches(operation, center: center, during: first) else {
+            Issue.record("Synchronization ended before reaching the controlled operation.")
+            return
+        }
         let completed = try records.settingStatus(.completed, for: id)
         let release = Task { await center.release(operation) }
         let latest = await coordinator.synchronize(completed)
         await release.value
-        #expect(await first.value == latest)
+        #expect(await first.value.isSuperseded)
+        #expect(!latest.isSuperseded)
         #expect(latest.result(for: id) == .none)
         #expect(await center.requests.isEmpty)
         #expect(await center.count(.add) == (operation == .add ? 1 : 0))
@@ -229,7 +251,10 @@ private actor ControlledNotificationCenter: ReminderNotificationCenter {
         let coordinator = ReminderCoordinator(center: center, now: { reminderNow }, calendar: { calendar })
         await center.setFailures(permission: true)
         let first = Task { await coordinator.synchronize(records, requestingAuthorizationFor: id) }
-        await center.waitFor(.permission)
+        guard await reaches(.permission, center: center, during: first) else {
+            Issue.record("Synchronization ended before requesting permission.")
+            return
+        }
         await center.release(.permission)
         #expect(await first.value.result(for: id) == .failed)
         #expect(await center.requests.isEmpty)
@@ -248,11 +273,15 @@ private actor ControlledNotificationCenter: ReminderNotificationCenter {
         _ = await coordinator.synchronize(records)
         let completed = try records.settingStatus(.completed, for: id)
         let cancelling = Task { await coordinator.synchronize(completed) }
-        await center.waitFor(.remove)
+        guard await reaches(.remove, center: center, during: cancelling) else {
+            Issue.record("Synchronization ended before cancelling the reminder.")
+            return
+        }
         let release = Task { await center.release(.remove) }
         let reopened = await coordinator.synchronize(records)
         await release.value
-        #expect(await cancelling.value == reopened)
+        #expect(await cancelling.value.isSuperseded)
+        #expect(!reopened.isSuperseded)
         #expect(await center.requests.count == 2)
         #expect(await center.foreignIdentifiers == ["unrelated-feature"])
     }
@@ -265,10 +294,88 @@ private actor ControlledNotificationCenter: ReminderNotificationCenter {
         let calendar = try reminderCalendar()
         let coordinator = ReminderCoordinator(center: center, now: { clock.withLock { $0 } }, calendar: { calendar })
         let syncing = Task { await coordinator.synchronize(records) }
-        await center.waitFor(.pending)
+        guard await reaches(.pending, center: center, during: syncing) else {
+            Issue.record("Synchronization ended before reading pending reminders.")
+            return
+        }
         clock.withLock { $0 = reminderNow.addingTimeInterval(7_200) }
         await center.release(.pending)
         #expect(await syncing.value.result(for: records.work[0].id) == .pastDate)
         #expect(await center.requests.isEmpty)
+    }
+
+    @Test func clockChangesNeverBypassAuthorization() async throws {
+        var records = try reminderFixture()
+        records.work[0].reminderEnabled = false
+        records.work[0].nextVisit = reminderNow.addingTimeInterval(-3_600)
+        let clock = OSAllocatedUnfairLock(initialState: reminderNow)
+        let center = ControlledNotificationCenter(permission: .denied, suspended: [.pending])
+        let calendar = try reminderCalendar()
+        let coordinator = ReminderCoordinator(center: center, now: { clock.withLock { $0 } }, calendar: { calendar })
+        let syncing = Task { await coordinator.synchronize(records) }
+        guard await reaches(.pending, center: center, during: syncing) else {
+            Issue.record("Synchronization ended before reading pending reminders.")
+            return
+        }
+        clock.withLock { $0 = reminderNow.addingTimeInterval(-7_200) }
+        await center.release(.pending)
+        #expect(await syncing.value.result(for: records.work[0].id) == .denied)
+        #expect(await center.requests.isEmpty)
+    }
+
+    @Test func permissionIntentNeverLeaksIntoAPassiveSynchronization() async throws {
+        let records = try reminderFixture()
+        let id = records.work[0].id
+        let center = ControlledNotificationCenter(permission: .notDetermined)
+        let calendar = try reminderCalendar()
+        let coordinator = ReminderCoordinator(center: center, now: { reminderNow }, calendar: { calendar })
+        _ = await coordinator.synchronize(try records.settingStatus(.completed, for: id), requestingAuthorizationFor: id)
+        _ = await coordinator.synchronize(records)
+        #expect(await center.count(.permission) == 0)
+        #expect(await center.requests.isEmpty)
+    }
+
+    @Test func aNewSnapshotSupersedesRemovalAtTheExactExpirationTime() async throws {
+        let records = try reminderFixture()
+        let calendar = try reminderCalendar()
+        let plan = try ReminderPlan(records: records, now: reminderNow, calendar: calendar)
+        let deadline = try #require(plan.requests.first { $0.kind == .deadline })
+        let clock = OSAllocatedUnfairLock(initialState: reminderNow)
+        let center = ControlledNotificationCenter(suspended: [.add, .remove])
+        let coordinator = ReminderCoordinator(center: center, now: { clock.withLock { $0 } }, calendar: { calendar })
+        let syncing = Task { await coordinator.synchronize(records) }
+        guard await reaches(.add, center: center, during: syncing) else {
+            Issue.record("Synchronization ended before registering the first reminder.")
+            return
+        }
+        clock.withLock { $0 = deadline.fireDate }
+        await center.release(.add)
+        guard await reaches(.remove, center: center, during: syncing) else {
+            Issue.record("An expired reminder must be removed before synchronization completes.")
+            return
+        }
+        let release = Task { await center.release(.remove) }
+        let latest = await coordinator.synchronize(try records.settingStatus(.completed, for: records.work[0].id))
+        await release.value
+        #expect(await syncing.value.isSuperseded)
+        #expect(!latest.isSuperseded)
+        #expect(await center.requests.isEmpty)
+        #expect(await center.count(.add) == 1)
+    }
+
+    @Test func cancellingASubscriberKeepsCommittedRemindersScheduled() async throws {
+        let records = try reminderFixture()
+        let calendar = try reminderCalendar()
+        let center = ControlledNotificationCenter(suspended: [.authorization])
+        let coordinator = ReminderCoordinator(center: center, now: { reminderNow }, calendar: { calendar })
+        let syncing = Task { await coordinator.synchronize(records) }
+        guard await reaches(.authorization, center: center, during: syncing) else {
+            Issue.record("Synchronization ended before checking authorization.")
+            return
+        }
+        syncing.cancel()
+        await center.release(.authorization)
+        #expect(!(await syncing.value).isSuperseded)
+        #expect(await center.requests.count == 2)
     }
 }

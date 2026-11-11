@@ -14,9 +14,10 @@ Permission can change in Settings while the app is away.
 
 Derive requests from committed records through a pure calendar policy.
 Serialize notification effects and discard superseded plans after each suspension.
+Link [tasks through their results](https://docs.swift.org/latest/documentation/the-swift-programming-language/concurrency/#Unstructured-Concurrency) instead of resuming continuations manually.
 Reconcile on foreground entry and prompt only after an explicit reminder edit.
 [Apple's authorization guidance](https://developer.apple.com/documentation/usernotifications/asking-permission-to-use-notifications) requires fresh settings and recommends contextual prompts.
-[Apple's request identifiers](https://developer.apple.com/documentation/usernotifications/unnotificationrequest/identifier) support replacement and cancellation.
+[Request identifiers](https://developer.apple.com/documentation/usernotifications/unnotificationrequest/identifier) support replacement and cancellation.
 
 ## Alternatives
 

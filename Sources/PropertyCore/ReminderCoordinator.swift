@@ -14,11 +14,9 @@ public protocol ReminderNotificationCenter: Sendable {
     private let center: any ReminderNotificationCenter
     private let now: @Sendable () -> Date
     private let calendar: @Sendable () -> Calendar
-    private var records = Records()
     private var revision: UInt64 = 0
-    private var running = false
     private var permissionIntents: Set<UUID> = []
-    private var waiters: [CheckedContinuation<ReminderSyncReport, Never>] = []
+    private var tail: Task<ReminderSyncReport, Never>?
 
     public init(center: any ReminderNotificationCenter,
                 now: @escaping @Sendable () -> Date = { Date() },
@@ -29,61 +27,39 @@ public protocol ReminderNotificationCenter: Sendable {
     }
 
     public func synchronize(_ records: Records, requestingAuthorizationFor id: UUID? = nil) async -> ReminderSyncReport {
-        self.records = records
         revision &+= 1
+        let current = revision
         if let id { permissionIntents.insert(id) }
-        return await withCheckedContinuation { continuation in
-            waiters.append(continuation)
-            if !running {
-                running = true
-                Task { await drain() }
-            }
+        let previous = tail
+        let task = Task {
+            _ = await previous?.value
+            guard current == revision else { return ReminderSyncReport.superseded }
+            return await reconcile(records, revision: current)
         }
+        tail = task
+        return await task.value
     }
 
-    private func drain() async {
-        updates: while true {
-            let current = revision
-            var plan: ReminderPlan
-            do { plan = try ReminderPlan(records: records, now: now(), calendar: calendar()) }
-            catch {
-                var report = ReminderSyncReport()
-                report.failedWorkIDs = Set(records.work.map(\.id))
-                finish(report)
-                return
-            }
+    private func reconcile(_ records: Records, revision current: UInt64) async -> ReminderSyncReport {
+        defer { if current == revision { permissionIntents = [] } }
+        do {
+            var plan = try ReminderPlan(records: records, now: now(), calendar: calendar())
             var report = ReminderSyncReport()
-            var authorization = ReminderAuthorization.authorized
-            if !plan.requests.isEmpty {
-                authorization = await center.authorization()
-                guard current == revision else { continue }
-                let futureIDs = Set(plan.requests.map(\.workID))
-                if authorization == .notDetermined, !permissionIntents.isDisjoint(with: futureIDs) {
-                    permissionIntents.removeAll()
-                    do { authorization = try await center.requestAuthorization() }
-                    catch {
-                        authorization = .denied
-                        report.failedWorkIDs = futureIDs
-                    }
-                    guard current == revision else { continue }
-                }
-                do { plan = try ReminderPlan(records: records, now: now(), calendar: calendar()) }
-                catch {
-                    report.failedWorkIDs = Set(records.work.map(\.id))
-                    finish(report)
-                    return
-                }
-                if authorization != .authorized {
-                    report.deniedWorkIDs = Set(plan.requests.map(\.workID))
-                }
-            }
+            var authorization = await center.authorization()
+            guard current == revision else { return .superseded }
             let pending = await center.pendingIdentifiers()
-            guard current == revision else { continue }
-            do { plan = try ReminderPlan(records: records, now: now(), calendar: calendar()) }
-            catch {
-                report.failedWorkIDs = Set(records.work.map(\.id))
-                finish(report)
-                return
+            guard current == revision else { return .superseded }
+            plan = try ReminderPlan(records: records, now: now(), calendar: calendar())
+            let futureIDs = Set(plan.requests.map(\.workID))
+            if authorization == .notDetermined, !permissionIntents.isDisjoint(with: futureIDs) {
+                permissionIntents = []
+                do { authorization = try await center.requestAuthorization() }
+                catch {
+                    authorization = .denied
+                    report.failedWorkIDs = futureIDs
+                }
+                guard current == revision else { return .superseded }
+                plan = try ReminderPlan(records: records, now: now(), calendar: calendar())
             }
             report.expiredWorkIDs = plan.expiredWorkIDs
             if authorization != .authorized { report.deniedWorkIDs = Set(plan.requests.map(\.workID)) }
@@ -92,29 +68,24 @@ public protocol ReminderNotificationCenter: Sendable {
             let obsolete = pending.filter { ReminderRequest.owns($0) && !identifiers.contains($0) }
             if !obsolete.isEmpty {
                 await center.remove(identifiers: obsolete)
-                guard current == revision else { continue }
+                guard current == revision else { return .superseded }
             }
             for request in desired {
                 if request.fireDate <= now() {
                     report.expiredWorkIDs.insert(request.workID)
                     await center.remove(identifiers: [request.identifier])
-                    guard current == revision else { continue updates }
+                    guard current == revision else { return .superseded }
                     continue
                 }
                 do { try await center.add(request) }
                 catch { report.failedWorkIDs.insert(request.workID) }
-                guard current == revision else { continue updates }
+                guard current == revision else { return .superseded }
             }
-            finish(report)
-            return
+            return report
+        } catch {
+            var report = ReminderSyncReport()
+            report.failedWorkIDs = Set(records.work.map(\.id))
+            return report
         }
-    }
-
-    private func finish(_ report: ReminderSyncReport) {
-        let continuations = waiters
-        waiters.removeAll()
-        permissionIntents.removeAll()
-        running = false
-        for continuation in continuations { continuation.resume(returning: report) }
     }
 }

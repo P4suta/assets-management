@@ -60,9 +60,16 @@ public struct ReminderPlan: Equatable, Sendable {
 }
 
 public struct ReminderSyncReport: Equatable, Sendable {
+    public var isSuperseded = false
     public var deniedWorkIDs: Set<UUID> = []
     public var expiredWorkIDs: Set<UUID> = []
     public var failedWorkIDs: Set<UUID> = []
+
+    static var superseded: Self {
+        var report = Self()
+        report.isSuperseded = true
+        return report
+    }
 
     public func result(for id: UUID) -> ReminderResult {
         if failedWorkIDs.contains(id) { return .failed }
