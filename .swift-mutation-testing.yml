@@ -5,6 +5,7 @@ concurrency: 2
 timeout: 15
 build-timeout: 120
 no-cache: true
+no-warm-sandbox: true
 min-score: 100
 max-integrity-warnings: 0
 output: .results/mutation-report.json
