@@ -49,7 +49,7 @@ public final class RecordsStore {
         phase = .loading
         do {
             try Task.checkCancellation()
-            let loaded = try await repository.load().validated()
+            let loaded = try await repository.load().validatedAfterLoading()
             try Task.checkCancellation()
             records = loaded
             phase = .ready
