@@ -1,0 +1,6 @@
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Exclude generated build products and local test output."
+paths = ['''(^|/)(\.build|\.derivedData|\.results|\.git)/''']

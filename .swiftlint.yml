@@ -1,0 +1,29 @@
+included:
+  - App
+  - Sources
+  - Tests
+  - UITests
+  - Package.swift
+only_rules:
+  - force_cast
+  - force_try
+  - trailing_whitespace
+  - duplicate_conditions
+  - unused_closure_parameter
+  - custom_rules
+custom_rules:
+  native_appearance:
+    included: "App/.*\\.swift"
+    regex: '(preferredColorScheme|toolbarBackground|presentationBackground|glassEffect|minimumScaleFactor|truncationMode|lineLimit)\s*\('
+    message: "Keep native appearance, materials, and text reflow."
+    severity: error
+  semantic_colors:
+    included: "App/.*\\.swift"
+    regex: 'Color\s*\(\s*(red:|hue:|white:)|foregroundStyle\s*\(\s*\.(primary|secondary|tertiary)\s*\)'
+    message: "Use system colors and semantic foreground colors."
+    severity: error
+  dynamic_type:
+    included: "App/.*\\.swift"
+    regex: '\.font\s*\(\s*\.system\s*\(\s*size:'
+    message: "Use Dynamic Type text styles."
+    severity: error

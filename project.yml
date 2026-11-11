@@ -1,0 +1,54 @@
+name: PropertyRecords
+options:
+  bundleIdPrefix: com.p4suta
+  deploymentTarget:
+    iOS: "26.0"
+  developmentLanguage: ja
+  knownRegions: [ja, en, Base]
+packages:
+  PropertyRecordsCore:
+    path: .
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    SWIFT_STRICT_CONCURRENCY: complete
+    SWIFT_TREAT_WARNINGS_AS_ERRORS: YES
+    ENABLE_USER_SCRIPT_SANDBOXING: YES
+    TARGETED_DEVICE_FAMILY: "1"
+targets:
+  PropertyRecords:
+    type: application
+    platform: iOS
+    sources:
+      - path: App
+        excludes: [Info.plist]
+    dependencies:
+      - package: PropertyRecordsCore
+        product: PropertyCore
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.p4suta.PropertyRecords
+        TARGETED_DEVICE_FAMILY: "1"
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+        GENERATE_INFOPLIST_FILE: NO
+        INFOPLIST_FILE: App/Info.plist
+        INFOPLIST_KEY_CFBundleDisplayName: 物件管理くん
+        INFOPLIST_KEY_NSCameraUsageDescription: 修繕箇所を撮影して、対応の記録に写真を追加します。
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
+        INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.productivity
+        INFOPLIST_KEY_UIFileSharingEnabled: YES
+        INFOPLIST_KEY_LSSupportsOpeningDocumentsInPlace: YES
+    scheme:
+      testTargets: [PropertyRecordsUITests]
+      gatherCoverageData: true
+  PropertyRecordsUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources: [UITests]
+    dependencies:
+      - target: PropertyRecords
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        PRODUCT_BUNDLE_IDENTIFIER: com.p4suta.PropertyRecordsUITests
