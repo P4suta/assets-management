@@ -13,6 +13,15 @@ lint:
 test:
     swift test
 
+sanitize:
+    swift test --sanitize thread --jobs 2 --scratch-path .build/thread-sanitizer
+
+mutation-plan:
+    swift-mutation-testing plan --output .results/mutation-plan.json
+
+mutation-scan:
+    swift-mutation-testing run
+
 build: generate
     xcodebuild -project PropertyRecords.xcodeproj -scheme PropertyRecords -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' -derivedDataPath .derivedData CODE_SIGNING_ALLOWED=NO ONLY_ACTIVE_ARCH=YES build -quiet
 

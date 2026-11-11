@@ -1,6 +1,7 @@
 .build/
 .derivedData/
 .results/
+.swift-mutation-testing-cache/
 .DS_Store
 *.xcuserstate
 xcuserdata/
