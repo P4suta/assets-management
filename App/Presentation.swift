@@ -67,6 +67,8 @@ func errorMessage(_ error: any Error) -> String {
     case StorageError.unreadable, StorageError.corrupted, DomainError.unsupportedFormat:
         return "記録を読み込めませんでした。保存済みのファイルは変更していません。"
     case StoreError.busy: return "保存中です。保存が終わってから再試行してください。"
+    case StoreError.notLoaded: return "記録を読み込んでから再試行してください。"
+    case is CancellationError: return "処理を中止しました。再試行してください。"
     default: return "保存できませんでした。入力内容は保持されています。再試行してください。"
     }
 }

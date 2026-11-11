@@ -3,7 +3,7 @@ import Observation
 import OSLog
 
 public enum StoreError: Error, Equatable, Sendable {
-    case busy
+    case busy, notLoaded
 }
 
 public struct AttachmentRollbackError: Error {
@@ -26,35 +26,47 @@ public struct RecordLocation: Hashable, Sendable {
 @MainActor @Observable
 public final class RecordsStore {
     public private(set) var records = Records()
-    public private(set) var isLoading = true
-    public private(set) var isSaving = false
-    public private(set) var loadError: (any Error)?
+    private enum Phase {
+        case unloaded, loading, ready, saving, failed(any Error)
+    }
+    private var phase: Phase = .unloaded
+    public var isLoading: Bool {
+        switch phase { case .unloaded, .loading: true; default: false }
+    }
+    public var isSaving: Bool {
+        if case .saving = phase { true } else { false }
+    }
+    public var loadError: (any Error)? {
+        if case .failed(let error) = phase { error } else { nil }
+    }
     @ObservationIgnored private let repository: any RecordsRepository
     @ObservationIgnored private let logger = Logger(subsystem: "com.p4suta.PropertyRecords", category: "Storage")
 
     public init(repository: any RecordsRepository) { self.repository = repository }
 
     public func load() async {
-        guard !isSaving else { return }
-        isLoading = true
+        switch phase { case .loading, .saving: return; default: break }
+        phase = .loading
         do {
-            records = try await repository.load().validated()
-            loadError = nil
+            try Task.checkCancellation()
+            let loaded = try await repository.load().validated()
+            try Task.checkCancellation()
+            records = loaded
+            phase = .ready
         } catch {
-            loadError = error
+            phase = .failed(error)
             logger.error("records.load failed errorType=\(String(reflecting: type(of: error)), privacy: .public)")
         }
-        isLoading = false
     }
 
     public func save(_ transform: (Records) throws -> Records) async throws {
-        guard !isSaving else { throw StoreError.busy }
-        isSaving = true
-        defer { isSaving = false }
+        try beginSaving()
+        defer { phase = .ready }
         let operationID = UUID().uuidString
         logger.debug("records.save started operation=\(operationID, privacy: .public)")
         do {
             let proposed = try transform(records).validated()
+            try Task.checkCancellation()
             try await repository.save(proposed)
             records = proposed
             logger.debug("records.save committed operation=\(operationID, privacy: .public)")
@@ -66,15 +78,18 @@ public final class RecordsStore {
 
     public func importAttachment(_ data: Data, name: String, extension fileExtension: String,
                                  kind: AttachmentKind, location: RecordLocation) async throws {
-        guard !isSaving else { throw StoreError.busy }
-        isSaving = true
-        defer { isSaving = false }
+        try beginSaving()
+        defer { phase = .ready }
+        var proposed = records
+        let provisional = UUID().uuidString + "." + fileExtension.lowercased()
+        proposed.attachments.append(Attachment(buildingID: location.buildingID, roomID: location.roomID,
+                                               workID: location.workID, kind: kind, name: name, storedName: provisional))
+        _ = try proposed.validated()
+        try Task.checkCancellation()
         let storedName = try await repository.writeAttachment(data, extension: fileExtension)
         do {
-            var proposed = records
-            proposed.attachments.append(Attachment(buildingID: location.buildingID, roomID: location.roomID,
-                                                   workID: location.workID, kind: kind, name: name,
-                                                   storedName: storedName))
+            try Task.checkCancellation()
+            proposed.attachments[proposed.attachments.count - 1].storedName = storedName
             _ = try proposed.validated()
             try await repository.save(proposed)
             records = proposed
@@ -90,5 +105,15 @@ public final class RecordsStore {
 
     public func attachmentURL(_ attachment: Attachment) async throws -> URL {
         try await repository.attachmentURL(named: attachment.storedName)
+    }
+
+    private func beginSaving() throws {
+        switch phase {
+        case .loading, .saving: throw StoreError.busy
+        case .unloaded, .failed: throw StoreError.notLoaded
+        case .ready: break
+        }
+        try Task.checkCancellation()
+        phase = .saving
     }
 }
