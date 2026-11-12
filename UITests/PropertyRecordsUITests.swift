@@ -92,6 +92,8 @@ final class PropertyRecordsUITests: XCTestCase {
         let clear = app.buttons["work.estimate.clear"]
         XCTAssertTrue(clear.exists)
         guard clear.exists else { return }
+        XCTAssertGreaterThanOrEqual(clear.frame.width, 44)
+        XCTAssertGreaterThanOrEqual(clear.frame.height, 44)
         clear.tap()
         enter("85000", into: "work.estimate", app: app)
         XCTAssertTrue(app.buttons["editor.save"].isEnabled)

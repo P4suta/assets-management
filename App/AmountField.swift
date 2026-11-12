@@ -18,10 +18,13 @@ struct AmountField: View {
                         .frame(minHeight: 44)
                 }
                 if !input.text.isEmpty || !input.isValid {
-                    Button("入力を消去", systemImage: "xmark.circle.fill") { input.clear() }
-                        .labelStyle(.iconOnly)
+                    Button { input.clear() } label: {
+                        Label("入力を消去", systemImage: "xmark.circle.fill")
+                            .labelStyle(.iconOnly)
+                            .frame(minWidth: 44, minHeight: 44)
+                            .contentShape(Rectangle())
+                    }
                         .buttonStyle(.borderless)
-                        .frame(minWidth: 44, minHeight: 44)
                         .accessibilityLabel(title + "を消去")
                         .accessibilityIdentifier(identifier + ".clear")
                 }
