@@ -1,6 +1,6 @@
 ---
 date: 2026-11-12
-status: proposed
+status: accepted
 ---
 
 # Serve support pages from the app repository

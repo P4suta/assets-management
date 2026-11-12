@@ -12,14 +12,15 @@ Run the browser journeys and accessibility audit: `mise x -- just website-ui-tes
 The journeys check the palette, keyboard navigation, narrow layouts, and enlarged text.
 The website runs no client scripts and receives no property records from the app.
 Static response headers prevent automatic script injection with the documented [no-transform directive](https://developers.cloudflare.com/web-analytics/faq/).
+Workers logging, traces, dependency instrumentation, Logpush, and deployment metrics are off in the configuration.
+Response headers cancel browser network error reporting policies.
 
 The [website workflow](../.github/workflows/website.yml) verifies pull requests and changes on the default branch.
 Only the default branch publishes the preserved candidate through a separate job.
 The publication job uses the production environment, which accepts only the default branch.
 Cloudflare credentials stay in the purpose-specific Doppler config.
 GitHub stores a read-only Service Token for that config in its protected environment.
-The initial provider token needs product-level administrative access to Workers and zone-specific route permissions.
-After bootstrap, reduce its authority using the current [Workers permission model](https://developers.cloudflare.com/workers/authorization/workers/).
+The production token provides editor access at the product level and route permissions for the approved zone under the [permission model](https://developers.cloudflare.com/workers/authorization/workers/).
 The configuration publishes only at the custom hostname.
 After deployment, check the public pages: `SUPPORT_ORIGIN=https://assets-management.yasunobu.dev mise x -- just website-ui-test`.
 The maintained HTML and styles live in `public/`.
