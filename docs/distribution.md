@@ -33,6 +33,28 @@ App Store privacy answers must describe the shipped binary and its dependencies.
 The app stores records and attachments on the device and has no collection service.
 The support email is `hi@sakashita.email`.
 
+The Japanese description explains repair and renewal records without a tab walkthrough.
+The promotional text describes the history users can keep.
+The [header artwork](../AppStore/CreativeAssets/ja/header.svg) and [search results artwork](../AppStore/CreativeAssets/ja/search-results.svg) contain the Japanese heading on a white background.
+The header uses 3840 by 1646 pixels, and the search artwork uses 3840 by 2560 pixels under Apple's [creative asset specifications](https://developer.apple.com/help/app-store-connect/reference/app-information/creative-assets-specifications).
+Each heading stays inside its template's safe area.
+The header's safe area starts at x=1097, y=493 with width=1646 and height=661.
+The search artwork's safe area starts at x=836, y=765 with width=2168 and height=1030.
+
+Render the SVG from its directory with ImageMagick 7 and a path to the macOS Yu Gothic Bold font:
+
+```sh
+magick -font "$STORE_CREATIVE_FONT" header.svg -background white -alpha remove -alpha off -colorspace sRGB -strip -define png:color-type=2 header.png
+magick -font "$STORE_CREATIVE_FONT" search-results.svg -background white -alpha remove -alpha off -colorspace sRGB -strip -define png:color-type=2 search-results.png
+```
+
+For Japanese, upload both opaque images to Asset Library.
+Assign the header to `PRODUCT_PAGE_HEADER_ASSET`.
+Assign the search artwork to `APP_STORE_SEARCH_RESULTS_ASSET`.
+For the initial version, add the app version to a draft after assigning its creative images.
+Check the image's review state before adding a separate asset item.
+Leave the draft ready for the final submission button when the owner requests that handoff.
+
 Prepare the Japanese metadata, screenshots, free price, age rating, export compliance, privacy answers, and review notes under [Apple's version requirements](https://developer.apple.com/help/app-store-connect/reference/app-information/platform-version-information).
 Select [automatic release after approval](https://developer.apple.com/help/app-store-connect/manage-your-apps-availability/select-an-app-store-version-release-option) when the owner authorizes publication.
 Upload and build processing are preparation steps.
