@@ -31,7 +31,7 @@ mutation-scan: mutation-results
 build: generate
     xcodebuild -project PropertyRecords.xcodeproj -scheme PropertyRecords -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' -derivedDataPath .derivedData CODE_SIGNING_ALLOWED=NO ONLY_ACTIVE_ARCH=YES build -quiet
 
-check: lint test build website-check
+check: lint test build website-check store-assets
 
 website-check:
     cd website && mise x node aqua:pnpm/pnpm just -- just check
@@ -50,3 +50,19 @@ ui-tour: generate
 
 release-build: generate
     xcodebuild -project PropertyRecords.xcodeproj -scheme PropertyRecords -configuration Release -destination 'generic/platform=iOS' -derivedDataPath .derivedData CODE_SIGNING_ALLOWED=NO build -quiet
+
+archive archive_path: generate
+    xcodebuild -project PropertyRecords.xcodeproj -scheme PropertyRecords -configuration Release -destination 'generic/platform=iOS' -derivedDataPath .derivedData -jobs 2 -archivePath '{{ archive_path }}' -allowProvisioningUpdates archive -quiet
+    just archive-resources '{{ archive_path }}'
+
+export archive_path output_path:
+    just archive-resources '{{ archive_path }}'
+    xcodebuild -exportArchive -archivePath '{{ archive_path }}' -exportPath '{{ output_path }}' -exportOptionsPlist AppStore/ExportOptions.plist -allowProvisioningUpdates -quiet
+
+archive-resources archive_path:
+    test ! -e '{{ archive_path }}/Products/Applications/PropertyRecords.app/PhotoLicense.txt'
+    xcrun assetutil --info '{{ archive_path }}/Products/Applications/PropertyRecords.app/Assets.car' | jaq --exit-status --slurp 'length == 1 and (.[0] | type == "array" and length > 0 and all(.[]; .Name? != "FixturePhoto"))'
+
+store-assets:
+    asc metadata validate --dir AppStore/Metadata
+    asc screenshots validate --path AppStore/Screenshots/ja/APP_IPHONE_61 --device-type APP_IPHONE_61

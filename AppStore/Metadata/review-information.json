@@ -1,0 +1,4 @@
+{
+  "demoAccountRequired": false,
+  "notes": "The app stores property records and attachments on the device.\nOn first launch, open Properties, add a building and its first room, then use Actions to add a repair, renewal, or inspection.\nAll features are available without signing in.\nThe camera is optional.\nFiles and the system photo picker are available when the camera is unavailable.\nLocal notifications are optional and only requested when a reminder is enabled.\nThe app has no payments, purchases, advertising, analytics, or data collection service."
+}
