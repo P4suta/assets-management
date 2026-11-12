@@ -1,6 +1,7 @@
 # Develop property records
 
-The iPhone app targets iOS 26 or later and has Actions and Properties tabs.
+The iPhone and iPad app targets iOS 26 or later and has Actions and Properties tabs.
+Native split navigation keeps the selected record when a window resizes or an iPhone Duo folds.
 Records and copied attachments stay in the app's private container.
 The app has no analytics or network service.
 
@@ -11,11 +12,11 @@ Read [Privacy policy](privacy-policy.md) for storage, permissions, and backups.
 
 ## Build and check
 
-Install Xcode with the iOS 26 SDK or later and the tools pinned in `mise.toml`.
+Install Xcode with the iOS 27.1 SDK or later for native Duo bar placement and the tools pinned in `mise.toml`.
 Install the pinned tools with `mise install`.
 Generate the Xcode project with `mise x -- just generate`.
 Choose a simulator and run the Xcode scheme: `PropertyRecords`.
-A physical-device build also needs the owner's signing team in Xcode.
+A physical-device build also needs the configured signing team in Xcode.
 
 Run the fast gate for lint, secret scanning, domain tests, storage tests, source policy checks, and a simulator build: `mise x -- just check`.
 Run native interaction tests and the screen tour: `mise x -- just ui-test`.

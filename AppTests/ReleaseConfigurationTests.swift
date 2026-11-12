@@ -51,4 +51,15 @@ import UIKit
         #expect(AppInformation.privacyURL?.path == "/privacy")
         #expect(AppInformation.supportURL?.path == "/support")
     }
+
+    @Test func applicationBundleSupportsResizablePhoneAndTabletScenes() throws {
+        let data = try Data(contentsOf: Bundle.main.bundleURL.appendingPathComponent("Info.plist"))
+        let manifest = try #require(PropertyListSerialization.propertyList(from: data, format: nil) as? [String: Any])
+        let families = try #require(manifest["UIDeviceFamily"] as? [Int])
+        #expect(Set(families) == [1, 2])
+        #expect(manifest["UIRequiresFullScreen"] == nil)
+        let orientations = try #require(manifest["UISupportedInterfaceOrientations~ipad"] as? [String])
+        #expect(Set(orientations) == ["UIInterfaceOrientationPortrait", "UIInterfaceOrientationPortraitUpsideDown",
+                                      "UIInterfaceOrientationLandscapeLeft", "UIInterfaceOrientationLandscapeRight"])
+    }
 }

@@ -2,6 +2,7 @@ import PropertyCore
 import SwiftUI
 
 struct WorkListView: View {
+    @Binding var selection: UUID?
     @Environment(\.dynamicTypeSize) private var textSize
     @Environment(RecordsStore.self) private var store
     @Environment(AppNotices.self) private var notices
@@ -22,7 +23,7 @@ struct WorkListView: View {
     }
 
     var body: some View {
-        List {
+        List(selection: $selection) {
             ReminderReport()
             if items.isEmpty {
                 ContentUnavailableView {
@@ -71,7 +72,7 @@ struct WorkListView: View {
 
     @ViewBuilder private func rows(_ values: [WorkItem]) -> some View {
         ForEach(values) { item in
-            NavigationLink { WorkDetailView(workID: item.id) } label: { WorkRow(item: item) }
+            NavigationLink(value: item.id) { WorkRow(item: item) }
                 .swipeActions {
                     Button(item.status == .completed ? "再開" : "完了", systemImage: "checkmark") { changeStatus(item) }
                     Button("編集", systemImage: "square.and.pencil") {

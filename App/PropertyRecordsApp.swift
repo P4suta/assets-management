@@ -57,17 +57,16 @@ private struct RootView: View {
             } else {
                 TabView(selection: $selectedTab) {
                     Tab("対応", systemImage: "checklist", value: 0) {
-                        NavigationStack {
-                            WorkListView {
-                                selectedTab = 1
-                                editor = .registration
-                            }
+                        WorkNavigationView {
+                            selectedTab = 1
+                            editor = .registration
                         }
                     }
                     Tab("物件", systemImage: "building.2.fill", value: 1) {
-                        NavigationStack { BuildingListView() }
+                        BuildingNavigationView()
                     }
                 }
+                .tabViewStyle(.sidebarAdaptable)
                 .sheet(item: $editor) { EditorDestinationView(destination: $0) }
             }
         }

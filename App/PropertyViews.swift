@@ -2,6 +2,7 @@ import PropertyCore
 import SwiftUI
 
 struct BuildingListView: View {
+    @Binding var selection: UUID?
     @Environment(\.dynamicTypeSize) private var textSize
     @Environment(RecordsStore.self) private var store
     @State private var query = ""
@@ -17,7 +18,7 @@ struct BuildingListView: View {
     }
 
     var body: some View {
-        List {
+        List(selection: $selection) {
             if buildings.isEmpty {
                 ContentUnavailableView {
                     Label(query.isEmpty ? "物件を登録しましょう" : "物件が見つかりません", systemImage: "building.2")
@@ -29,7 +30,7 @@ struct BuildingListView: View {
             } else {
                 Section("建物") {
                     ForEach(buildings) { building in
-                        NavigationLink { BuildingDetailView(buildingID: building.id) } label: {
+                        NavigationLink(value: building.id) {
                             VStack(alignment: .leading, spacing: 8) {
                                 Text(building.name).foregroundStyle(Color.primary)
                                 Text(building.management.title + " · \(store.records.rooms.filter { $0.buildingID == building.id }.count)部屋")

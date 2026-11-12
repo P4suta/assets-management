@@ -1,7 +1,11 @@
 # Verify record integrity and reminder recovery
 
 The fast gate runs semantic lint, secret scanning, Swift 6 type checking, deterministic tests, and a simulator build.
+Xcode builds turn off compilation caching to reduce temporary disk use during checks.
 The interface suite exercises saved records through native controls and audits accessibility.
+Run the rotation checks on iPad and iPhone Duo simulators with `mise x -- just adaptive-ui-test`.
+Run window resizing with the selected record and an open editor, and verify the same title, draft value, and reachable save action afterward.
+Keep physical-device acceptance and the App Review recording separate from simulator results.
 Run the interface suite on iOS 26 and an available later runtime after changing app behavior.
 When the Settings app lacks notification controls in Simulator, combine native denial and foreground journeys with hosted tests of the app's foreground handler using a controlled notification port.
 The hosted tests also construct Apple's calendar trigger to check the absolute date across time zones.

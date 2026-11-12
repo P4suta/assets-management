@@ -5,7 +5,7 @@ import UIKit
 final class PropertyRecordsUITests: XCTestCase {
     func testAppInformationHasAccessiblePrivacyAndSupportLinks() throws {
         let app = launch()
-        app.tabBars.buttons["物件"].tap()
+        selectTab("物件", app: app)
         app.buttons["app-info.open"].tap()
         let privacy = app.descendants(matching: .any)["app-info.privacy"].firstMatch
         let support = app.descendants(matching: .any)["app-info.support"].firstMatch
@@ -75,7 +75,7 @@ final class PropertyRecordsUITests: XCTestCase {
         app.buttons["editor.save"].tap()
         app.terminate()
         app.launch()
-        app.tabBars.buttons["物件"].tap()
+        selectTab("物件", app: app)
         tap("桜通りレジデンス東館", app: app)
         tap("205号室", app: app)
         let resident = row("佐藤 美咲", app: app)
@@ -88,7 +88,7 @@ final class PropertyRecordsUITests: XCTestCase {
     }
 
     private func openSampleRoom(_ app: XCUIApplication) {
-        app.tabBars.buttons["物件"].tap()
+        selectTab("物件", app: app)
         tap("桜通りレジデンス", app: app)
         tap("203号室", app: app)
     }
@@ -124,7 +124,7 @@ final class PropertyRecordsUITests: XCTestCase {
 
     func testChangingOnlyContractRentRequiresDiscardConfirmation() {
         let app = launch(seeded: true)
-        app.tabBars.buttons["物件"].tap()
+        selectTab("物件", app: app)
         tap("桜通りレジデンス", app: app)
         tap("203号室", app: app)
         tap("賃貸借契約", app: app)
@@ -155,7 +155,7 @@ final class PropertyRecordsUITests: XCTestCase {
         XCTAssertTrue(row("桜通りレジデンス", app: app).waitForExistence(timeout: 5))
         app.terminate()
         app.launch()
-        app.tabBars.buttons["物件"].tap()
+        selectTab("物件", app: app)
         XCTAssertTrue(row("桜通りレジデンス", app: app).waitForExistence(timeout: 5))
     }
 
@@ -446,7 +446,7 @@ final class PropertyRecordsUITests: XCTestCase {
         tap("更新内容と期限を編集", app: app)
         try audit(app, name: "Renewal Editor")
         app.buttons["editor.cancel"].tap()
-        app.tabBars.buttons["物件"].tap()
+        selectTab("物件", app: app)
         try audit(app, name: "Properties")
         app.buttons["property.add"].tap()
         try audit(app, name: "Property Editor")
@@ -474,6 +474,105 @@ final class PropertyRecordsUITests: XCTestCase {
         app.buttons["editor.cancel"].tap()
     }
 
+    func testSelectedWorkAndUnsavedEditSurviveRotation() throws {
+        defer { XCUIDevice.shared.orientation = .portrait }
+        let app = launch(seeded: true)
+        tap("給湯器から水漏れ", app: app)
+        app.buttons["work.edit"].tap()
+        replace("配管修繕の現地確認", in: "work.title", app: app)
+        for orientation in [UIDeviceOrientation.landscapeLeft, .portrait, .landscapeRight, .portrait] {
+            XCUIDevice.shared.orientation = orientation
+            XCTAssertTrue(field("work.title", app: app).waitForExistence(timeout: 5))
+            XCTAssertEqual(inputText("work.title", app: app), "配管修繕の現地確認")
+            XCTAssertTrue(app.buttons["editor.save"].isHittable)
+        }
+        app.buttons["editor.cancel"].tap()
+        app.alerts.buttons["編集を続ける"].tap()
+        XCTAssertEqual(inputText("work.title", app: app), "配管修繕の現地確認")
+        app.buttons["editor.save"].tap()
+        XCTAssertTrue(app.staticTexts["配管修繕の現地確認"].firstMatch.waitForExistence(timeout: 5))
+        try audit(app, name: "Adaptive Repair")
+    }
+
+    func testSelectedPropertyAndRoomSurviveRotation() throws {
+        defer { XCUIDevice.shared.orientation = .portrait }
+        let app = launch(seeded: true)
+        openSampleRoom(app)
+        for orientation in [UIDeviceOrientation.landscapeLeft, .portrait, .landscapeRight, .portrait] {
+            XCUIDevice.shared.orientation = orientation
+            XCTAssertTrue(row("佐藤 花子", app: app).waitForExistence(timeout: 5))
+            XCTAssertTrue(app.navigationBars["203号室"].exists)
+        }
+        tap("賃貸借契約", app: app)
+        XCTAssertTrue(app.staticTexts["契約満了日、2027年3月31日"].firstMatch.waitForExistence(timeout: 5))
+        try audit(app, name: "Adaptive Contract")
+    }
+
+    func testStoreScreenshots() {
+        defer { XCUIDevice.shared.appearance = .light }
+        XCUIDevice.shared.appearance = .light
+        let app = launch(seeded: true)
+        tap("給湯器から水漏れ", app: app)
+        if !row("共用灯の交換", app: app).isHittable {
+            back(app)
+            captureStoreScreen(app, name: "1-actions")
+            tap("給湯器から水漏れ", app: app)
+        } else {
+            captureStoreScreen(app, name: "1-actions")
+        }
+        captureStoreScreen(app, name: "3-repair")
+        selectTab("物件", app: app)
+        tap("桜通りレジデンス", app: app)
+        captureStoreScreen(app, name: "2-properties")
+        XCUIDevice.shared.appearance = .dark
+        XCTAssertTrue(row("203号室", app: app).waitForExistence(timeout: 5))
+        captureStoreScreen(app, name: "4-properties-dark")
+    }
+
+    func testReviewDemonstration() {
+        let app = launch()
+        let building = "青葉ハイツ " + String(UUID().uuidString.prefix(8))
+        selectTab("物件", app: app)
+        app.buttons["property.add"].tap()
+        enter(building, into: "property.name", app: app)
+        enter("203", into: "property.room", app: app)
+        app.buttons["editor.save"].tap()
+        tap(building, app: app)
+        tap("203号室", app: app)
+        tap("契約を登録", app: app)
+        tap("契約を編集", app: app)
+        enter("82000", into: "contract.rent", app: app)
+        app.buttons["editor.save"].tap()
+        XCTAssertTrue(app.staticTexts["家賃、¥82,000"].waitForExistence(timeout: 5))
+        selectTab("対応", app: app)
+        app.buttons["work.add"].tap()
+        field("work.building", app: app).tap()
+        tap(building, app: app)
+        enter("共用灯の交換", into: "work.title", app: app)
+        app.buttons["editor.save"].tap()
+        tap("共用灯の交換", app: app)
+        tap("連絡履歴", app: app)
+        app.buttons["連絡履歴を追加"].tap()
+        enter("業者へ現地確認を依頼", into: "history.text", app: app)
+        app.buttons["editor.save"].tap()
+        XCTAssertTrue(row("業者へ現地確認を依頼", app: app).waitForExistence(timeout: 5))
+        back(app)
+        tapIdentifier("work.advance", app: app)
+        XCTAssertTrue(app.buttons["完了にする"].waitForExistence(timeout: 5))
+        tapIdentifier("work.advance", app: app)
+        let completed = NSPredicate(format: "value == %@", "完了")
+        let expectation = XCTNSPredicateExpectation(predicate: completed, object: app.buttons["work.status"])
+        XCTAssertEqual(XCTWaiter.wait(for: [expectation], timeout: 5), .completed)
+        captureStoreScreen(app, name: "Review completed repair")
+    }
+
+    private func captureStoreScreen(_ app: XCUIApplication, name: String) {
+        let capture = XCTAttachment(screenshot: app.screenshot())
+        capture.name = name
+        capture.lifetime = .keepAlways
+        add(capture)
+    }
+
     func testReminderNoticeAccessibilityAfterLaunch() throws {
         let app = launch(seeded: true, reminderNotice: true)
         tap("給湯器から水漏れ", app: app)
@@ -488,8 +587,22 @@ final class PropertyRecordsUITests: XCTestCase {
         app.launchEnvironment["UITEST_STORAGE_ID"] = UUID().uuidString
         if reminderNotice { app.launchEnvironment["UITEST_NOTICE"] = "denied" }
         app.launch()
-        XCTAssertTrue(app.tabBars.firstMatch.waitForExistence(timeout: 10))
+        let controls = NSPredicate(format: "identifier IN %@", ["work.add", "property.add"])
+        XCTAssertTrue(app.descendants(matching: .any).matching(controls).firstMatch.waitForExistence(timeout: 10))
         return app
+    }
+
+    private func selectTab(_ title: String, app: XCUIApplication) {
+        let standard = app.tabBars.buttons[title]
+        if standard.exists {
+            standard.tap()
+        } else {
+            let symbol = title == "物件" ? "building.2.fill" : "checklist"
+            let predicate = NSPredicate(format: "identifier == %@ AND label == %@", symbol, title)
+            let adaptive = app.descendants(matching: .any).matching(predicate).firstMatch
+            XCTAssertTrue(adaptive.waitForExistence(timeout: 5))
+            adaptive.tap()
+        }
     }
 
     private func enter(_ value: String, into identifier: String, app: XCUIApplication) {
@@ -581,7 +694,15 @@ final class PropertyRecordsUITests: XCTestCase {
         }
     }
 
-    private func back(_ app: XCUIApplication) { app.navigationBars.buttons.firstMatch.tap() }
+    private func back(_ app: XCUIApplication) {
+        let back = app.navigationBars.buttons["BackButton"].firstMatch
+        if back.exists {
+            back.tap()
+        } else {
+            let controls = NSPredicate(format: "identifier IN %@", ["work.add", "property.add"])
+            XCTAssertTrue(app.buttons.matching(controls).firstMatch.isHittable)
+        }
+    }
 
     private func audit(_ app: XCUIApplication, name: String) throws {
         Thread.sleep(forTimeInterval: 0.7)
