@@ -6,7 +6,7 @@ The price is free, with no accounts, advertising, tracking, or purchases.
 The bundle identifier is `com.p4suta.PropertyRecords`.
 The Apple Developer team is `XMBQLW82L9`.
 The initial version is `1.0.0`.
-The initial build number is `1`.
+The current build number is `2`.
 
 Run the fast gate, hosted app tests, interface journeys on iOS 26 and a later runtime, Thread Sanitizer, and the full mutation campaign before archiving.
 The verification scope and mutation acceptance criteria are in [verification.md](verification.md).
@@ -34,6 +34,6 @@ The app stores records and attachments on the device and has no collection servi
 The support email is `hi@sakashita.email`.
 
 Prepare the Japanese metadata, screenshots, free price, age rating, export compliance, privacy answers, and review notes under [Apple's version requirements](https://developer.apple.com/help/app-store-connect/reference/app-information/platform-version-information).
-Select [manual release](https://developer.apple.com/help/app-store-connect/manage-your-apps-availability/select-an-app-store-version-release-option) before review.
+Select [automatic release after approval](https://developer.apple.com/help/app-store-connect/manage-your-apps-availability/select-an-app-store-version-release-option) when the owner authorizes publication.
 Upload and build processing are preparation steps.
 Submitting for App Review and releasing the app require the owner's instruction.
