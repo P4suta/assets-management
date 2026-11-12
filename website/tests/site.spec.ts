@@ -118,6 +118,14 @@ for (const item of pages) {
 	}, testInfo: TestInfo): Promise<void> => {
 		const response = await page.goto(item.path);
 		expect(response?.ok()).toBe(true);
+		if (process.env.SUPPORT_ORIGIN) {
+			const headers = response?.headers() ?? {};
+			const networkPolicy: unknown = JSON.parse(headers.nel ?? "null");
+			const reportPolicy: unknown = JSON.parse(headers["report-to"] ?? "null");
+			expect(networkPolicy).toMatchObject({ max_age: 0 });
+			expect(reportPolicy).toMatchObject({ max_age: 0, endpoints: [] });
+			expect(headers["reporting-endpoints"]).toBeUndefined();
+		}
 		await expect(page.getByRole("heading", { level: 1 })).toHaveText(
 			item.heading,
 		);

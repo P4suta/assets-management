@@ -11,6 +11,7 @@ The gate installs dependencies, checks types, builds static assets, scans depend
 Run the browser journeys and accessibility audit: `mise x -- just website-ui-test`.
 The journeys check the palette, keyboard navigation, narrow layouts, and enlarged text.
 The website runs no client scripts and receives no property records from the app.
+Static response headers prevent automatic script injection with the documented [no-transform directive](https://developers.cloudflare.com/web-analytics/faq/).
 
 The [website workflow](../.github/workflows/website.yml) verifies pull requests and changes on the default branch.
 Only the default branch publishes the preserved candidate through a separate job.
