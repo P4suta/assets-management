@@ -33,8 +33,10 @@ App Store privacy answers must describe the shipped binary and its dependencies.
 The app stores records and attachments on the device and has no collection service.
 The support email is `hi@sakashita.email`.
 
-The Japanese description explains repair and renewal records without a tab walkthrough.
+The Japanese description addresses rental property managers who need repair history, scattered documents, and renewal terms in one place.
+Its examples describe contact history, search, renewal drafts, reminders, equipment, and common-area work that the app supports.
 The promotional text describes the history users can keep.
+The marketing URL points to the app-specific landing page at its subdomain root.
 The [header artwork](../AppStore/CreativeAssets/ja/header.svg) and [search results artwork](../AppStore/CreativeAssets/ja/search-results.svg) contain the Japanese heading on a white background.
 The header uses 3840 by 1646 pixels, and the search artwork uses 3840 by 2560 pixels under Apple's [creative asset specifications](https://developer.apple.com/help/app-store-connect/reference/app-information/creative-assets-specifications).
 Each heading stays inside its template's safe area.
@@ -53,9 +55,9 @@ Assign the header to `PRODUCT_PAGE_HEADER_ASSET`.
 Assign the search artwork to `APP_STORE_SEARCH_RESULTS_ASSET`.
 For the initial version, add the app version to a draft after assigning its creative images.
 Check the image's review state before adding a separate asset item.
-Leave the draft ready for the final submission button when the owner requests that handoff.
+Leave the draft ready when the user requests a manual submission.
 
 Prepare the Japanese metadata, screenshots, free price, age rating, export compliance, privacy answers, and review notes under [Apple's version requirements](https://developer.apple.com/help/app-store-connect/reference/app-information/platform-version-information).
-Select [automatic release after approval](https://developer.apple.com/help/app-store-connect/manage-your-apps-availability/select-an-app-store-version-release-option) when the owner authorizes publication.
+Select [automatic release after approval](https://developer.apple.com/help/app-store-connect/manage-your-apps-availability/select-an-app-store-version-release-option) after the user authorizes publication.
 Upload and build processing are preparation steps.
-Submitting for App Review and releasing the app require the owner's instruction.
+Submitting for App Review and releasing the app require explicit authorization.
