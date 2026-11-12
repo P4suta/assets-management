@@ -9,14 +9,12 @@ struct AmountField: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
+            Text(title).font(.subheadline).foregroundStyle(Color.secondary)
+                .fixedSize(horizontal: false, vertical: true)
             HStack {
                 Image(systemName: "yensign").accessibilityHidden(true)
-                VStack(alignment: .leading, spacing: 8) {
-                    Text(title).font(.subheadline).foregroundStyle(Color.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                    NativeAmountField(input: $input, title: title, identifier: identifier)
-                        .frame(minHeight: 44)
-                }
+                NativeAmountField(input: $input, title: title, identifier: identifier)
+                    .frame(minHeight: 44)
                 if !input.text.isEmpty || !input.isValid {
                     Button { input.clear() } label: {
                         Label("入力を消去", systemImage: "xmark.circle.fill")

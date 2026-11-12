@@ -30,6 +30,9 @@ final class PropertyRecordsUITests: XCTestCase {
         XCTAssertGreaterThanOrEqual(clear.frame.width, 44 - 0.001)
         XCTAssertGreaterThanOrEqual(clear.frame.height, 44 - 0.001)
         XCTAssertTrue(app.windows.firstMatch.frame.contains(clear.frame))
+        let amount = field("contract.rent", app: app)
+        XCTAssertGreaterThanOrEqual(clear.frame.midY, amount.frame.minY)
+        XCTAssertLessThanOrEqual(clear.frame.midY, amount.frame.maxY)
         clear.tap()
         enter("1000000000000", into: "contract.rent", app: app)
         app.buttons["editor.save"].tap()
@@ -103,6 +106,9 @@ final class PropertyRecordsUITests: XCTestCase {
         XCTAssertGreaterThanOrEqual(clear.frame.width, 44 - 0.001)
         XCTAssertGreaterThanOrEqual(clear.frame.height, 44 - 0.001)
         XCTAssertTrue(app.windows.firstMatch.frame.contains(clear.frame))
+        let amount = field("work.estimate", app: app)
+        XCTAssertGreaterThanOrEqual(clear.frame.midY, amount.frame.minY)
+        XCTAssertLessThanOrEqual(clear.frame.midY, amount.frame.maxY)
         let capture = XCTAttachment(screenshot: app.screenshot())
         capture.name = "Bounded amount input"
         capture.lifetime = .keepAlways
