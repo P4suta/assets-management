@@ -9,6 +9,8 @@ generate:
 lint:
     swiftlint lint --strict --quiet
     gitleaks dir . --config .gitleaks.toml --no-banner --redact --exit-code 1
+    jactionlint
+    zizmor --offline .github/workflows
 
 test:
     swift test
@@ -29,7 +31,13 @@ mutation-scan: mutation-results
 build: generate
     xcodebuild -project PropertyRecords.xcodeproj -scheme PropertyRecords -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' -derivedDataPath .derivedData CODE_SIGNING_ALLOWED=NO ONLY_ACTIVE_ARCH=YES build -quiet
 
-check: lint test build
+check: lint test build website-check
+
+website-check:
+    cd website && mise x node aqua:pnpm/pnpm just -- just check
+
+website-ui-test:
+    cd website && mise x node aqua:pnpm/pnpm just -- just ui-test
 
 app-test: generate
     xcodebuild -project PropertyRecords.xcodeproj -scheme PropertyRecords -destination '{{ destination }}' -derivedDataPath .derivedData CODE_SIGNING_ALLOWED=NO -parallel-testing-enabled NO -only-testing:PropertyRecordsAppTests test -quiet

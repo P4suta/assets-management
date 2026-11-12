@@ -1,0 +1,19 @@
+{
+	"name": "property-records-support",
+	"private": true,
+	"type": "module",
+	"scripts": {
+		"build": "vite build",
+		"dev": "vite preview --host 127.0.0.1 --port 4318 --strictPort",
+		"check": "tsc --noEmit",
+		"test": "pnpm build && playwright test"
+	},
+	"devDependencies": {
+		"@axe-core/playwright": "4.14.0",
+		"@playwright/test": "1.65.0",
+		"@types/node": "26.6.6",
+		"typescript": "7.0.2",
+		"vite": "8.3.8",
+		"wrangler": "4.160.1"
+	}
+}

@@ -1,0 +1,139 @@
+name: Website
+
+on:
+  push:
+    branches: [main]
+    paths: [website/**, .github/workflows/website.yml, justfile, mise.toml]
+  pull_request:
+    paths: [website/**, .github/workflows/website.yml, justfile, mise.toml]
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: website-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    name: Verify the website candidate
+    if: github.repository_id == '1455076889'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    outputs:
+      artifact: ${{ steps.upload.outputs.artifact-id }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
+      - uses: jdx/mise-action@5228313ee0372e111a38da051671ca30fc5a96db # v3.6.3
+        with:
+          version: "2026.11.6"
+          working_directory: website
+          install_args: node aqua:pnpm/pnpm just
+      - run: mise x just -- just website-check
+      - name: Install the browser runtime
+        working-directory: website
+        run: mise x node aqua:pnpm/pnpm -- pnpm exec playwright install --with-deps --only-shell chromium
+      - run: mise x just -- just website-ui-test
+      - name: Preserve the verified assets
+        run: |
+          tar --create --file website-candidate.tar --directory website dist
+          sha256sum website-candidate.tar > website-candidate.sha256
+      - id: upload
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: support-website-${{ github.sha }}-${{ github.run_attempt }}
+          path: |
+            website-candidate.tar
+            website-candidate.sha256
+          if-no-files-found: error
+          retention-days: 30
+
+  publish:
+    name: Publish the verified website
+    needs: verify
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: website-production
+      url: https://assets-management.yasunobu.dev
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            mise.toml
+            website/mise.toml
+            website/package.json
+            website/pnpm-lock.yaml
+            website/pnpm-workspace.yaml
+            website/wrangler.jsonc
+      - uses: jdx/mise-action@5228313ee0372e111a38da051671ca30fc5a96db # v3.6.3
+        with:
+          version: "2026.11.6"
+          working_directory: website
+          install_args: node aqua:pnpm/pnpm
+      - name: Install the pinned provider tool
+        working-directory: website
+        run: mise x node aqua:pnpm/pnpm -- pnpm install --frozen-lockfile --ignore-scripts
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          artifact-ids: ${{ needs.verify.outputs.artifact }}
+          path: candidate
+          digest-mismatch: error
+      - name: Check and unpack the preserved candidate
+        run: |
+          cd candidate
+          sha256sum --check website-candidate.sha256
+          tar --extract --file website-candidate.tar --directory ../website
+      - id: doppler
+        uses: dopplerhq/secrets-fetch-action@451892f16195f9ac360e1a5bcbf0b5fd0e957534 # v2.0.0
+        with:
+          auth-method: token
+          doppler-token: ${{ secrets.DOPPLER_TOKEN }}
+          doppler-project: assets-management
+          doppler-config: ci_website
+          inject-env-vars: "false"
+      - name: Deploy the preserved assets
+        working-directory: website
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ steps.doppler.outputs.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ steps.doppler.outputs.CLOUDFLARE_API_TOKEN }}
+        run: |
+          test -n "$CLOUDFLARE_ACCOUNT_ID"
+          test -n "$CLOUDFLARE_API_TOKEN"
+          mise x node aqua:pnpm/pnpm -- pnpm exec wrangler deploy
+
+  acceptance:
+    name: Check the public website
+    needs: publish
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
+      - uses: jdx/mise-action@5228313ee0372e111a38da051671ca30fc5a96db # v3.6.3
+        with:
+          version: "2026.11.6"
+          working_directory: website
+          install_args: node aqua:pnpm/pnpm just
+      - run: mise x just -- just website-check
+      - name: Install the browser runtime
+        working-directory: website
+        run: mise x node aqua:pnpm/pnpm -- pnpm exec playwright install --with-deps --only-shell chromium
+      - name: Wait for the custom domain
+        run: curl --fail --silent --show-error --retry 12 --retry-delay 5 --retry-all-errors --connect-timeout 5 --max-time 10 --output /dev/null https://assets-management.yasunobu.dev/
+      - name: Exercise the public pages
+        env:
+          SUPPORT_ORIGIN: https://assets-management.yasunobu.dev
+        run: mise x just -- just website-ui-test

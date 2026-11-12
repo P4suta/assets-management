@@ -1,0 +1,12 @@
+default:
+    @just --list
+
+check:
+    pnpm install --frozen-lockfile --ignore-scripts
+    pnpm check
+    pnpm build
+    pnpm audit --audit-level high
+    pnpm exec wrangler deploy --dry-run
+
+ui-test:
+    pnpm test
