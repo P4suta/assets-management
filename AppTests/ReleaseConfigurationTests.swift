@@ -4,6 +4,13 @@ import UIKit
 @testable import PropertyRecords
 
 @Suite @MainActor struct ReleaseConfigurationTests {
+    #if DEBUG
+    @Test func developmentPhotographAndItsLicenseAreAvailableForNativeJourneys() throws {
+        #expect(SamplePDF.photoData()?.isEmpty == false)
+        _ = try #require(Bundle.main.url(forResource: "PhotoLicense", withExtension: "txt"))
+    }
+    #endif
+
     @Test func applicationBundleIncludesThePrimaryAppIcon() throws {
         let icons = try #require(Bundle.main.object(forInfoDictionaryKey: "CFBundleIcons") as? [String: Any])
         let primary = try #require(icons["CFBundlePrimaryIcon"] as? [String: Any])

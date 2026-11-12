@@ -8,7 +8,7 @@ struct PropertyRecordsApp: App {
     @State private var notices = AppNotices()
 
     init() {
-        _store = State(initialValue: RecordsStore(repository: RepositoryFactory.make(), trace: StorageDiagnostics.record))
+        _store = State(initialValue: RecordsStore(repository: RepositoryFactory.make()))
         let notices = AppNotices()
         #if DEBUG
         if ProcessInfo.processInfo.arguments.contains("--ui-testing"),
