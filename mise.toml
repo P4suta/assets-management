@@ -1,10 +1,14 @@
+[env]
+ASC_TELEMETRY_DISABLED = "1"
+DO_NOT_TRACK = "1"
+
 [tools]
 xcodegen = "2.46.0"
 swiftlint = "0.65.1"
 gitleaks = "8.30.1"
 just = "1.59.0"
 "github:ericodx/swift-mutation-testing" = "1.7.1"
-"github:rorkai/App-Store-Connect-CLI" = "6.6.0"
+"github:rorkai/App-Store-Connect-CLI" = { version = "6.6.1", bin = "asc" }
 jactionlint = "2.5.0"
 zizmor = "1.32.0"
 jaq = "3.1.2"
