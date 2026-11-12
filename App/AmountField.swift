@@ -61,6 +61,11 @@ struct NativeAmountField: UIViewRepresentable {
         context.coordinator.update(field, title: title, identifier: identifier)
     }
 
+    func sizeThatFits(_ proposal: ProposedViewSize, uiView: UITextField, context: Context) -> CGSize? {
+        guard let width = proposal.width, width.isFinite else { return nil }
+        return CGSize(width: width, height: max(44, uiView.intrinsicContentSize.height))
+    }
+
     @MainActor final class Coordinator: NSObject, UITextFieldDelegate {
         var input: Binding<AmountInput>
 
@@ -74,6 +79,7 @@ struct NativeAmountField: UIViewRepresentable {
             field.autocapitalizationType = .none
             field.adjustsFontForContentSizeCategory = true
             field.setContentHuggingPriority(.defaultLow, for: .horizontal)
+            field.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
             field.addTarget(self, action: #selector(changed), for: .editingChanged)
             update(field, title: title, identifier: identifier)
             return field

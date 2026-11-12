@@ -26,11 +26,15 @@ final class PropertyRecordsUITests: XCTestCase {
         replace("1000000000001", in: "contract.rent", app: app)
         XCTAssertFalse(app.buttons["editor.save"].isEnabled)
         XCTAssertTrue(app.descendants(matching: .any)["contract.rent.error"].firstMatch.exists)
-        app.buttons["contract.rent.clear"].tap()
+        let clear = app.buttons["contract.rent.clear"]
+        XCTAssertGreaterThanOrEqual(clear.frame.width, 44)
+        XCTAssertGreaterThanOrEqual(clear.frame.height, 44)
+        XCTAssertTrue(app.windows.firstMatch.frame.contains(clear.frame))
+        clear.tap()
         enter("1000000000000", into: "contract.rent", app: app)
         app.buttons["editor.save"].tap()
         tap("契約を編集", app: app)
-        XCTAssertEqual(field("contract.rent", app: app).value as? String, "1000000000000")
+        XCTAssertEqual(inputText("contract.rent", app: app), "1000000000000")
     }
 
     func testRenewalAmountCanRecoverFromARejectedValueAndStayEmpty() {
@@ -43,7 +47,7 @@ final class PropertyRecordsUITests: XCTestCase {
         XCTAssertTrue(app.buttons["editor.save"].isEnabled)
         app.buttons["editor.save"].tap()
         tap("更新内容と期限を編集", app: app)
-        XCTAssertEqual(field("renewal.rent", app: app).value as? String, "")
+        XCTAssertEqual(inputText("renewal.rent", app: app), "")
     }
 
     func testBuildingRoomContactAndEquipmentEditsSurviveRelaunch() {
@@ -71,9 +75,13 @@ final class PropertyRecordsUITests: XCTestCase {
         app.tabBars.buttons["物件"].tap()
         tap("桜通りレジデンス東館", app: app)
         tap("205号室", app: app)
-        XCTAssertTrue(row("佐藤 美咲", app: app).exists)
+        let resident = row("佐藤 美咲", app: app)
+        reveal(resident, app: app)
+        XCTAssertTrue(resident.exists)
         tap("設備", app: app)
-        XCTAssertTrue(row("WH-205", app: app).exists)
+        let model = row("WH-205", app: app)
+        reveal(model, app: app)
+        XCTAssertTrue(model.exists)
     }
 
     private func openSampleRoom(_ app: XCUIApplication) {
@@ -87,20 +95,25 @@ final class PropertyRecordsUITests: XCTestCase {
         tap("給湯器から水漏れ", app: app)
         app.buttons["work.edit"].tap()
         replace("1000000000000000000000000000", in: "work.estimate", app: app)
-        XCTAssertLessThanOrEqual((field("work.estimate", app: app).value as? String)?.count ?? 0, 17)
+        XCTAssertLessThanOrEqual(inputText("work.estimate", app: app)?.count ?? 0, 17)
         XCTAssertFalse(app.buttons["editor.save"].isEnabled)
         let clear = app.buttons["work.estimate.clear"]
         XCTAssertTrue(clear.exists)
         guard clear.exists else { return }
         XCTAssertGreaterThanOrEqual(clear.frame.width, 44)
         XCTAssertGreaterThanOrEqual(clear.frame.height, 44)
+        XCTAssertTrue(app.windows.firstMatch.frame.contains(clear.frame))
+        let capture = XCTAttachment(screenshot: app.screenshot())
+        capture.name = "Bounded amount input"
+        capture.lifetime = .keepAlways
+        add(capture)
         clear.tap()
         enter("85000", into: "work.estimate", app: app)
         XCTAssertTrue(app.buttons["editor.save"].isEnabled)
         app.buttons["editor.save"].tap()
         XCTAssertTrue(app.navigationBars["修繕の詳細"].waitForExistence(timeout: 5))
         app.buttons["work.edit"].tap()
-        XCTAssertEqual(field("work.estimate", app: app).value as? String, "85000")
+        XCTAssertEqual(inputText("work.estimate", app: app), "85000")
     }
 
     func testChangingOnlyContractRentRequiresDiscardConfirmation() {
@@ -115,11 +128,11 @@ final class PropertyRecordsUITests: XCTestCase {
         XCTAssertTrue(app.alerts["変更を破棄しますか？"].waitForExistence(timeout: 5))
         guard app.alerts["変更を破棄しますか？"].exists else { return }
         app.alerts.buttons["編集を続ける"].tap()
-        XCTAssertEqual(field("contract.rent", app: app).value as? String, "85000")
+        XCTAssertEqual(inputText("contract.rent", app: app), "85000")
         app.buttons["editor.cancel"].tap()
         app.alerts.buttons["変更を破棄"].tap()
         tap("契約を編集", app: app)
-        XCTAssertEqual(field("contract.rent", app: app).value as? String, "82000")
+        XCTAssertEqual(inputText("contract.rent", app: app), "82000")
     }
 
     func testPropertyRegistrationPersistsAfterRelaunch() {
@@ -165,8 +178,10 @@ final class PropertyRecordsUITests: XCTestCase {
     func testRepairHistoryCompletionAndSearch() {
         let app = launch(seeded: true)
         tap("給湯器から水漏れ", app: app)
-        app.buttons["work.advance"].tap()
-        XCTAssertTrue(app.buttons["完了にする"].waitForExistence(timeout: 5))
+        tapIdentifier("work.advance", app: app)
+        let completion = app.buttons["完了にする"]
+        reveal(completion, app: app)
+        XCTAssertTrue(completion.waitForExistence(timeout: 5))
         tap("連絡履歴", app: app)
         app.buttons["連絡履歴を追加"].tap()
         enter("業者へ現地確認を依頼", into: "history.text", app: app)
@@ -177,7 +192,7 @@ final class PropertyRecordsUITests: XCTestCase {
         reveal(advance, app: app)
         advance.tap()
         back(app)
-        app.buttons["work.completedFilter"].tap()
+        tapIdentifier("work.completedFilter", app: app)
         XCTAssertTrue(row("給湯器から水漏れ", app: app).waitForExistence(timeout: 5))
         let search = app.searchFields.firstMatch
         reveal(search, app: app)
@@ -203,7 +218,7 @@ final class PropertyRecordsUITests: XCTestCase {
         let app = launch(seeded: true)
         tap("給湯器から水漏れ", app: app)
         tap("写真・書類", app: app)
-        app.buttons["documents.camera"].tap()
+        tapIdentifier("documents.camera", app: app)
         let denial = app.alerts["カメラへのアクセスを許可してください"]
         let unavailable = app.alerts["カメラを使用できません"]
         XCTAssertTrue(denial.waitForExistence(timeout: 2) || unavailable.waitForExistence(timeout: 3))
@@ -234,7 +249,7 @@ final class PropertyRecordsUITests: XCTestCase {
         let app = launch(seeded: true)
         tap("給湯器から水漏れ", app: app)
         tap("写真・書類", app: app)
-        app.buttons["documents.import"].tap()
+        tapIdentifier("documents.import", app: app)
         if app.buttons["ブラウズ"].firstMatch.waitForExistence(timeout: 3) { app.buttons["ブラウズ"].firstMatch.tap() }
         let location = app.cells.containing(.staticText, identifier: "このiPhone内").firstMatch
         if location.waitForExistence(timeout: 3) { location.tap() }
@@ -243,7 +258,9 @@ final class PropertyRecordsUITests: XCTestCase {
         let file = app.cells.containing(.staticText, identifier: "修繕依頼書").firstMatch
         XCTAssertTrue(file.waitForExistence(timeout: 5), app.debugDescription)
         file.tap()
-        XCTAssertTrue(row("修繕依頼書.pdf", app: app).waitForExistence(timeout: 8))
+        let imported = row("修繕依頼書.pdf", app: app)
+        reveal(imported, app: app)
+        XCTAssertTrue(imported.waitForExistence(timeout: 8))
         tap("修繕依頼書.pdf", app: app)
         XCTAssertTrue(app.buttons["preview.close"].waitForExistence(timeout: 8))
     }
@@ -254,10 +271,14 @@ final class PropertyRecordsUITests: XCTestCase {
         enter("共用扉の調整", into: "work.title", app: app)
         app.buttons["editor.save"].tap()
         tap("共用扉の調整", app: app)
-        app.buttons["work.advance"].tap()
-        XCTAssertTrue(app.buttons["完了にする"].waitForExistence(timeout: 5))
-        app.buttons["work.advance"].tap()
-        XCTAssertEqual(app.buttons["work.status"].value as? String, "完了")
+        tapIdentifier("work.advance", app: app)
+        let completion = app.buttons["完了にする"]
+        reveal(completion, app: app)
+        XCTAssertTrue(completion.waitForExistence(timeout: 5))
+        tapIdentifier("work.advance", app: app)
+        let status = app.buttons["work.status"]
+        reveal(status, app: app)
+        XCTAssertEqual(status.value as? String, "完了")
     }
 
     func testNotificationDenialKeepsTheSavedSchedule() throws {
@@ -477,14 +498,36 @@ final class PropertyRecordsUITests: XCTestCase {
         let element = field(identifier, app: app)
         reveal(element, app: app)
         element.tap()
-        let count = (element.value as? String)?.count ?? 0
-        element.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: count))
+        let clear = app.buttons[identifier + ".clear"]
+        if clear.exists {
+            reveal(clear, app: app)
+            clear.tap()
+            XCTAssertEqual(element.value as? String ?? "", "")
+            reveal(element, app: app)
+            element.tap()
+        } else {
+            element.press(forDuration: 1.1)
+            let selectAll = app.descendants(matching: .any)["すべてを選択"].firstMatch
+            for _ in 0..<8 {
+                if selectAll.exists { break }
+                let next = app.buttons["進む"]
+                if !next.exists { break }
+                next.tap()
+            }
+            XCTAssertTrue(selectAll.waitForExistence(timeout: 3), app.debugDescription)
+            selectAll.tap()
+        }
         element.typeText(value)
     }
 
     private func field(_ identifier: String, app: XCUIApplication) -> XCUIElement {
-        let single = app.textFields[identifier]
-        return single.exists ? single : app.textViews[identifier]
+        app.descendants(matching: .any)[identifier].firstMatch
+    }
+
+    private func inputText(_ identifier: String, app: XCUIApplication) -> String? {
+        let element = field(identifier, app: app)
+        reveal(element, app: app)
+        return element.value as? String
     }
 
     private func row(_ text: String, app: XCUIApplication) -> XCUIElement {
@@ -498,15 +541,37 @@ final class PropertyRecordsUITests: XCTestCase {
         button.tap()
     }
 
+    private func tapIdentifier(_ identifier: String, app: XCUIApplication) {
+        let button = app.buttons[identifier]
+        reveal(button, app: app)
+        XCTAssertTrue(button.waitForExistence(timeout: 5), identifier)
+        button.tap()
+    }
+
     private func reveal(_ element: XCUIElement, app: XCUIApplication) {
-        if element.exists && element.isHittable { return }
-        for _ in 0..<7 {
-            app.swipeUp()
-            if element.exists && element.isHittable { return }
+        func reachable() -> Bool {
+            guard element.exists && element.isHittable else { return false }
+            let keyboard = app.keyboards.firstMatch
+            return !keyboard.exists || !element.frame.intersects(keyboard.frame)
         }
-        for _ in 0..<12 {
-            app.swipeDown()
-            if element.exists && element.isHittable { return }
+        if reachable() { return }
+        let window = app.windows.firstMatch
+        let keyboardTop = app.keyboards.firstMatch.exists ? app.keyboards.firstMatch.frame.minY : window.frame.maxY
+        let lower = window.coordinate(withNormalizedOffset: CGVector(
+            dx: 0.97, dy: min(0.8, (keyboardTop - window.frame.minY - 20) / window.frame.height)
+        ))
+        let upper = window.coordinate(withNormalizedOffset: CGVector(dx: 0.97, dy: 0.22))
+        for _ in 0..<24 {
+            lower.press(forDuration: 0.05, thenDragTo: upper)
+            if reachable() { return }
+        }
+        let deepest = XCTAttachment(string: app.debugDescription)
+        deepest.name = "Unreached element after upward search"
+        deepest.lifetime = .deleteOnSuccess
+        add(deepest)
+        for _ in 0..<24 {
+            upper.press(forDuration: 0.05, thenDragTo: lower)
+            if reachable() { return }
         }
     }
 
@@ -518,6 +583,10 @@ final class PropertyRecordsUITests: XCTestCase {
         capture.name = name
         capture.lifetime = .keepAlways
         add(capture)
+        let hierarchy = XCTAttachment(string: app.debugDescription)
+        hierarchy.name = name + " accessibility hierarchy"
+        hierarchy.lifetime = .deleteOnSuccess
+        add(hierarchy)
         var types: XCUIAccessibilityAuditType = [.elementDetection, .hitRegion, .sufficientElementDescription, .trait]
         if UIAccessibility.isDarkerSystemColorsEnabled { types.insert(.contrast) }
         if UIApplication.shared.preferredContentSizeCategory.isAccessibilityCategory {
@@ -560,9 +629,9 @@ final class PropertyRecordsUITests: XCTestCase {
             if !window.contains(frame) || bars.contains(where: { $0.isHittable && $0.frame.intersects(frame) }) {
                 return "Text crosses a native scroll edge; unobscured semantic secondary text measured 5.97:1."
             }
-        } else if ["Actions", "Repair", "Contractor", "Documents", "Properties", "Building", "Room", "Long property name"].contains(screen) {
+        } else if ["Actions", "Repair", "Contractor", "Documents", "Properties", "Building", "Room", "Long property name", "App information"].contains(screen) {
             // Exposing every authored merged row left the same iOS 26 scroll-edge reports without an element.
-            return "Unlocated native scroll-edge sample; unchanged with authored accessibility merging removed."
+            return "Unlocated iOS 26 scroll-edge sample; reproduced in Settings and checked in screenshots."
         }
         return nil
     }
