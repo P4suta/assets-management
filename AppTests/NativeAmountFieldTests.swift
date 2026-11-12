@@ -5,7 +5,7 @@ import UIKit
 @testable import PropertyRecords
 
 @Suite @MainActor struct NativeAmountFieldTests {
-    private final class InputBox {
+    @MainActor private final class InputBox {
         var input: AmountInput
         init(_ text: String) { input = AmountInput(text) }
         var binding: Binding<AmountInput> { Binding(get: { self.input }, set: { self.input = $0 }) }
