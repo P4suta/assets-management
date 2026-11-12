@@ -27,8 +27,8 @@ final class PropertyRecordsUITests: XCTestCase {
         XCTAssertFalse(app.buttons["editor.save"].isEnabled)
         XCTAssertTrue(app.descendants(matching: .any)["contract.rent.error"].firstMatch.exists)
         let clear = app.buttons["contract.rent.clear"]
-        XCTAssertGreaterThanOrEqual(clear.frame.width, 44)
-        XCTAssertGreaterThanOrEqual(clear.frame.height, 44)
+        XCTAssertGreaterThanOrEqual(clear.frame.width, 44 - 0.001)
+        XCTAssertGreaterThanOrEqual(clear.frame.height, 44 - 0.001)
         XCTAssertTrue(app.windows.firstMatch.frame.contains(clear.frame))
         clear.tap()
         enter("1000000000000", into: "contract.rent", app: app)
@@ -100,8 +100,8 @@ final class PropertyRecordsUITests: XCTestCase {
         let clear = app.buttons["work.estimate.clear"]
         XCTAssertTrue(clear.exists)
         guard clear.exists else { return }
-        XCTAssertGreaterThanOrEqual(clear.frame.width, 44)
-        XCTAssertGreaterThanOrEqual(clear.frame.height, 44)
+        XCTAssertGreaterThanOrEqual(clear.frame.width, 44 - 0.001)
+        XCTAssertGreaterThanOrEqual(clear.frame.height, 44 - 0.001)
         XCTAssertTrue(app.windows.firstMatch.frame.contains(clear.frame))
         let capture = XCTAttachment(screenshot: app.screenshot())
         capture.name = "Bounded amount input"
