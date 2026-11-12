@@ -3,6 +3,11 @@ import Testing
 @testable import PropertyCore
 
 @Suite struct AmountInputTests {
+    @Test(arguments: [String(repeating: "0", count: 18), String(repeating: "０", count: 18), String(repeating: " ", count: 18)])
+    func rawInputLengthIsBoundedBeforeNormalization(text: String) {
+        #expect(throws: DomainError.invalidAmount) { try YenAmount.parse(text) }
+    }
+
     @Test(arguments: ["1000000000001", "9223372036854775807", "1000000000000000000000000000"])
     func parsingRejectsEveryAmountAboveTheStoredLimit(text: String) {
         #expect(throws: DomainError.invalidAmount) { try YenAmount.parse(text) }
