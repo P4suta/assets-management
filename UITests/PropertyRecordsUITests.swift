@@ -3,6 +3,123 @@ import UIKit
 
 @MainActor
 final class PropertyRecordsUITests: XCTestCase {
+    func testAppInformationHasAccessiblePrivacyAndSupportLinks() throws {
+        let app = launch()
+        app.tabBars.buttons["物件"].tap()
+        app.buttons["app-info.open"].tap()
+        let privacy = app.descendants(matching: .any)["app-info.privacy"].firstMatch
+        let support = app.descendants(matching: .any)["app-info.support"].firstMatch
+        reveal(privacy, app: app)
+        XCTAssertTrue(privacy.waitForExistence(timeout: 5))
+        reveal(support, app: app)
+        XCTAssertTrue(support.exists)
+        try audit(app, name: "App information")
+        app.buttons["app-info.close"].tap()
+        XCTAssertTrue(app.buttons["property.add"].waitForExistence(timeout: 5))
+    }
+
+    func testContractAmountRejectsValuesAboveTheStoredLimit() {
+        let app = launch(seeded: true)
+        openSampleRoom(app)
+        tap("賃貸借契約", app: app)
+        tap("契約を編集", app: app)
+        replace("1000000000001", in: "contract.rent", app: app)
+        XCTAssertFalse(app.buttons["editor.save"].isEnabled)
+        XCTAssertTrue(app.descendants(matching: .any)["contract.rent.error"].firstMatch.exists)
+        app.buttons["contract.rent.clear"].tap()
+        enter("1000000000000", into: "contract.rent", app: app)
+        app.buttons["editor.save"].tap()
+        tap("契約を編集", app: app)
+        XCTAssertEqual(field("contract.rent", app: app).value as? String, "1000000000000")
+    }
+
+    func testRenewalAmountCanRecoverFromARejectedValueAndStayEmpty() {
+        let app = launch(seeded: true)
+        tap("契約更新の確認", app: app)
+        tap("更新内容と期限を編集", app: app)
+        replace("1000000000001", in: "renewal.rent", app: app)
+        XCTAssertFalse(app.buttons["editor.save"].isEnabled)
+        app.buttons["renewal.rent.clear"].tap()
+        XCTAssertTrue(app.buttons["editor.save"].isEnabled)
+        app.buttons["editor.save"].tap()
+        tap("更新内容と期限を編集", app: app)
+        XCTAssertEqual(field("renewal.rent", app: app).value as? String, "")
+    }
+
+    func testBuildingRoomContactAndEquipmentEditsSurviveRelaunch() {
+        let app = launch(seeded: true)
+        openSampleRoom(app)
+        tap("部屋を編集", app: app)
+        replace("205", in: "room.number", app: app)
+        app.buttons["editor.save"].tap()
+        tap("佐藤 花子", app: app)
+        tap("連絡先を編集", app: app)
+        replace("佐藤 美咲", in: "contact.name", app: app)
+        app.buttons["editor.save"].tap()
+        back(app)
+        tap("設備", app: app)
+        tap("給湯器", app: app)
+        replace("WH-205", in: "equipment.model", app: app)
+        app.buttons["editor.save"].tap()
+        back(app)
+        back(app)
+        tap("建物を編集", app: app)
+        replace("桜通りレジデンス東館", in: "property.name", app: app)
+        app.buttons["editor.save"].tap()
+        app.terminate()
+        app.launch()
+        app.tabBars.buttons["物件"].tap()
+        tap("桜通りレジデンス東館", app: app)
+        tap("205号室", app: app)
+        XCTAssertTrue(row("佐藤 美咲", app: app).exists)
+        tap("設備", app: app)
+        XCTAssertTrue(row("WH-205", app: app).exists)
+    }
+
+    private func openSampleRoom(_ app: XCUIApplication) {
+        app.tabBars.buttons["物件"].tap()
+        tap("桜通りレジデンス", app: app)
+        tap("203号室", app: app)
+    }
+
+    func testAmountInputIsBoundedAndRejectsOversizedValuesBeforeSaving() {
+        let app = launch(seeded: true)
+        tap("給湯器から水漏れ", app: app)
+        app.buttons["work.edit"].tap()
+        replace("1000000000000000000000000000", in: "work.estimate", app: app)
+        XCTAssertLessThanOrEqual((field("work.estimate", app: app).value as? String)?.count ?? 0, 17)
+        XCTAssertFalse(app.buttons["editor.save"].isEnabled)
+        let clear = app.buttons["work.estimate.clear"]
+        XCTAssertTrue(clear.exists)
+        guard clear.exists else { return }
+        clear.tap()
+        enter("85000", into: "work.estimate", app: app)
+        XCTAssertTrue(app.buttons["editor.save"].isEnabled)
+        app.buttons["editor.save"].tap()
+        XCTAssertTrue(app.navigationBars["修繕の詳細"].waitForExistence(timeout: 5))
+        app.buttons["work.edit"].tap()
+        XCTAssertEqual(field("work.estimate", app: app).value as? String, "85000")
+    }
+
+    func testChangingOnlyContractRentRequiresDiscardConfirmation() {
+        let app = launch(seeded: true)
+        app.tabBars.buttons["物件"].tap()
+        tap("桜通りレジデンス", app: app)
+        tap("203号室", app: app)
+        tap("賃貸借契約", app: app)
+        tap("契約を編集", app: app)
+        replace("85000", in: "contract.rent", app: app)
+        app.buttons["editor.cancel"].tap()
+        XCTAssertTrue(app.alerts["変更を破棄しますか？"].waitForExistence(timeout: 5))
+        guard app.alerts["変更を破棄しますか？"].exists else { return }
+        app.alerts.buttons["編集を続ける"].tap()
+        XCTAssertEqual(field("contract.rent", app: app).value as? String, "85000")
+        app.buttons["editor.cancel"].tap()
+        app.alerts.buttons["変更を破棄"].tap()
+        tap("契約を編集", app: app)
+        XCTAssertEqual(field("contract.rent", app: app).value as? String, "82000")
+    }
+
     func testPropertyRegistrationPersistsAfterRelaunch() {
         let app = launch()
         app.buttons["property.add"].tap()
@@ -173,6 +290,23 @@ final class PropertyRecordsUITests: XCTestCase {
         try audit(app, name: "Repair")
     }
 
+    func testPastVisitKeepsTheRecordAndExplainsWhyNoNotificationIsScheduled() {
+        let app = launch(seeded: true, pastVisit: true)
+        tap("給湯器から水漏れ", app: app)
+        let schedule = app.buttons["work.schedule"]
+        reveal(schedule, app: app)
+        schedule.tap()
+        let notify = app.switches["予定を通知"]
+        reveal(notify, app: app)
+        notify.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.5)).tap()
+        app.buttons["editor.save"].tap()
+        XCTAssertTrue(app.staticTexts["過去の日時には通知を予約できません。記録は保存済みです。通知する場合は期限や予定の日時を変更してください。"].waitForExistence(timeout: 5))
+        reveal(schedule, app: app)
+        schedule.tap()
+        XCTAssertEqual(app.switches["予定を通知"].value as? String, "1")
+        app.buttons["editor.cancel"].tap()
+    }
+
     private func saveScheduleWithDeniedNotifications() -> XCUIApplication {
         let monitor = addUIInterruptionMonitor(withDescription: "Deny notification access") { alert in
             for title in ["許可しない", "Don’t Allow", "Don't Allow"] where alert.buttons[title].exists {
@@ -317,8 +451,9 @@ final class PropertyRecordsUITests: XCTestCase {
         try audit(app, name: "Repair")
     }
 
-    private func launch(seeded: Bool = false, failFirstSave: Bool = false, reminderNotice: Bool = false) -> XCUIApplication {
+    private func launch(seeded: Bool = false, failFirstSave: Bool = false, reminderNotice: Bool = false, pastVisit: Bool = false) -> XCUIApplication {
         let app = XCUIApplication()
+        app.launchEnvironment["UITEST_PAST_VISIT"] = pastVisit ? "1" : "0"
         app.launchArguments = ["--ui-testing", "-AppleLanguages", "(ja)", "-AppleLocale", "ja_JP"]
             + (seeded ? ["--seeded"] : []) + (failFirstSave ? ["--fail-first-save"] : [])
         app.launchEnvironment["UITEST_STORAGE_ID"] = UUID().uuidString

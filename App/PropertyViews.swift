@@ -6,6 +6,7 @@ struct BuildingListView: View {
     @Environment(RecordsStore.self) private var store
     @State private var query = ""
     @State private var editor: EditorDestination?
+    @State private var appInformation = false
 
     private var buildings: [Building] {
         store.records.buildings.filter { building in
@@ -47,12 +48,17 @@ struct BuildingListView: View {
         .navigationBarTitleDisplayMode(textSize.isAccessibilitySize ? .inline : .large)
         .searchable(text: $query, placement: .navigationBarDrawer(displayMode: .always), prompt: "検索")
         .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                Button("アプリについて", systemImage: "info.circle") { appInformation = true }
+                    .accessibilityIdentifier("app-info.open")
+            }
             ToolbarItem(placement: .primaryAction) {
                 Button("物件を追加", systemImage: "plus") { editor = .registration }
                     .accessibilityIdentifier("property.add")
             }
         }
         .sheet(item: $editor) { EditorDestinationView(destination: $0) }
+        .sheet(isPresented: $appInformation) { AppInformationView() }
     }
 }
 

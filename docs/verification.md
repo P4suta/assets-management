@@ -16,6 +16,17 @@ The finite bound isn't a proof over arbitrary operation histories.
 Controlled continuations test overlapping storage and notification operations without sleeps.
 Real temporary files test atomic replacement, file size boundaries, corrupted snapshots, and rejected symbolic links.
 
+Amount input and stored amounts share one whole-yen range.
+The parser accepts digits in either width and correctly grouped thousands separators.
+The input retains at most 17 Unicode scalars and blocks saving after a rejected edit.
+The native field uses [the text field delegate](https://developer.apple.com/documentation/uikit/uitextfielddelegate/textfield(_:shouldchangecharactersinranges:replacementstring:)) to validate edits.
+Hosted tests exercise replacement, deletion, noncontiguous ranges, and changes that bypass the delegate.
+The input follows Apple's [dynamic validation guidance](https://developer.apple.com/design/human-interface-guidelines/entering-data).
+Interface tests cover estimates, current rent, and renewal rent through rejection, correction, and saving.
+Stored amount tests corrupt each amount slot independently and verify that failed reads preserve the bytes.
+Notification fixtures place the next visit relative to the supplied clock instead of a fixed calendar date.
+Native journeys separately check a future visit with denied notifications and an expired visit that remains saved.
+
 Instrument the Swift package with Thread Sanitizer using `mise x -- just sanitize`.
 The dedicated scratch directory keeps instrumented binaries separate from ordinary builds.
 Instrumentation complements the explicit suspension tests.

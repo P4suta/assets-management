@@ -151,17 +151,17 @@ struct ContractEditor: View {
     @Environment(RecordsStore.self) private var store
     @State private var start = Date()
     @State private var end = Calendar.current.date(byAdding: .year, value: 2, to: Date()) ?? Date()
-    @State private var rent = ""
+    @State private var rent = AmountInput()
     @State private var baseline: Contract?
-    @State private var baselineRent = ""
+    @State private var baselineRent = AmountInput()
     @State private var prepared = false
     let roomID: UUID
 
-    private var dirty: Bool { baseline.map { $0.start != start || $0.end != end } ?? false || rent != baselineRent }
+    private var dirty: Bool { (baseline.map { $0.start != start || $0.end != end } ?? false) || rent != baselineRent }
 
     var body: some View {
-        EditorSheet(title: "契約を編集", dirty: dirty, save: {
-            let contract = Contract(start: start, end: end, monthlyRent: try amountValue(rent))
+        EditorSheet(title: "契約を編集", dirty: dirty, canSave: rent.isValid, save: {
+            let contract = Contract(start: start, end: end, monthlyRent: try rent.value())
             try await store.save { records in
                 var records = records
                 guard let index = records.rooms.firstIndex(where: { $0.id == roomID }) else { throw DomainError.invalidReference }
@@ -172,7 +172,7 @@ struct ContractEditor: View {
             Section {
                 DatePicker("契約開始日", selection: $start, displayedComponents: .date)
                 DatePicker("契約満了日", selection: $end, displayedComponents: .date)
-                InputField(title: "月額家賃（円）", text: $rent, identifier: "contract.rent").keyboardType(.numberPad)
+                AmountField(title: "月額家賃（円）", input: $rent, identifier: "contract.rent")
             } footer: { Text("締結済みの契約内容を登録してください。") }
         }
         .onAppear {
@@ -180,7 +180,7 @@ struct ContractEditor: View {
             if let contract = store.records.rooms.first(where: { $0.id == roomID })?.contract {
                 start = contract.start
                 end = contract.end
-                rent = contract.monthlyRent.map(String.init) ?? ""
+                rent = AmountInput(contract.monthlyRent.map(String.init) ?? "")
             }
             baseline = Contract(start: start, end: end)
             baselineRent = rent

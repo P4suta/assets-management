@@ -10,6 +10,7 @@ enum RepositoryFactory {
                 .appendingPathComponent(identifier, isDirectory: true)
             return TestRepository(directory: directory,
                                   seeded: ProcessInfo.processInfo.arguments.contains("--seeded"),
+                                  pastVisit: ProcessInfo.processInfo.environment["UITEST_PAST_VISIT"] == "1",
                                   failFirstSave: ProcessInfo.processInfo.arguments.contains("--fail-first-save"))
         }
         #endif
@@ -21,16 +22,18 @@ enum RepositoryFactory {
 private actor TestRepository: RecordsRepository {
     let backing: FileRecordsRepository
     let seeded: Bool
+    let pastVisit: Bool
     var failFirstSave: Bool
-    init(directory: URL, seeded: Bool, failFirstSave: Bool) {
+    init(directory: URL, seeded: Bool, pastVisit: Bool, failFirstSave: Bool) {
         backing = FileRecordsRepository(directory: directory)
         self.seeded = seeded
+        self.pastVisit = pastVisit
         self.failFirstSave = failFirstSave
     }
     func load() async throws -> Records {
         let records = try await backing.load()
         guard records.buildings.isEmpty, seeded else { return records }
-        var fixture = try SampleRecords.make()
+        var fixture = try SampleRecords.make(pastVisit: pastVisit)
         if let item = fixture.work.first {
             guard let data = await SamplePDF.photoData() else { throw StorageError.missingAttachment }
             let name = try await backing.writeAttachment(data, extension: "png")
@@ -60,8 +63,8 @@ private actor TestRepository: RecordsRepository {
     func removeAttachment(named name: String) async throws { try await backing.removeAttachment(named: name) }
 }
 
-private enum SampleRecords {
-    static func make() throws -> Records {
+enum SampleRecords {
+    static func make(now: Date = Date(), pastVisit: Bool = false) throws -> Records {
         var records = Records()
         let contractor = Contact(name: "高橋", company: "みどり設備", notes: "架空の連絡先です。")
         let resident = Contact(name: "佐藤 花子", notes: "架空の連絡先です。")
@@ -78,7 +81,7 @@ private enum SampleRecords {
         let repair = WorkItem(buildingID: building.id, roomID: room.id, title: "給湯器から水漏れ",
                               receivedAt: date(2026, 11, 11), dueDate: date(2026, 11, 12),
                               notes: "給湯器の配管接続部から水が漏れる。", contractorID: contractor.id,
-                              estimate: 38_500, nextVisit: date(2026, 11, 12, hour: 10))
+                              estimate: 38_500, nextVisit: now.addingTimeInterval(pastVisit ? -86_400 : 86_400))
         records.buildings = [building, managed]
         records.rooms = [room, renewalRoom, Room(buildingID: managed.id, number: "201"),
                          Room(buildingID: managed.id, number: "202")]

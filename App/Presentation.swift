@@ -60,9 +60,9 @@ func errorMessage(_ error: any Error) -> String {
         return name + "を入力してください。"
     case DomainError.duplicateRoom: return "部屋番号が重複しています。別の部屋番号を入力してください。"
     case DomainError.invalidDates: return "契約終了日は開始日以降の日付にしてください。"
-    case DomainError.invalidAmount: return "金額は0以上の整数で入力してください。"
+    case DomainError.invalidAmount: return "金額は0円から1兆円までの整数で入力してください。"
     case DomainError.missingRenewal: return "更新する部屋と契約内容を入力してください。"
-    case StorageError.attachmentTooLarge: return "25 MB以下のファイルを選択してください。"
+    case StorageError.attachmentTooLarge: return "25 MiB以下のファイルを選択してください。"
     case StorageError.missingAttachment: return "ファイルが見つかりません。書類一覧から追加し直してください。"
     case StorageError.unreadable, StorageError.corrupted, DomainError.unsupportedFormat:
         return "記録を読み込めませんでした。保存済みのファイルは変更していません。"
@@ -71,15 +71,6 @@ func errorMessage(_ error: any Error) -> String {
     case is CancellationError: return "処理を中止しました。再試行してください。"
     default: return "保存できませんでした。入力内容は保持されています。再試行してください。"
     }
-}
-
-func amountValue(_ text: String) throws -> Int? {
-    let value = text.trimmingCharacters(in: .whitespacesAndNewlines)
-    guard !value.isEmpty else { return nil }
-    guard value.allSatisfy(\.isNumber), let integer = Int(value), integer >= 0 else {
-        throw DomainError.invalidAmount
-    }
-    return integer
 }
 
 func yen(_ value: Int?) -> String {

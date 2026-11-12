@@ -8,6 +8,7 @@ struct EditorSheet<Fields: View>: View {
     @State private var message: String?
     let title: String
     let dirty: Bool
+    var canSave = true
     let save: @MainActor () async throws -> Void
     @ViewBuilder let fields: () -> Fields
 
@@ -39,7 +40,7 @@ struct EditorSheet<Fields: View>: View {
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("保存", systemImage: "checkmark") { attemptSave() }
-                        .disabled(saving)
+                        .disabled(saving || !canSave)
                         .accessibilityIdentifier("editor.save")
                 }
             }
@@ -54,6 +55,7 @@ struct EditorSheet<Fields: View>: View {
     }
 
     private func attemptSave() {
+        guard canSave, !saving else { return }
         saving = true
         message = nil
         Task { @MainActor in

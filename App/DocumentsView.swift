@@ -58,7 +58,7 @@ struct DocumentsView: View {
                     .accessibilityIdentifier("documents.import")
                 Button("カメラで撮影", systemImage: "camera") { requestCamera() }
                     .accessibilityIdentifier("documents.camera")
-            } footer: { Text("写真・書類は端末内に保存します。ファイルの上限は25 MBです。") }
+            } footer: { Text("写真・書類は端末内に保存します。ファイルの上限は25 MiBです。") }
             if importing { ProgressView("ファイルを保存中") }
         }
         .navigationTitle("写真・書類")

@@ -6,8 +6,8 @@ struct WorkEditor: View {
     @Environment(AppNotices.self) private var notices
     @State private var draft: WorkItem
     @State private var baseline: WorkItem
-    @State private var estimate = ""
-    @State private var baselineEstimate = ""
+    @State private var estimate = AmountInput()
+    @State private var baselineEstimate = AmountInput()
     @State private var prepared = false
     let workID: UUID?
     private var dirty: Bool { draft != baseline || estimate != baselineEstimate }
@@ -20,7 +20,8 @@ struct WorkEditor: View {
     }
 
     var body: some View {
-        EditorSheet(title: draft.kind.title + (workID == nil ? "を追加" : "を編集"), dirty: dirty, save: save) {
+        EditorSheet(title: draft.kind.title + (workID == nil ? "を追加" : "を編集"), dirty: dirty,
+                    canSave: estimate.isValid, save: save) {
             Section("対象") {
                 Picker("建物", selection: $draft.buildingID) {
                     ForEach(store.records.buildings) { Text($0.name).tag($0.id) }
@@ -46,7 +47,7 @@ struct WorkEditor: View {
                     Text("未登録").tag(UUID?.none)
                     ForEach(store.records.contacts) { Text($0.name).tag(Optional($0.id)) }
                 }
-                InputField(title: "見積額（円）", text: $estimate, identifier: "work.estimate").keyboardType(.numberPad)
+                AmountField(title: "見積額（円）", input: $estimate, identifier: "work.estimate")
             }
             Section("期限") {
                 Toggle("期限を設定", isOn: Binding(get: { draft.dueDate != nil }, set: { draft.dueDate = $0 ? Date() : nil }))
@@ -75,7 +76,7 @@ struct WorkEditor: View {
                       let first = store.records.buildings.first {
                 draft.buildingID = first.id
             }
-            estimate = draft.estimate.map(String.init) ?? ""
+            estimate = AmountInput(draft.estimate.map(String.init) ?? "")
             baseline = draft
             baselineEstimate = estimate
             prepared = true
@@ -84,7 +85,7 @@ struct WorkEditor: View {
 
     private func save() async throws {
         var item = draft
-        item.estimate = try amountValue(estimate)
+        item.estimate = try estimate.value()
         if item.kind != .renewal { item.renewalDraft = nil }
         if item.dueDate == nil { item.reminderEnabled = false }
         if item.buildingID != baseline.buildingID || item.roomID != baseline.roomID { item.renewalDraft = nil }
@@ -187,19 +188,21 @@ struct RenewalEditor: View {
     @State private var start = Date()
     @State private var end = Date()
     @State private var due = Date()
-    @State private var rent = ""
+    @State private var rent = AmountInput()
     @State private var notify = false
     @State private var baseline = ""
     @State private var prepared = false
     let workID: UUID
-    private var signature: String { "\(start.timeIntervalSince1970)|\(end.timeIntervalSince1970)|\(due.timeIntervalSince1970)|\(rent)|\(notify)" }
+    private var signature: String {
+        "\(start.timeIntervalSince1970)|\(end.timeIntervalSince1970)|\(due.timeIntervalSince1970)|\(rent.text)|\(String(describing: rent.issue))|\(notify)"
+    }
 
     var body: some View {
-        EditorSheet(title: "契約更新を編集", dirty: prepared && signature != baseline, save: {
+        EditorSheet(title: "契約更新を編集", dirty: prepared && signature != baseline, canSave: rent.isValid, save: {
             guard var item = store.records.work.first(where: { $0.id == workID }), item.roomID != nil else {
                 throw DomainError.missingRenewal
             }
-            item.renewalDraft = Contract(start: start, end: end, monthlyRent: try amountValue(rent))
+            item.renewalDraft = Contract(start: start, end: end, monthlyRent: try rent.value())
             item.dueDate = due
             item.status = .inProgress
             item.reminderEnabled = notify
@@ -213,7 +216,7 @@ struct RenewalEditor: View {
             Section("更新後の契約（下書き）") {
                 DatePicker("契約開始日", selection: $start, displayedComponents: .date)
                 DatePicker("契約満了日", selection: $end, displayedComponents: .date)
-                InputField(title: "月額家賃（円）", text: $rent, identifier: "renewal.rent").keyboardType(.numberPad)
+                AmountField(title: "月額家賃（円）", input: $rent, identifier: "renewal.rent")
             }
             Section {
                 DatePicker("期限", selection: $due, displayedComponents: .date).accessibilityIdentifier("renewal.deadline")
@@ -231,7 +234,7 @@ struct RenewalEditor: View {
                 start = Calendar.current.date(byAdding: .day, value: 1, to: contract?.end ?? Date()) ?? Date()
                 end = Calendar.current.date(byAdding: .year, value: 2, to: start) ?? start
             }
-            rent = contract?.monthlyRent.map(String.init) ?? ""
+            rent = AmountInput(contract?.monthlyRent.map(String.init) ?? "")
             due = item.dueDate ?? Date()
             notify = item.reminderEnabled
             baseline = signature
