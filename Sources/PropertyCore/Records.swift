@@ -158,7 +158,7 @@ public struct Records: Codable, Equatable, Sendable {
     }
 
     private func amount(_ value: Int?) throws {
-        if let value, !(0...1_000_000_000_000).contains(value) { throw DomainError.invalidAmount }
+        _ = try YenAmount.checked(value)
     }
 
     private func validate(_ contract: Contract) throws {
