@@ -30,7 +30,7 @@ jobs:
         profile: [standard, accessibility]
         include:
           - device: iPhone-iOS26
-            runner: macos-26
+            runner: macos-26-intel
             developer: /Applications/Xcode_26.6.app/Contents/Developer
             device-type: com.apple.CoreSimulator.SimDeviceType.iPhone-17-Pro
             runtime: com.apple.CoreSimulator.SimRuntime.iOS-26-5
@@ -69,6 +69,9 @@ jobs:
           printf 'SIMULATOR_DESTINATION=platform=iOS Simulator,id=%s\n' "$acceptance_device" >> "$GITHUB_ENV"
           xcrun simctl boot "$acceptance_device"
           xcrun simctl bootstatus "$acceptance_device" -b
+      - name: Initialize and check the native test host
+        timeout-minutes: 15
+        run: mise x xcodegen just -- just app-test
       - name: Configure the accessibility profile
         timeout-minutes: 1
         env:
@@ -80,12 +83,11 @@ jobs:
           xcrun simctl ui "$SIMULATOR_UDID" content_size "$SIMULATOR_CONTENT_SIZE"
           xcrun simctl ui "$SIMULATOR_UDID" appearance "$SIMULATOR_APPEARANCE"
           xcrun simctl ui "$SIMULATOR_UDID" increase_contrast "$SIMULATOR_CONTRAST"
-      - name: Prepare the photo library
-        timeout-minutes: 2
+      - name: Capture the native test host
+        timeout-minutes: 1
         run: |
-          set -x
-          xcrun simctl launch "$SIMULATOR_UDID" com.apple.mobileslideshow
-          xcrun simctl addmedia "$SIMULATOR_UDID" UITests/Fixtures/Building.png
+          mkdir -p .results
+          xcrun simctl io "$SIMULATOR_UDID" screenshot .results/native-bootstrap.png
       - id: tests
         run: mise x xcodegen just -- just ui-test
       - name: Preserve native test results and captures
@@ -96,4 +98,13 @@ jobs:
           path: .derivedData/Logs/Test/*.xcresult
           include-hidden-files: true
           if-no-files-found: error
+          retention-days: 7
+      - name: Preserve the bootstrap screen
+        if: ${{ failure() && steps.tests.outcome == 'skipped' }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: native-bootstrap-${{ matrix.device }}-${{ matrix.profile }}-${{ github.event.pull_request.head.sha || github.sha }}-${{ github.run_attempt }}
+          path: .results/native-bootstrap.png
+          include-hidden-files: true
+          if-no-files-found: ignore
           retention-days: 7

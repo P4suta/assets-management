@@ -48,7 +48,7 @@ iOS 26 SDK builds [exclude the unavailable service](https://developer.apple.com/
 Run the interface suite on iOS 26 and an available later runtime after changing app behavior.
 The on-demand Native acceptance workflow checks an iPhone with iOS 26 and an iPad with iPadOS 27 through `just ui-test`.
 Each target also runs with the largest text size, Dark appearance, and Increase Contrast enabled.
-Use GitHub's [documented standard runners](https://docs.github.com/en/actions/reference/runners/github-hosted-runners) with the installed [Xcode 26](https://github.com/actions/runner-images/blob/main/images/macos/macos-26-arm64-Readme.md) and [Xcode 27](https://github.com/actions/runner-images/blob/main/images/macos/xcode-27-arm64-Readme.md) environments.
+Use GitHub's [documented standard runners](https://docs.github.com/en/actions/reference/runners/github-hosted-runners) with the installed [Xcode 26](https://github.com/actions/runner-images/blob/main/images/macos/macos-26-Readme.md) and [Xcode 27](https://github.com/actions/runner-images/blob/main/images/macos/xcode-27-arm64-Readme.md) environments.
 Start a same-repository pull request's run by adding the label: `release-acceptance`.
 Remove and reapply the label to check a later head.
 The workflow also supports dispatching a selected candidate after the workflow reaches the default branch.
