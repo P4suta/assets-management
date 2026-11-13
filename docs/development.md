@@ -1,6 +1,6 @@
 # Develop property records
 
-The iPhone and iPad app targets iOS 26 or later and has Actions and Properties tabs.
+The iPhone and iPad app targets iOS 26 or later and has Actions, Properties, and Contacts tabs.
 Native split navigation keeps the selected record when a window resizes or an iPhone Duo folds.
 Records and copied attachments stay in the app's private container.
 The app has no analytics or network service.
