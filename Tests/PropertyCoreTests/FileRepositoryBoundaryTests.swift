@@ -7,6 +7,28 @@ private func repositorySandbox() -> URL {
 }
 
 @Suite @MainActor struct FileRepositoryBoundaryTests {
+    @Test func loadingALegacySnapshotLeavesItsBytesUntilAnAtomicSave() async throws {
+        let directory = repositorySandbox()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        var original = try completeRecords()
+        original.formatVersion = 1
+        let bytes = try JSONEncoder().encode(original)
+        let snapshot = directory.appendingPathComponent("records.json")
+        try bytes.write(to: snapshot)
+        let repository = FileRecordsRepository(directory: directory)
+        var migrated = try await repository.load()
+        #expect(migrated.formatVersion == 2)
+        #expect(try Data(contentsOf: snapshot) == bytes)
+        migrated.contacts[0].category = .insurance
+        migrated.contacts[0].isEmergency = true
+        try await repository.save(migrated)
+        #expect(try await repository.load() == migrated)
+        #expect(try Data(contentsOf: snapshot) != bytes)
+        #expect(migrated.history == original.history)
+        #expect(migrated.attachments == original.attachments)
+    }
+
     @Test func invalidSnapshotRelationshipsAreReadFailures() async throws {
         let directory = repositorySandbox()
         defer { try? FileManager.default.removeItem(at: directory) }
@@ -20,7 +42,7 @@ private func repositorySandbox() -> URL {
         #expect(try Data(contentsOf: url) == data)
     }
 
-    @Test(arguments: ["selfManaged", "renewal", "notStarted", "phone", "document"])
+    @Test(arguments: ["selfManaged", "renewal", "notStarted", "phone", "document", "other"])
     func anUnknownStoredEnumFailsClosed(token: String) async throws {
         let directory = repositorySandbox()
         defer { try? FileManager.default.removeItem(at: directory) }
@@ -41,7 +63,7 @@ private func repositorySandbox() -> URL {
         defer { try? FileManager.default.removeItem(at: directory) }
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         var records = try fixtureRecords()
-        records.formatVersion = 2
+        records.formatVersion = 3
         let data = try JSONEncoder().encode(records)
         let url = directory.appendingPathComponent("records.json")
         try data.write(to: url)

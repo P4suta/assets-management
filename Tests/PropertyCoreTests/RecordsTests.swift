@@ -120,7 +120,7 @@ func fixtureRecords() throws -> Records {
 
 @Test func futureFormatsFailClosed() {
     var records = Records()
-    records.formatVersion = 2
+    records.formatVersion = 3
     #expect(throws: DomainError.unsupportedFormat) { try records.validated() }
 }
 

@@ -1,7 +1,7 @@
 import Foundation
 
 public struct Records: Codable, Equatable, Sendable {
-    public var formatVersion = 1
+    public var formatVersion = 2
     public var buildings: [Building] = []
     public var rooms: [Room] = []
     public var contacts: [Contact] = []
@@ -10,6 +10,22 @@ public struct Records: Codable, Equatable, Sendable {
     public var attachments: [Attachment] = []
 
     public init() {}
+
+    private enum CodingKeys: String, CodingKey {
+        case formatVersion, buildings, rooms, contacts, work, history, attachments
+    }
+
+    public init(from decoder: any Decoder) throws {
+        let values = try decoder.container(keyedBy: CodingKeys.self)
+        let version = try values.decode(Int.self, forKey: .formatVersion)
+        guard version == 1 || version == 2 else { throw DomainError.unsupportedFormat }
+        buildings = try values.decode([Building].self, forKey: .buildings)
+        rooms = try values.decode([Room].self, forKey: .rooms)
+        contacts = try values.decode([Contact].self, forKey: .contacts)
+        work = try values.decode([WorkItem].self, forKey: .work)
+        history = try values.decode([HistoryEntry].self, forKey: .history)
+        attachments = try values.decode([Attachment].self, forKey: .attachments)
+    }
 
     public func registering(_ draft: RegistrationDraft) throws -> Records {
         var result = self
@@ -56,7 +72,7 @@ public struct Records: Codable, Equatable, Sendable {
     }
 
     public func validated() throws -> Records {
-        guard formatVersion == 1 else { throw DomainError.unsupportedFormat }
+        guard formatVersion == 2 else { throw DomainError.unsupportedFormat }
         try unique(buildings.map(\.id))
         try unique(rooms.map(\.id))
         try unique(contacts.map(\.id))
@@ -84,7 +100,11 @@ public struct Records: Codable, Equatable, Sendable {
                 try finite(equipment.installedOn)
             }
         }
-        for contact in contacts { try required(contact.name, .contactName) }
+        for contact in contacts {
+            try required(contact.name, .contactName)
+            try unique(contact.buildingIDs)
+            guard contact.buildingIDs.allSatisfy(buildingIDs.contains) else { throw DomainError.invalidReference }
+        }
         for item in work {
             try required(item.title, .workTitle)
             try location(buildingID: item.buildingID, roomID: item.roomID)
@@ -166,6 +186,15 @@ public struct Records: Codable, Equatable, Sendable {
         try finite(contract.end)
         guard contract.end >= contract.start else { throw DomainError.invalidDates }
         try amount(contract.monthlyRent)
+        if let notice = contract.notice {
+            guard (0...365).contains(notice.advanceDays) else { throw DomainError.invalidNotice }
+            switch notice.timing {
+            case .date(let date):
+                guard date.timeIntervalSince1970.isFinite else { throw DomainError.invalidNotice }
+            case .monthsBeforeExpiry(let months):
+                guard (1...1_200).contains(months) else { throw DomainError.invalidNotice }
+            }
+        }
     }
 
     private func finite(_ date: Date?) throws {
