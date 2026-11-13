@@ -22,7 +22,16 @@ schemes:
       targets:
         PropertyRecords: all
     test:
-      targets: [PropertyRecordsAppTests, PropertyRecordsUITests]
+      targets: [PropertyRecordsAppTests]
+      debugEnabled: false
+      gatherCoverageData: true
+  PropertyRecordsInterface:
+    build:
+      targets:
+        PropertyRecords: [test]
+    test:
+      targets: [PropertyRecordsUITests]
+      debugEnabled: false
       gatherCoverageData: true
       preActions:
         - name: Prepare the simulator photo fixture
@@ -39,6 +48,7 @@ schemes:
         PropertyRecords: [test]
     test:
       config: Release
+      debugEnabled: false
       targets:
         - name: PropertyRecordsUITests
           parallelizable: false

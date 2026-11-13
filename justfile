@@ -43,16 +43,16 @@ app-test: generate
     xcodebuild -project PropertyRecords.xcodeproj -scheme PropertyRecords -destination '{{ destination }}' -derivedDataPath .derivedData CODE_SIGNING_ALLOWED=NO -parallel-testing-enabled NO -only-testing:PropertyRecordsAppTests test -quiet
 
 ui-test: generate
-    xcodebuild -project PropertyRecords.xcodeproj -scheme PropertyRecords -destination '{{ destination }}' -derivedDataPath .derivedData CODE_SIGNING_ALLOWED=NO -parallel-testing-enabled NO '-skip-testing:PropertyRecordsUITests/PropertyRecordsUITests/testSystemSettingsAuditProbe()' test -quiet
+    xcodebuild -project PropertyRecords.xcodeproj -scheme PropertyRecordsInterface -destination '{{ destination }}' -derivedDataPath .derivedData CODE_SIGNING_ALLOWED=NO -parallel-testing-enabled NO '-skip-testing:PropertyRecordsUITests/PropertyRecordsUITests/testSystemSettingsAuditProbe()' test -quiet
 
 ui-tour: generate
-    xcodebuild -project PropertyRecords.xcodeproj -scheme PropertyRecords -destination '{{ destination }}' -derivedDataPath .derivedData CODE_SIGNING_ALLOWED=NO -parallel-testing-enabled NO '-only-testing:PropertyRecordsUITests/PropertyRecordsUITests/testScreenTourAccessibility()' test -quiet
+    xcodebuild -project PropertyRecords.xcodeproj -scheme PropertyRecordsInterface -destination '{{ destination }}' -derivedDataPath .derivedData CODE_SIGNING_ALLOWED=NO -parallel-testing-enabled NO '-only-testing:PropertyRecordsUITests/PropertyRecordsUITests/testScreenTourAccessibility()' test -quiet
 
 adaptive-ui-test: generate
-    xcodebuild -project PropertyRecords.xcodeproj -scheme PropertyRecords -destination '{{ destination }}' -derivedDataPath .derivedData CODE_SIGNING_ALLOWED=NO -parallel-testing-enabled NO '-only-testing:PropertyRecordsUITests/PropertyRecordsUITests/testSelectedWorkAndUnsavedEditSurviveRotation()' '-only-testing:PropertyRecordsUITests/PropertyRecordsUITests/testSelectedPropertyAndRoomSurviveRotation()' test -quiet
+    xcodebuild -project PropertyRecords.xcodeproj -scheme PropertyRecordsInterface -destination '{{ destination }}' -derivedDataPath .derivedData CODE_SIGNING_ALLOWED=NO -parallel-testing-enabled NO '-only-testing:PropertyRecordsUITests/PropertyRecordsUITests/testSelectedWorkAndUnsavedEditSurviveRotation()' '-only-testing:PropertyRecordsUITests/PropertyRecordsUITests/testSelectedPropertyAndRoomSurviveRotation()' test -quiet
 
 store-screenshot-test: generate
-    xcodebuild -project PropertyRecords.xcodeproj -scheme PropertyRecords -destination '{{ destination }}' -derivedDataPath .derivedData CODE_SIGNING_ALLOWED=NO -parallel-testing-enabled NO '-only-testing:PropertyRecordsUITests/PropertyRecordsUITests/testStoreScreenshots()' test -quiet
+    xcodebuild -project PropertyRecords.xcodeproj -scheme PropertyRecordsInterface -destination '{{ destination }}' -derivedDataPath .derivedData CODE_SIGNING_ALLOWED=NO -parallel-testing-enabled NO '-only-testing:PropertyRecordsUITests/PropertyRecordsUITests/testStoreScreenshots()' test -quiet
 
 review-journey-build build_path: generate
     xcodebuild -project PropertyRecords.xcodeproj -scheme PropertyRecordsReview -configuration Release -destination '{{ destination }}' -derivedDataPath '{{ build_path }}' DEVELOPMENT_TEAM=XMBQLW82L9 -allowProvisioningUpdates build-for-testing -quiet
