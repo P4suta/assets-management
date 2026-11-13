@@ -53,3 +53,16 @@ A mutation that doesn't compile supplies no behavioral result.
 Investigate surviving changes through the supported API and rerun the affected family after fixing the gap.
 Don't introduce survivor baselines or operator exclusions to get a passing result.
 Keep mutation analysis and instrumentation outside ordinary pull-request CI, and run the full campaign before release.
+
+Use the processed TestFlight build for the physical demonstration.
+Use the physical device destination when building the signed runner: `mise x -- just review-journey-build /absolute/path/build`.
+Install the runner without replacing the TestFlight app.
+Prepare a copy of the generated test-run file with only the interface-test target.
+Apple's installed manual describes destination artifacts: `man xcodebuild.xctestrun`.
+Xcode supports destination artifacts on physical iOS devices.
+Turn on the destination artifact flag: `UseDestinationArtifacts`.
+Supply the installed runner and app bundle identifiers plus the test bundle's destination-relative path.
+Remove the paths on the host for the app, runner, and test bundle.
+Turn off the app's Main Thread Checker.
+Run the prepared file with `mise x -- just review-journey-test /absolute/path/installed-app.xctestrun`.
+The recipe rejects test-run files that could install another app over the TestFlight build.

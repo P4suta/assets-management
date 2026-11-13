@@ -54,8 +54,12 @@ adaptive-ui-test: generate
 store-screenshot-test: generate
     xcodebuild -project PropertyRecords.xcodeproj -scheme PropertyRecords -destination '{{ destination }}' -derivedDataPath .derivedData CODE_SIGNING_ALLOWED=NO -parallel-testing-enabled NO '-only-testing:PropertyRecordsUITests/PropertyRecordsUITests/testStoreScreenshots()' test -quiet
 
-review-journey-test: generate
-    xcodebuild -project PropertyRecords.xcodeproj -scheme PropertyRecords -configuration Release -destination '{{ destination }}' -derivedDataPath .derivedData DEVELOPMENT_TEAM=XMBQLW82L9 -allowProvisioningUpdates -parallel-testing-enabled NO '-only-testing:PropertyRecordsUITests/PropertyRecordsUITests/testReviewDemonstration()' test -quiet
+review-journey-build build_path: generate
+    xcodebuild -project PropertyRecords.xcodeproj -scheme PropertyRecordsReview -configuration Release -destination '{{ destination }}' -derivedDataPath '{{ build_path }}' DEVELOPMENT_TEAM=XMBQLW82L9 -allowProvisioningUpdates build-for-testing -quiet
+
+review-journey-test run_file:
+    plutil -convert json -o - '{{ run_file }}' | jaq --exit-status '((keys | sort) == ["PropertyRecordsUITests", "__xctestrun_metadata__"]) and .PropertyRecordsUITests.UseDestinationArtifacts == true and .PropertyRecordsUITests.UITargetAppBundleIdentifier == "com.p4suta.PropertyRecords"'
+    xcodebuild -xctestrun '{{ run_file }}' -destination '{{ destination }}' -parallel-testing-enabled NO -test-timeouts-enabled YES -default-test-execution-time-allowance 240 -maximum-test-execution-time-allowance 300 '-only-testing:PropertyRecordsUITests/PropertyRecordsUITests/testReviewDemonstration()' test-without-building -quiet
 
 release-build: generate
     xcodebuild -project PropertyRecords.xcodeproj -scheme PropertyRecords -configuration Release -destination 'generic/platform=iOS' -derivedDataPath .derivedData CODE_SIGNING_ALLOWED=NO build -quiet

@@ -16,6 +16,19 @@ settings:
     COMPILATION_CACHE_ENABLE_CACHING: NO
     ENABLE_USER_SCRIPT_SANDBOXING: YES
     TARGETED_DEVICE_FAMILY: "1,2"
+schemes:
+  PropertyRecordsReview:
+    build:
+      targets:
+        PropertyRecords: [test]
+    test:
+      config: Release
+      targets:
+        - name: PropertyRecordsUITests
+          parallelizable: false
+      gatherCoverageData: false
+      preferredScreenCaptureFormat: screenRecording
+      deleteScreenshotsWhenEachTestSucceeds: false
 targets:
   PropertyRecords:
     type: application
