@@ -90,7 +90,7 @@ struct WorkDetailView: View {
                     Text(store.records.locationText(item)).foregroundStyle(Color.secondary)
                 }
                 Section("内容") {
-                    Picker("状態", selection: Binding(get: { item.status }, set: setStatus)) {
+                    Picker("状態", selection: Binding(get: { item.status }, set: { setStatus($0) })) {
                         ForEach(WorkStatus.allCases, id: \.self) { status in
                             Label(status.title, systemImage: status.symbol).tag(status)
                         }
