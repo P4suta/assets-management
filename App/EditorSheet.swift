@@ -3,9 +3,7 @@ import UIKit
 
 struct EditorSheet<Fields: View>: View {
     @Environment(\.dismiss) private var dismiss
-    @State private var discard = false
-    @State private var saving = false
-    @State private var message: String?
+    @Bindable var feedback: EditorFeedback
     let title: String
     let dirty: Bool
     var canSave = true
@@ -15,7 +13,7 @@ struct EditorSheet<Fields: View>: View {
     var body: some View {
         NavigationStack {
             Form {
-                if let message {
+                if let message = feedback.message {
                     Section {
                         Label(message, systemImage: "exclamationmark.circle")
                             .foregroundStyle(Color(uiColor: .systemRed))
@@ -24,7 +22,7 @@ struct EditorSheet<Fields: View>: View {
                 }
                 fields()
             }
-            .disabled(saving)
+            .disabled(feedback.saving)
             .modifier(AdaptivePickerStyle())
             .scrollDismissesKeyboard(.interactively)
             .navigationTitle(title)
@@ -32,40 +30,40 @@ struct EditorSheet<Fields: View>: View {
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("キャンセル", systemImage: "xmark", role: .cancel) {
-                        if dirty { discard = true } else { dismiss() }
+                        if dirty { feedback.discard = true } else { dismiss() }
                     }
-                    .disabled(saving)
+                    .disabled(feedback.saving)
                     .labelStyle(.iconOnly)
                     .accessibilityIdentifier("editor.cancel")
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("保存", systemImage: "checkmark") { attemptSave() }
-                        .disabled(saving || !canSave)
+                        .disabled(feedback.saving || !canSave)
                         .accessibilityIdentifier("editor.save")
                 }
             }
-            .overlay { if saving { ProgressView("保存中") } }
+            .overlay { if feedback.saving { ProgressView("保存中") } }
         }
-        .interactiveDismissDisabled(dirty || saving)
-        .background(DismissAttemptObserver(blocked: dirty || saving) { if !saving { discard = true } })
-        .alert("変更を破棄しますか？", isPresented: $discard) {
+        .interactiveDismissDisabled(dirty || feedback.saving)
+        .background(DismissAttemptObserver(blocked: dirty || feedback.saving) { if !feedback.saving { feedback.discard = true } })
+        .alert("変更を破棄しますか？", isPresented: $feedback.discard) {
             Button("変更を破棄", role: .destructive) { dismiss() }
             Button("編集を続ける", role: .cancel) {}
         } message: { Text("入力内容は保存されません。") }
     }
 
     private func attemptSave() {
-        guard canSave, !saving else { return }
-        saving = true
-        message = nil
+        guard canSave, !feedback.saving else { return }
+        feedback.saving = true
+        feedback.message = nil
         Task { @MainActor in
             do { try await save(); dismiss() }
             catch {
                 let feedback = errorMessage(error)
-                message = feedback
+                self.feedback.message = feedback
                 UIAccessibility.post(notification: .announcement, argument: feedback)
             }
-            saving = false
+            feedback.saving = false
         }
     }
 }
