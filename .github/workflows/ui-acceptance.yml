@@ -1,0 +1,59 @@
+name: Native acceptance
+
+on:
+  workflow_dispatch:
+  pull_request:
+    types: [labeled]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: native-acceptance-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  journeys:
+    name: ${{ matrix.name }}
+    if: >-
+      github.repository_id == '1455076889' &&
+      (github.event_name == 'workflow_dispatch' ||
+       (github.event.label.name == 'release-acceptance' &&
+        github.event.pull_request.head.repo.id == github.event.pull_request.base.repo.id))
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        include:
+          - name: iPhone on iOS 26
+            runner: macos-26
+            developer: /Applications/Xcode_26.6.app/Contents/Developer
+            destination: platform=iOS Simulator,name=iPhone 17 Pro,OS=26.5
+          - name: iPad on iPadOS 27
+            runner: xcode-27
+            developer: /Applications/Xcode_27.2.app/Contents/Developer
+            destination: platform=iOS Simulator,name=iPad Pro 13-inch (M5),OS=27.2
+    env:
+      DEVELOPER_DIR: ${{ matrix.developer }}
+      SIMULATOR_DESTINATION: ${{ matrix.destination }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - uses: jdx/mise-action@b44d12e7d0d8ee7461bb893e1b1993500433185b # v5.2.7
+        with:
+          version: "2026.11.7"
+          install_args: xcodegen just
+      - run: mise x xcodegen just -- just ui-test
+      - name: Preserve native test results and captures
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: native-results-${{ matrix.runner }}-${{ github.event.pull_request.head.sha || github.sha }}-${{ github.run_attempt }}
+          path: .derivedData/Logs/Test/*.xcresult
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 7
