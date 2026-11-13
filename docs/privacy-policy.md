@@ -2,12 +2,12 @@
 
 The policy takes effect on November 12, 2026.
 Yasunobu Sakashita develops the app.
-This policy covers the iPhone app named `物件管理くん`.
+This policy covers the iPhone and iPad app named `物件管理くん`.
 
 ## Records and attachments
 
 The app stores property and contact details in its private storage on your device.
-Private storage also holds contracts, repair records, photographs, and documents.
+Private storage also holds contracts, repair records, memos, photographs, and stored documents.
 The app doesn't send those records or attachments to the developer or an app server.
 The app has no account, advertising, tracking, or analytics service.
 The developer doesn't collect data through the app or share app records with third parties.

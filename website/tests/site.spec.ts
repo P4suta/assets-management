@@ -1,6 +1,13 @@
 import { writeFile } from "node:fs/promises";
 import AxeBuilder from "@axe-core/playwright";
-import { expect, type Page, type TestInfo, test } from "@playwright/test";
+import {
+	type Dialog,
+	expect,
+	type Page,
+	type Request,
+	type TestInfo,
+	test,
+} from "@playwright/test";
 
 const pages = [
 	{ path: "/", heading: "物件管理くん" },
@@ -116,6 +123,10 @@ for (const item of pages) {
 	}: {
 		page: Page;
 	}, testInfo: TestInfo): Promise<void> => {
+		const requests: string[] = [];
+		page.on("request", (request: Request): void => {
+			requests.push(request.url());
+		});
 		const response = await page.goto(item.path);
 		expect(response?.ok()).toBe(true);
 		if (process.env.SUPPORT_ORIGIN) {
@@ -130,7 +141,14 @@ for (const item of pages) {
 			item.heading,
 		);
 		await expect(page.locator("html")).toHaveAttribute("lang", "ja");
-		await expect(page.locator("script")).toHaveCount(0);
+		const scripts = page.locator("script");
+		await expect(scripts).toHaveCount(1);
+		await expect(scripts).toHaveAttribute("type", "module");
+		const source = await scripts.getAttribute("src");
+		expect(source).toBeTruthy();
+		expect(new URL(source ?? "", page.url()).origin).toBe(
+			new URL(page.url()).origin,
+		);
 		expect(await paletteIssues(page)).toEqual([]);
 		await checkLayout(page);
 		const audit = await new AxeBuilder({ page })
@@ -157,6 +175,19 @@ for (const item of pages) {
 			path: testInfo.outputPath("page.png"),
 			fullPage: true,
 		});
+		expect(
+			requests.every(
+				(address: string): boolean =>
+					new URL(address).origin === new URL(page.url()).origin,
+			),
+		).toBe(true);
+		expect(response?.headers()["set-cookie"]).toBeUndefined();
+		expect(await page.context().cookies()).toEqual([]);
+		expect(
+			await page.evaluate(
+				(): number => localStorage.length + sessionStorage.length,
+			),
+		).toBe(0);
 	});
 
 	test(`enlarged text and spacing on ${item.path}`, async ({
@@ -178,6 +209,11 @@ test("navigation and browser history preserve the destination", async ({
 }: {
 	page: Page;
 }): Promise<void> => {
+	const dialogs: string[] = [];
+	page.on("dialog", async (dialog: Dialog): Promise<void> => {
+		dialogs.push(dialog.message());
+		await dialog.dismiss();
+	});
 	await page.goto("/");
 	await page
 		.getByRole("link", { name: "使い方とお問い合わせ", exact: true })
@@ -199,7 +235,55 @@ test("navigation and browser history preserve the destination", async ({
 	await expect(page.getByRole("heading", { level: 1 })).toHaveText(
 		"物件管理くん",
 	);
+	expect(dialogs).toEqual([]);
 });
+
+for (const path of ["/support/", "/privacy/"]) {
+	test(`external email requires confirmation on ${path}`, async ({
+		page,
+	}: {
+		page: Page;
+	}): Promise<void> => {
+		await page.goto(path);
+		await page.evaluate((): void => {
+			const outcomes: boolean[] = [];
+			document.documentElement.dataset.handoffOutcomes = "[]";
+			const observe = (event: MouseEvent): void => {
+				if (!(event.target instanceof Element)) return;
+				if (!event.target.closest('a[href^="mailto:"]')) return;
+				outcomes.push(event.defaultPrevented);
+				document.documentElement.dataset.handoffOutcomes =
+					JSON.stringify(outcomes);
+				event.preventDefault();
+			};
+			document.addEventListener("click", observe);
+			document.addEventListener("auxclick", observe);
+		});
+		const link = page.getByRole("link", { name: "hi@sakashita.email" });
+		for (const action of ["cancel", "accept", "keyboard", "middle"] as const) {
+			await link.focus();
+			const pendingDialog = page.waitForEvent("dialog");
+			const pendingClick =
+				action === "keyboard"
+					? page.keyboard.press("Enter")
+					: action === "middle"
+						? link.click({ button: "middle" })
+						: link.locator("span").click();
+			const dialog = await pendingDialog;
+			expect(dialog.type()).toBe("confirm");
+			expect(dialog.message()).toBe(
+				"外部リンクを開きます。\nmailto:hi@sakashita.email",
+			);
+			if (action === "accept") await dialog.accept();
+			else await dialog.dismiss();
+			await pendingClick;
+			await expect(page).toHaveURL(new RegExp(`${path}$`));
+		}
+		expect(
+			await page.locator("html").getAttribute("data-handoff-outcomes"),
+		).toBe("[true,false,true,true]");
+	});
+}
 
 test("keyboard access reaches the content and links", async ({
 	page,
