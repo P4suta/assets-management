@@ -58,26 +58,38 @@ jobs:
         with:
           version: "2026.11.8"
           install_args: xcodegen just
-      - name: Prepare an isolated Simulator and photograph
+      - name: Boot an isolated Simulator
         timeout-minutes: 5
         env:
           SIMULATOR_DEVICE_TYPE: ${{ matrix.device-type }}
           SIMULATOR_RUNTIME: ${{ matrix.runtime }}
+        run: |
+          acceptance_device="$(xcrun simctl create 'Property Records native acceptance' "$SIMULATOR_DEVICE_TYPE" "$SIMULATOR_RUNTIME")"
+          printf 'SIMULATOR_UDID=%s\n' "$acceptance_device" >> "$GITHUB_ENV"
+          printf 'SIMULATOR_DESTINATION=platform=iOS Simulator,id=%s\n' "$acceptance_device" >> "$GITHUB_ENV"
+          xcrun simctl boot "$acceptance_device"
+          xcrun simctl bootstatus "$acceptance_device" -b
+      - name: Configure the accessibility profile
+        timeout-minutes: 1
+        env:
           SIMULATOR_CONTENT_SIZE: ${{ matrix.content-size }}
           SIMULATOR_APPEARANCE: ${{ matrix.appearance }}
           SIMULATOR_CONTRAST: ${{ matrix.contrast }}
         run: |
-          acceptance_device="$(xcrun simctl create 'Property Records native acceptance' "$SIMULATOR_DEVICE_TYPE" "$SIMULATOR_RUNTIME")"
-          xcrun simctl boot "$acceptance_device"
-          xcrun simctl bootstatus "$acceptance_device" -b
-          xcrun simctl addmedia "$acceptance_device" UITests/Fixtures/Building.png
-          xcrun simctl ui "$acceptance_device" content_size "$SIMULATOR_CONTENT_SIZE"
-          xcrun simctl ui "$acceptance_device" appearance "$SIMULATOR_APPEARANCE"
-          xcrun simctl ui "$acceptance_device" increase_contrast "$SIMULATOR_CONTRAST"
-          printf 'SIMULATOR_DESTINATION=platform=iOS Simulator,id=%s\n' "$acceptance_device" >> "$GITHUB_ENV"
-      - run: mise x xcodegen just -- just ui-test
+          set -x
+          xcrun simctl ui "$SIMULATOR_UDID" content_size "$SIMULATOR_CONTENT_SIZE"
+          xcrun simctl ui "$SIMULATOR_UDID" appearance "$SIMULATOR_APPEARANCE"
+          xcrun simctl ui "$SIMULATOR_UDID" increase_contrast "$SIMULATOR_CONTRAST"
+      - name: Prepare the photo library
+        timeout-minutes: 2
+        run: |
+          set -x
+          xcrun simctl launch "$SIMULATOR_UDID" com.apple.mobileslideshow
+          xcrun simctl addmedia "$SIMULATOR_UDID" UITests/Fixtures/Building.png
+      - id: tests
+        run: mise x xcodegen just -- just ui-test
       - name: Preserve native test results and captures
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && steps.tests.outcome != 'skipped' }}
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: native-results-${{ matrix.device }}-${{ matrix.profile }}-${{ github.event.pull_request.head.sha || github.sha }}-${{ github.run_attempt }}
