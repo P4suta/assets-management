@@ -6,6 +6,19 @@ The interface suite exercises saved records through native controls and audits a
 Run the rotation checks on iPad and iPhone Duo simulators with `mise x -- just adaptive-ui-test`.
 Run window resizing with the selected record and an open editor, and verify the same title, draft value, and reachable save action afterward.
 Keep physical-device acceptance and the App Review recording separate from simulator results.
+Selected-row tests audit foreground contrast within the visible selection in both appearances.
+Selected rows use the primary system label for text and status symbols.
+The style adjusts for its [highlighted background](https://developer.apple.com/documentation/swiftui/environmentvalues/backgroundprominence).
+The iPadOS 27.2 audit reports insufficient contrast for a selected deadline whose captured black text has a measured ratio of 12.298:1.
+The test also measures the current status and deadline screenshots using the sRGB luminance and contrast formula from the [Web Content Accessibility Guidelines (WCAG)](https://www.w3.org/TR/WCAG22/#dfn-relative-luminance).
+The measurement covers captions drawn with a single foreground color on an opaque background.
+Status symbols use [monochrome rendering](https://developer.apple.com/design/human-interface-guidelines/sf-symbols#Rendering-modes).
+The test groups background colors within one 8-bit step per channel and uses the lowest contrast for the group.
+Unsupported or ambiguous images fail verification.
+The audit filter requires the affected OS, issue type, label, element type, selection, matching frame, and a fresh measured ratio of at least 4.5:1.
+Unknown reports remain failures.
+[Apple's issue-handler example](https://developer.apple.com/videos/play/wwdc2023/10035/?time=597) supports filtering a specific contrast false positive after checking the label.
+The screen tour also audits contrast with Increase Contrast enabled.
 Run the interface suite on iOS 26 and an available later runtime after changing app behavior.
 When the Settings app lacks notification controls in Simulator, combine native denial and foreground journeys with hosted tests of the app's foreground handler using a controlled notification port.
 The hosted tests also construct Apple's calendar trigger to check the absolute date across time zones.

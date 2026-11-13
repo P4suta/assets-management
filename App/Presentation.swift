@@ -86,21 +86,44 @@ extension Records {
     }
 }
 
+extension View {
+    func recordForeground(_ color: Color, selected: Bool) -> some View {
+        foregroundStyle(RecordForegroundStyle(color: color, selected: selected))
+    }
+}
+
+private struct RecordForegroundStyle: ShapeStyle {
+    let color: Color
+    let selected: Bool
+
+    func resolve(in environment: EnvironmentValues) -> some ShapeStyle {
+        guard selected else { return AnyShapeStyle(color) }
+        guard environment.backgroundProminence == .increased else { return AnyShapeStyle(Color.primary) }
+        var contrasted = environment
+        contrasted.colorScheme = environment.colorScheme == .dark ? .light : .dark
+        return AnyShapeStyle(Color.primary.resolve(in: contrasted))
+    }
+}
+
 struct StatusLabel: View {
     let status: WorkStatus
+    var selected = false
     var body: some View {
         Label(status.title, systemImage: status.symbol)
-            .foregroundStyle(Color.accentColor)
+            .recordForeground(Color.accentColor, selected: selected)
+            .symbolRenderingMode(.monochrome)
+            .accessibilityIdentifier("work.caption.status")
     }
 }
 
 struct WorkRow: View {
     @Environment(RecordsStore.self) private var store
     let item: WorkItem
+    var selected = false
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(item.title).foregroundStyle(Color.primary)
-            Text(store.records.locationText(item)).font(.subheadline).foregroundStyle(Color.secondary)
+            Text(item.title).recordForeground(Color.primary, selected: selected)
+            Text(store.records.locationText(item)).font(.subheadline).recordForeground(Color.secondary, selected: selected)
             ViewThatFits(in: .horizontal) {
                 HStack { status; deadline }
                 VStack(alignment: .leading, spacing: 8) { status; deadline }
@@ -109,12 +132,14 @@ struct WorkRow: View {
         }
         .padding(.vertical, 4)
         .accessibilityElement(children: .combine)
+        .accessibilityIdentifier(selected ? "work.row.selected" : "work.row")
     }
-    private var status: some View { StatusLabel(status: item.status) }
+    private var status: some View { StatusLabel(status: item.status, selected: selected) }
     @ViewBuilder private var deadline: some View {
         if let dueDate = item.dueDate {
             Text("期限 " + dueDate.formatted(date: .abbreviated, time: .omitted))
-                .foregroundStyle(Color.secondary)
+                .recordForeground(Color.secondary, selected: selected)
+                .accessibilityIdentifier("work.caption.deadline")
         }
     }
 }

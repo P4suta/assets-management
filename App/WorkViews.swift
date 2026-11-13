@@ -72,7 +72,7 @@ struct WorkListView: View {
 
     @ViewBuilder private func rows(_ values: [WorkItem]) -> some View {
         ForEach(values) { item in
-            NavigationLink(value: item.id) { WorkRow(item: item) }
+            NavigationLink(value: item.id) { WorkRow(item: item, selected: selection == item.id) }
                 .swipeActions {
                     Button(item.status == .completed ? "再開" : "完了", systemImage: "checkmark") { changeStatus(item) }
                     Button("編集", systemImage: "square.and.pencil") {

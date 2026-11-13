@@ -31,12 +31,13 @@ struct BuildingListView: View {
                 Section("建物") {
                     ForEach(buildings) { building in
                         NavigationLink(value: building.id) {
+                            let selected = selection == building.id
                             VStack(alignment: .leading, spacing: 8) {
-                                Text(building.name).foregroundStyle(Color.primary)
+                                Text(building.name).recordForeground(Color.primary, selected: selected)
                                 Text(building.management.title + " · \(store.records.rooms.filter { $0.buildingID == building.id }.count)部屋")
-                                    .font(.subheadline).foregroundStyle(Color.secondary)
+                                    .font(.subheadline).recordForeground(Color.secondary, selected: selected)
                                 let count = store.records.work.filter { $0.buildingID == building.id && $0.status != .completed }.count
-                                Text("未完了の対応 \(count)件").font(.footnote).foregroundStyle(Color.secondary)
+                                Text("未完了の対応 \(count)件").font(.footnote).recordForeground(Color.secondary, selected: selected)
                             }.padding(.vertical, 4).accessibilityElement(children: .combine)
                         }
                         .contextMenu { Button("編集") { editor = .building(building.id) } }
