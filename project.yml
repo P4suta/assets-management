@@ -83,3 +83,7 @@ targets:
       base:
         GENERATE_INFOPLIST_FILE: YES
         PRODUCT_BUNDLE_IDENTIFIER: com.p4suta.PropertyRecordsUITests
+        VOICEOVER_TEST_CONDITION: VOICEOVER_AUTOMATION
+        "VOICEOVER_TEST_CONDITION[sdk=iphoneos26.*]": ""
+        "VOICEOVER_TEST_CONDITION[sdk=iphonesimulator26.*]": ""
+        SWIFT_ACTIVE_COMPILATION_CONDITIONS: "$(inherited) $(VOICEOVER_TEST_CONDITION)"

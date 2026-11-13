@@ -142,7 +142,9 @@ final class PropertyRecordsUITests: XCTestCase {
         XCTAssertEqual(inputText("contract.rent", app: app), "85000")
         app.buttons["editor.cancel"].tap()
         app.alerts.buttons["変更を破棄"].tap()
+        XCTAssertTrue(app.buttons["editor.cancel"].waitForNonExistence(timeout: 5))
         tap("契約を編集", app: app)
+        XCTAssertTrue(app.buttons["editor.cancel"].waitForExistence(timeout: 5))
         XCTAssertEqual(inputText("contract.rent", app: app), "82000")
     }
 
@@ -184,6 +186,38 @@ final class PropertyRecordsUITests: XCTestCase {
         app.alerts.buttons["変更を破棄"].tap()
         XCTAssertTrue(app.buttons["property.add"].waitForExistence(timeout: 5))
         XCTAssertFalse(row("破棄する入力", app: app).exists)
+    }
+
+    func testPristineRegistrationCanReopenAfterInteractiveDismissal() {
+        let app = launch()
+        app.buttons["property.add"].tap()
+        dismissRegistrationInteractively(app)
+        XCTAssertTrue(app.buttons["editor.cancel"].waitForNonExistence(timeout: 5))
+        app.buttons["property.add"].tap()
+        XCTAssertTrue(app.textFields["property.name"].waitForExistence(timeout: 5))
+    }
+
+    func testInteractiveDiscardPreservesOrRemovesOnlyTheDraft() {
+        let app = launch()
+        app.buttons["property.add"].tap()
+        enter("編集中の物件", into: "property.name", app: app)
+        dismissRegistrationInteractively(app)
+        captureStoreScreen(app, name: "Interactive draft dismissal")
+        let hierarchy = XCTAttachment(string: app.debugDescription)
+        hierarchy.name = "Interactive draft dismissal hierarchy"
+        hierarchy.lifetime = .keepAlways
+        add(hierarchy)
+        let alert = app.alerts["変更を破棄しますか？"]
+        XCTAssertTrue(alert.waitForExistence(timeout: 5))
+        alert.buttons["編集を続ける"].tap()
+        XCTAssertEqual(inputText("property.name", app: app), "編集中の物件")
+        dismissRegistrationInteractively(app)
+        XCTAssertTrue(alert.waitForExistence(timeout: 5))
+        alert.buttons["変更を破棄"].tap()
+        XCTAssertTrue(app.buttons["editor.cancel"].waitForNonExistence(timeout: 5))
+        app.buttons["property.add"].tap()
+        XCTAssertTrue(app.textFields["property.name"].waitForExistence(timeout: 5))
+        XCTAssertNotEqual(inputText("property.name", app: app), "編集中の物件")
     }
 
     func testRepairHistoryCompletionAndSearch() {
@@ -596,7 +630,28 @@ final class PropertyRecordsUITests: XCTestCase {
         XCTAssertThrowsError(try UniformTextContrast(image: image(foreground: nil, background: .white)))
     }
 
+    func testScrollCoordinatesIgnoreEmptyAndUnrelatedKeyboards() throws {
+        let bounds = CGRect(x: 20, y: 100, width: 300, height: 600)
+        let natural = try XCTUnwrap(ScrollCoordinates(bounds: bounds, keyboard: nil))
+        XCTAssertEqual(natural.lower.dy, 0.8)
+        for keyboard in [CGRect.zero, CGRect(x: 20, y: 900, width: 300, height: 200),
+                         CGRect(x: 20, y: 300, width: 100, height: 200)] {
+            let gesture = try XCTUnwrap(ScrollCoordinates(bounds: bounds, keyboard: keyboard))
+            XCTAssertEqual(gesture.lower.dy, natural.lower.dy)
+        }
+        let visible = try XCTUnwrap(ScrollCoordinates(bounds: bounds, keyboard: CGRect(x: 0, y: 500, width: 500, height: 300)))
+        XCTAssertEqual(visible.lower.dy, 380.0 / 600, accuracy: 0.001)
+        XCTAssertGreaterThan(visible.lower.dy, visible.upper.dy)
+    }
+
+    func testScrollCoordinatesRejectEmptyOrObscuredViewports() {
+        XCTAssertNil(ScrollCoordinates(bounds: .zero, keyboard: nil))
+        let bounds = CGRect(x: 20, y: 100, width: 300, height: 600)
+        XCTAssertNil(ScrollCoordinates(bounds: bounds, keyboard: CGRect(x: 0, y: 0, width: 500, height: 1_000)))
+    }
+
     func testNativeEditorVoiceOverStaysWithinTheSheet() throws {
+        #if VOICEOVER_AUTOMATION
         guard #available(iOS 27.0, *) else {
             throw XCTSkip("Native VoiceOver automation requires iOS 27 or later.")
         }
@@ -609,8 +664,12 @@ final class PropertyRecordsUITests: XCTestCase {
         tap("契約更新の確認", app: app)
         tap("更新内容と期限を編集", app: app)
         try assertModalVoiceOver(expected: ["キャンセル", "保存", "契約開始日", "契約満了日", "月額家賃", "期限を通知"], app: app)
+        #else
+        throw XCTSkip("Native VoiceOver automation requires the iOS 27 SDK or later.")
+        #endif
     }
 
+    #if VOICEOVER_AUTOMATION
     @available(iOS 27.0, *)
     private func assertModalVoiceOver(expected: [String], app: XCUIApplication) throws {
         let service = XCUIDevice.shared.voiceOverService
@@ -641,6 +700,7 @@ final class PropertyRecordsUITests: XCTestCase {
         }
         if !wasEnabled { try service.disable() }
     }
+    #endif
 
     func testStoreScreenshots() {
         defer { XCUIDevice.shared.appearance = .light }
@@ -747,6 +807,14 @@ final class PropertyRecordsUITests: XCTestCase {
         element.typeText(value)
     }
 
+    private func dismissRegistrationInteractively(_ app: XCUIApplication) {
+        let header = app.navigationBars["物件を追加"]
+        XCTAssertTrue(header.waitForExistence(timeout: 5))
+        let start = header.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
+        let end = app.windows.firstMatch.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.9))
+        start.press(forDuration: 0.1, thenDragTo: end)
+    }
+
     private func replace(_ value: String, in identifier: String, app: XCUIApplication) {
         let element = field(identifier, app: app)
         reveal(element, app: app)
@@ -810,11 +878,13 @@ final class PropertyRecordsUITests: XCTestCase {
         if reachable() { return }
         let window = app.windows.firstMatch
         let container = app.collectionViews.allElementsBoundByIndex.last(where: \.isHittable) ?? window
-        let keyboardTop = app.keyboards.firstMatch.exists ? app.keyboards.firstMatch.frame.minY : container.frame.maxY
-        let lower = container.coordinate(withNormalizedOffset: CGVector(
-            dx: 0.97, dy: min(0.8, (keyboardTop - container.frame.minY - 20) / container.frame.height)
-        ))
-        let upper = container.coordinate(withNormalizedOffset: CGVector(dx: 0.97, dy: 0.22))
+        let keyboard = app.keyboards.firstMatch
+        guard let coordinates = ScrollCoordinates(bounds: container.frame, keyboard: keyboard.isHittable ? keyboard.frame : nil) else {
+            XCTFail("No visible viewport is available for scrolling.")
+            return
+        }
+        let lower = container.coordinate(withNormalizedOffset: coordinates.lower)
+        let upper = container.coordinate(withNormalizedOffset: coordinates.upper)
         for _ in 0..<24 {
             lower.press(forDuration: 0.05, thenDragTo: upper)
             if reachable() { return }

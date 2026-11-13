@@ -19,6 +19,8 @@ The audit filter requires the affected OS, issue type, label, element type, sele
 Unknown reports remain failures.
 [Apple's issue-handler example](https://developer.apple.com/videos/play/wwdc2023/10035/?time=597) supports filtering a specific contrast false positive after checking the label.
 The screen tour also audits contrast with Increase Contrast enabled.
+A [VoiceOver journey](https://developer.apple.com/documentation/xcuiautomation/xcuivoiceoverservice) checks editor labels in both directions and rejects background labels on iOS 27 or later.
+iOS 26 SDK builds [exclude the unavailable service](https://developer.apple.com/documentation/xcode/adding-a-build-configuration-file-to-your-project#Apply-a-setting-conditionally-to-a-platform-or-architecture) and report a skipped VoiceOver test.
 Run the interface suite on iOS 26 and an available later runtime after changing app behavior.
 When the Settings app lacks notification controls in Simulator, combine native denial and foreground journeys with hosted tests of the app's foreground handler using a controlled notification port.
 The hosted tests also construct Apple's calendar trigger to check the absolute date across time zones.

@@ -26,6 +26,7 @@
 		830FA033E7B0D02A2D0E6563 /* SamplePDF.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB04BEC00CAF21101156D518 /* SamplePDF.swift */; };
 		88A1B1A7BAF235F23C584A1B /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 874F39A4223D495FA090D5E4 /* PrivacyInfo.xcprivacy */; };
 		91DF8ECE1C3F0F3D3C488FC6 /* PropertyRecordsUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B462DECE5F8A2D2135F5CF8D /* PropertyRecordsUITests.swift */; };
+		94D68019F1CF81D8CA0B324C /* ScrollCoordinates.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4ED99829799D65BA129FF3DB /* ScrollCoordinates.swift */; };
 		9AF80082F4C7FB5347CA28DA /* PropertyViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = D31184F9098AC80725C966CC /* PropertyViews.swift */; };
 		A39ADF86DB88A9C6295AB9DC /* DocumentsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B26E150B947E30698CF10205 /* DocumentsView.swift */; };
 		AF877EDD80A922D59F7C1E16 /* PropertyRecordsApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 04919A5B49AB50183EB2F94C /* PropertyRecordsApp.swift */; };
@@ -62,6 +63,7 @@
 		0F7F9A1F14EF57BBA9406647 /* UniformTextContrast.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UniformTextContrast.swift; sourceTree = "<group>"; };
 		4B454F163817867506BD98C8 /* PhotoLicense.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = PhotoLicense.txt; sourceTree = "<group>"; };
 		4EC90FD1E07B1C0F6907C896 /* ReminderService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReminderService.swift; sourceTree = "<group>"; };
+		4ED99829799D65BA129FF3DB /* ScrollCoordinates.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScrollCoordinates.swift; sourceTree = "<group>"; };
 		5FE544CE2B5686A8C19000DA /* ReleaseConfigurationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReleaseConfigurationTests.swift; sourceTree = "<group>"; };
 		6D58247B1FA2BB73A89D54F6 /* WorkViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkViews.swift; sourceTree = "<group>"; };
 		874F39A4223D495FA090D5E4 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
@@ -139,6 +141,7 @@
 			isa = PBXGroup;
 			children = (
 				B462DECE5F8A2D2135F5CF8D /* PropertyRecordsUITests.swift */,
+				4ED99829799D65BA129FF3DB /* ScrollCoordinates.swift */,
 				0F7F9A1F14EF57BBA9406647 /* UniformTextContrast.swift */,
 			);
 			path = UITests;
@@ -348,6 +351,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				91DF8ECE1C3F0F3D3C488FC6 /* PropertyRecordsUITests.swift in Sources */,
+				94D68019F1CF81D8CA0B324C /* ScrollCoordinates.swift in Sources */,
 				5EB662B99E8F861F9C63873C /* UniformTextContrast.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -448,8 +452,12 @@
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.p4suta.PropertyRecordsUITests;
 				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) $(VOICEOVER_TEST_CONDITION)";
 				TARGETED_DEVICE_FAMILY = "1,2";
 				TEST_TARGET_NAME = PropertyRecords;
+				VOICEOVER_TEST_CONDITION = VOICEOVER_AUTOMATION;
+				"VOICEOVER_TEST_CONDITION[sdk=iphoneos26.*]" = "";
+				"VOICEOVER_TEST_CONDITION[sdk=iphonesimulator26.*]" = "";
 			};
 			name = Debug;
 		};
@@ -590,8 +598,12 @@
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.p4suta.PropertyRecordsUITests;
 				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) $(VOICEOVER_TEST_CONDITION)";
 				TARGETED_DEVICE_FAMILY = "1,2";
 				TEST_TARGET_NAME = PropertyRecords;
+				VOICEOVER_TEST_CONDITION = VOICEOVER_AUTOMATION;
+				"VOICEOVER_TEST_CONDITION[sdk=iphoneos26.*]" = "";
+				"VOICEOVER_TEST_CONDITION[sdk=iphonesimulator26.*]" = "";
 			};
 			name = Release;
 		};
