@@ -70,6 +70,24 @@ private actor ContractNotificationCenter: ReminderNotificationCenter {
         #expect(try ReminderPlan(records: records, now: now, calendar: calendar()).requests.isEmpty)
     }
 
+    @Test func recordingANoticeRequiresExplicitNotificationConsent() throws {
+        var records = try records()
+        let notice = ContractNotice(timing: .date(now.addingTimeInterval(86_400)))
+        #expect(!notice.reminderEnabled)
+        #expect(notice.advanceDays == 30)
+        records.rooms[0].contract?.notice = notice
+        #expect(try ReminderPlan(records: records, now: now, calendar: calendar()).requests.isEmpty)
+    }
+
+    @Test func contractDeadlineAtTheCurrentInstantIsAlreadyExpired() throws {
+        var records = try records()
+        let deadline = try #require(ISO8601DateFormatter().date(from: "2028-03-01T00:00:00Z"))
+        records.rooms[0].contract?.notice = ContractNotice(timing: .date(deadline), advanceDays: 0, reminderEnabled: true)
+        let plan = try ReminderPlan(records: records, now: deadline, calendar: calendar())
+        #expect(plan.requests.isEmpty)
+        #expect(plan.expiredTargets == [.contract(records.rooms[0].id)])
+    }
+
     @Test func calendarDaysPreserveLocalMorningAcrossDaylightSaving() throws {
         var records = try records()
         let calendar = try calendar("America/New_York")

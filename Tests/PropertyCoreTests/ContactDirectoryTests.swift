@@ -61,6 +61,29 @@ import Testing
         #expect(records.contacts[2].category == .maintenance)
     }
 
+    @Test func formattedTelephoneSearchDoesNotMatchUnrelatedNumbersOrWords() throws {
+        var records = try fixtureRecords()
+        let expected = Contact(name: "設備受付", phone: "０９０−１２３４−５６７８")
+        records.contacts = [expected, Contact(name: "保険受付", phone: "03-9876-5432")]
+        for query in ["090 1234", "090(1234)", "090ー1234", "０９０−１２３４", "  090-1234  "] {
+            #expect(records.matchingContacts(query: query).map(\.id) == [expected.id])
+        }
+        for query in ["090-9999", "090a1234", "保険090", "not-present", "---"] {
+            #expect(records.matchingContacts(query: query).isEmpty)
+        }
+    }
+
+    @Test func directoryNamesSortNumericallyBeforeIdentifierTies() throws {
+        var records = try fixtureRecords()
+        let first = Contact(id: UUID(uuid: (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1)), name: "受付10")
+        let second = Contact(id: UUID(uuid: (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2)), name: "受付2")
+        let third = Contact(id: UUID(uuid: (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3)), name: "受付10")
+        for input in [[first, third, second], [third, second, first], [second, first, third]] {
+            records.contacts = input
+            #expect(records.matchingContacts(query: "").map(\.id) == [second.id, first.id, third.id])
+        }
+    }
+
     @Test func relatedBuildingsCombineExplicitAndExistingAssignments() throws {
         var records = try completeRecords().registering(RegistrationDraft(name: "青葉コート", roomNumber: "101"))
         let id = records.contacts[0].id

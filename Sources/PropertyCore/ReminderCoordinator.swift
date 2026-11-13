@@ -78,6 +78,7 @@ public protocol ReminderNotificationCenter: Sendable {
                 await center.remove(identifiers: obsolete)
                 guard current == revision else { return .superseded }
             }
+            var accepted: [ReminderRequest] = []
             for request in desired {
                 if request.fireDate <= now() {
                     report.expiredTargets.insert(request.target)
@@ -85,15 +86,18 @@ public protocol ReminderNotificationCenter: Sendable {
                     guard current == revision else { return .superseded }
                     continue
                 }
-                do { try await center.add(request) }
+                do {
+                    try await center.add(request)
+                    accepted.append(request)
+                }
                 catch { report.failedTargets.insert(request.target) }
                 guard current == revision else { return .superseded }
             }
-            if !desired.isEmpty {
+            if !accepted.isEmpty {
                 let registered = Set(await center.pendingIdentifiers())
                 guard current == revision else { return .superseded }
                 let verifiedAt = now()
-                for request in desired where !registered.contains(request.identifier) {
+                for request in accepted where !registered.contains(request.identifier) {
                     if request.fireDate > verifiedAt { report.failedTargets.insert(request.target) }
                     else { report.expiredTargets.insert(request.target) }
                 }

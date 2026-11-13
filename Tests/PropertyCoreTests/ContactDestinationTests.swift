@@ -5,7 +5,8 @@ import Testing
 @Suite struct ContactDestinationTests {
     @Test(arguments: [(" (０３) １２３４−５６７８ ", "tel:0312345678"),
                       ("＋８１（３）１２３４－５６７８", "tel:+81312345678"),
-                      ("119", "tel:119"), ("+1 (408) 555.5555", "tel:+14085555555")])
+                      ("119", "tel:119"), ("+1 (408) 555.5555", "tel:+14085555555"),
+                      ("090ー1234ー5678", "tel:09012345678")])
     func telephoneFormattingPreservesTheIntendedDigits(example: (String, String)) {
         let contact = Contact(name: "受付", phone: example.0)
         #expect(contact.telephoneURL?.absoluteString == example.1)
@@ -37,7 +38,8 @@ import Testing
     }
 
     @Test(arguments: ["", " ", "qa", "@example.invalid", "qa@", "qa@example.invalid,other@example.invalid",
-                      "qa@example.invalid;other@example.invalid", "qa\r\n@example.invalid", "qa @example.invalid"])
+                      "qa@example.invalid;other@example.invalid", "qa\r\n@example.invalid", "qa @example.invalid",
+                      "qa@@example.invalid", "qa;other@example.invalid"])
     func unrecognizedMailboxTextRemainsARecordWithoutAnExternalAction(value: String) {
         let contact = Contact(name: "受付", email: value)
         #expect(contact.emailURL == nil)
