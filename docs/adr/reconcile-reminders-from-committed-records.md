@@ -18,6 +18,7 @@ Link [tasks through their results](https://docs.swift.org/latest/documentation/t
 Reconcile on foreground entry and prompt only after an explicit reminder edit.
 [Apple's authorization guidance](https://developer.apple.com/documentation/usernotifications/asking-permission-to-use-notifications) requires fresh settings and recommends contextual prompts.
 [Request identifiers](https://developer.apple.com/documentation/usernotifications/unnotificationrequest/identifier) support replacement and cancellation.
+Verify [pending requests](https://developer.apple.com/documentation/usernotifications/unusernotificationcenter/getpendingnotificationrequests(completionhandler:)) after registration and offer a retry for missing future requests.
 
 ## Alternatives
 

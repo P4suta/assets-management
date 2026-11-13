@@ -20,13 +20,14 @@ private func reminderFixture() throws -> Records {
     return try records.validated()
 }
 
-private enum NotificationOperation: Hashable { case authorization, permission, pending, remove, add }
+private enum NotificationOperation: Hashable { case authorization, permission, pending, remove, add, verification }
 
 private actor ControlledNotificationCenter: ReminderNotificationCenter {
     private var permission: ReminderAuthorization
     private var suspended: Set<NotificationOperation>
     private var failAdd = false
     private var failPermission = false
+    private var queriedPending = false
     private var counts: [NotificationOperation: Int] = [:]
     private var arrivals: [NotificationOperation: [CheckedContinuation<Bool, Never>]] = [:]
     private var ended: Set<NotificationOperation> = []
@@ -40,6 +41,7 @@ private actor ControlledNotificationCenter: ReminderNotificationCenter {
     }
 
     func authorization() async -> ReminderAuthorization {
+        queriedPending = false
         let value = permission
         await checkpoint(.authorization)
         return value
@@ -53,8 +55,10 @@ private actor ControlledNotificationCenter: ReminderNotificationCenter {
 
     func pendingIdentifiers() async -> [String] {
         let identifiers = Array(requests.keys) + foreignIdentifiers
-        await checkpoint(.pending)
-        return identifiers
+        let operation: NotificationOperation = queriedPending ? .verification : .pending
+        queriedPending = true
+        await checkpoint(operation)
+        return operation == .verification ? Array(requests.keys) + foreignIdentifiers : identifiers
     }
 
     func remove(identifiers: [String]) async {
@@ -202,7 +206,7 @@ private actor ControlledNotificationCenter: ReminderNotificationCenter {
         #expect(await center.count(.permission) == 1)
     }
 
-    @Test(arguments: [NotificationOperation.authorization, .permission, .pending, .add])
+    @Test(arguments: [NotificationOperation.authorization, .permission, .pending, .add, .verification])
     private func completionSupersedesEverySuspendedSchedulingPhase(operation: NotificationOperation) async throws {
         let records = try reminderFixture()
         let id = records.work[0].id
@@ -223,7 +227,7 @@ private actor ControlledNotificationCenter: ReminderNotificationCenter {
         #expect(!latest.isSuperseded)
         #expect(latest.result(for: id) == .none)
         #expect(await center.requests.isEmpty)
-        #expect(await center.count(.add) == (operation == .add ? 1 : 0))
+        #expect(await center.count(.add) == (operation == .verification ? 2 : operation == .add ? 1 : 0))
         #expect(await center.foreignIdentifiers == ["unrelated-feature"])
     }
 
@@ -241,6 +245,27 @@ private actor ControlledNotificationCenter: ReminderNotificationCenter {
         let disabled = try records.settingStatus(.completed, for: id)
         _ = await coordinator.synchronize(disabled)
         #expect(await center.requests.isEmpty)
+    }
+
+    @Test func deliveryDuringReadbackDoesNotBecomeARegistrationFailure() async throws {
+        let records = try reminderFixture()
+        let calendar = try reminderCalendar()
+        let plan = try ReminderPlan(records: records, now: reminderNow, calendar: calendar)
+        let deadline = try #require(plan.requests.first { $0.kind == .deadline })
+        let clock = OSAllocatedUnfairLock(initialState: reminderNow)
+        let center = ControlledNotificationCenter(suspended: [.verification])
+        let coordinator = ReminderCoordinator(center: center, now: { clock.withLock { $0 } }, calendar: { calendar })
+        let task = Task { await coordinator.synchronize(records) }
+        guard await reaches(.verification, center: center, during: task) else {
+            Issue.record("Synchronization ended before verifying registration.")
+            return
+        }
+        clock.withLock { $0 = deadline.fireDate }
+        await center.remove(identifiers: [deadline.identifier])
+        await center.release(.verification)
+        let report = await task.value
+        #expect(report.failedTargets.isEmpty)
+        #expect(report.expiredTargets == [.work(records.work[0].id)])
     }
 
     @Test func permissionFailureCanBeRetriedWithoutChangingRecords() async throws {

@@ -7,8 +7,10 @@ private actor ContractNotificationCenter: ReminderNotificationCenter {
     private(set) var prompts = 0
     private(set) var requests: [String: ReminderRequest] = [:]
     private var fail = false
+    private var capacity: Int?
     func setPermission(_ value: ReminderAuthorization) { permission = value }
     func setFailure(_ value: Bool) { fail = value }
+    func setCapacity(_ value: Int?) { capacity = value }
     func authorization() -> ReminderAuthorization { permission }
     func requestAuthorization() -> ReminderAuthorization { prompts += 1; return permission }
     func pendingIdentifiers() -> [String] { Array(requests.keys) + ["foreign"] }
@@ -18,6 +20,10 @@ private actor ContractNotificationCenter: ReminderNotificationCenter {
     func add(_ request: ReminderRequest) throws {
         if fail { throw StorageError.unwritable }
         requests[request.identifier] = request
+        if let capacity, requests.count > capacity,
+           let last = requests.values.max(by: { $0.fireDate < $1.fireDate }) {
+            requests.removeValue(forKey: last.identifier)
+        }
     }
 }
 
@@ -170,5 +176,23 @@ private actor ContractNotificationCenter: ReminderNotificationCenter {
         #expect(recovered.authorization == .authorized)
         #expect(await center.requests.count == 2)
         #expect(records.rooms[0].contract?.notice?.reminderEnabled == true)
+    }
+
+    @Test func silentlyDiscardedNotificationsRemainRetryable() async throws {
+        let records = try records()
+        let original = records
+        let center = ContractNotificationCenter()
+        await center.setCapacity(1)
+        let now = now
+        let calendar = try calendar()
+        let coordinator = ReminderCoordinator(center: center, now: { now }, calendar: { calendar })
+        let incomplete = await coordinator.synchronize(records)
+        #expect(await center.requests.count == 1)
+        #expect(incomplete.result(for: .contract(records.rooms[0].id)) == .failed)
+        await center.setCapacity(nil)
+        let recovered = await coordinator.synchronize(records)
+        #expect(recovered.result(for: .contract(records.rooms[0].id)) == .none)
+        #expect(await center.requests.count == 2)
+        #expect(records == original)
     }
 }

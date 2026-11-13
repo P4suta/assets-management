@@ -89,6 +89,15 @@ public protocol ReminderNotificationCenter: Sendable {
                 catch { report.failedTargets.insert(request.target) }
                 guard current == revision else { return .superseded }
             }
+            if !desired.isEmpty {
+                let registered = Set(await center.pendingIdentifiers())
+                guard current == revision else { return .superseded }
+                let verifiedAt = now()
+                for request in desired where !registered.contains(request.identifier) {
+                    if request.fireDate > verifiedAt { report.failedTargets.insert(request.target) }
+                    else { report.expiredTargets.insert(request.target) }
+                }
+            }
             return report
         } catch {
             var report = ReminderSyncReport()
