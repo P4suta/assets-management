@@ -73,6 +73,7 @@ struct NativeAmountField: UIViewRepresentable {
             let field = UITextField()
             field.delegate = self
             field.keyboardType = .numberPad
+            field.allowsNumberPadPopover = false
             field.autocorrectionType = .no
             field.autocapitalizationType = .none
             field.adjustsFontForContentSizeCategory = true
