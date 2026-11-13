@@ -37,9 +37,6 @@ struct AmountField: View {
                 Text(yen(amount)).foregroundStyle(Color.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
-            Text("0円〜1兆円。空欄は未登録です。")
-                .font(.footnote).foregroundStyle(Color.secondary)
-                .fixedSize(horizontal: false, vertical: true)
         }
         .onChange(of: input.issue) { _, issue in
             if issue != nil { UIAccessibility.post(notification: .announcement, argument: errorMessage(DomainError.invalidAmount)) }

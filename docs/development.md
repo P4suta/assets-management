@@ -7,7 +7,7 @@ The app has no analytics or network service.
 
 ## Use the app
 
-Read [App support](support.md) for registration, repairs, renewals, files, and reminders.
+Read [App support](support.md) for registration, repairs, memos, photographs, and reminders.
 Read [Privacy policy](privacy-policy.md) for storage, permissions, and backups.
 
 ## Build and check
@@ -37,10 +37,9 @@ An actor writes a versioned snapshot atomically and publishes the change after s
 Attachment imports copy files before saving metadata and remove the new file if the metadata commit fails.
 [The storage decision](adr/native-records-with-atomic-local-storage.md) describes the chosen boundary.
 
-## Sample photograph
+## Sample image
 
-Debug interface tests use fictional property records and a photograph by drake035 from Home Improvement Stack Exchange.
-The photograph has no edits and uses the license `CC BY-SA 3.0`.
-Read the [photo attribution](../App/DevelopmentAssets/PhotoLicense.txt) for the source and license.
-Archive builds exclude the development photograph and its license file.
+Debug interface tests use fictional property records and an original pipe diagram rendered with UIKit.
+The image labels its content as a sample.
+The renderer belongs to the debug build and requires no third-party image license.
 Ordinary app launches start without sample records.

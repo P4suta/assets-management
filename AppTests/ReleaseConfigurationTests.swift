@@ -5,9 +5,11 @@ import UIKit
 
 @Suite @MainActor struct ReleaseConfigurationTests {
     #if DEBUG
-    @Test func developmentPhotographAndItsLicenseAreAvailableForNativeJourneys() throws {
-        #expect(SamplePDF.photoData()?.isEmpty == false)
-        _ = try #require(Bundle.main.url(forResource: "PhotoLicense", withExtension: "txt"))
+    @Test func developmentImageIsAnOriginalBoundedDiagram() throws {
+        let data = try #require(SamplePDF.photoData())
+        let image = try #require(UIImage(data: data)?.cgImage)
+        #expect(image.width == 1_000)
+        #expect(image.height == 700)
     }
     #endif
 

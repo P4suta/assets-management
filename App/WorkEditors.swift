@@ -26,15 +26,10 @@ struct WorkEditor: View {
                     ForEach(WorkKind.allCases, id: \.self) { Text($0.title).tag($0) }
                 }
                 InputField(title: "対応内容（必須）", text: $session.value.item.title, identifier: "work.title", multiline: true)
-                DatePicker("受付", selection: $session.value.item.receivedAt)
                 Picker("状態", selection: $session.value.item.status) {
                     ForEach(WorkStatus.allCases, id: \.self) { Text($0.title).tag($0) }
                 }
-                InputField(title: "詳細", text: $session.value.item.notes, identifier: "work.notes", multiline: true)
-                Picker("業者", selection: $session.value.item.contractorID) {
-                    Text("未登録").tag(UUID?.none)
-                    ForEach(store.records.contacts) { Text($0.name).tag(Optional($0.id)) }
-                }
+                InputField(title: "メモ", text: $session.value.item.notes, identifier: "work.notes", multiline: true)
                 AmountField(title: "見積額（円）", input: $session.value.estimate, identifier: "work.estimate")
             }
             Section("期限") {
@@ -90,7 +85,7 @@ struct HistoryEditor: View {
     let entryID: UUID?
 
     var body: some View {
-        EditorSheet(feedback: session.feedback, title: entryID == nil ? "連絡履歴を追加" : "連絡履歴を編集", dirty: session.dirty, save: {
+        EditorSheet(feedback: session.feedback, title: entryID == nil ? "メモを追加" : "メモを編集", dirty: session.dirty, save: {
             try await store.save { records in
                 var records = records
                 records.history.upsert(session.value)
@@ -98,15 +93,7 @@ struct HistoryEditor: View {
             }
         }) {
             Section {
-                DatePicker("連絡日時", selection: $session.value.date)
-                Picker("連絡方法", selection: $session.value.method) {
-                    ForEach(CommunicationMethod.allCases, id: \.self) { Text($0.title).tag($0) }
-                }
-                Picker("相手", selection: $session.value.contactID) {
-                    Text("未指定").tag(UUID?.none)
-                    ForEach(store.records.contacts) { Text($0.name).tag(Optional($0.id)) }
-                }
-                InputField(title: "連絡内容（必須）", text: $session.value.text, identifier: "history.text", multiline: true)
+                InputField(title: "メモ（必須）", text: $session.value.text, identifier: "history.text", multiline: true)
             }
         }
         .onAppear { session.prepare { store.records.history.first { $0.id == entryID } ?? session.value } }

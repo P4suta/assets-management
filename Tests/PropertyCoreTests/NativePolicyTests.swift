@@ -25,7 +25,9 @@ private let nativeRules = [
     NativeRule(pattern: #"UIDevice\s*\.\s*current\s*\.\s*(orientation|userInterfaceIdiom)\b"#,
                rejected: "UIDevice.current.orientation", accepted: "NavigationSplitView { List { Text(title) } } detail: { detail }"),
     NativeRule(pattern: #"UIApplication\s*\.\s*shared\s*\.\s*(windows|connectedScenes)\b"#,
-               rejected: "UIApplication.shared.connectedScenes", accepted: "view.window?.windowScene")
+               rejected: "UIApplication.shared.connectedScenes", accepted: "view.window?.windowScene"),
+    NativeRule(pattern: #"UIApplication\s*\.\s*shared\s*\.\s*(open|openURL)\s*\("#,
+               rejected: "UIApplication.shared.open(url)", accepted: "openURL(url)")
 ]
 
 @Test func nativeDesignRulesRejectViolationsAndAcceptSystemComponents() throws {

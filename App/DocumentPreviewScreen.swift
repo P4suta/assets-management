@@ -8,12 +8,21 @@ struct DocumentPreviewItem: Identifiable {
 }
 
 struct DocumentPreviewScreen: View {
+    let item: DocumentPreviewItem
+
+    var body: some View {
+        DocumentPreviewContent(item: item).confirmExternalNavigation()
+    }
+}
+
+private struct DocumentPreviewContent: View {
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.openURL) private var openURL
     let item: DocumentPreviewItem
 
     var body: some View {
         NavigationStack {
-            NativeDocumentPreview(item: item)
+            NativeDocumentPreview(item: item) { openURL($0) }
                 .navigationTitle(item.title)
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
@@ -26,21 +35,31 @@ struct DocumentPreviewScreen: View {
     }
 }
 
-private struct NativeDocumentPreview: UIViewControllerRepresentable {
+struct NativeDocumentPreview: UIViewControllerRepresentable {
     let item: DocumentPreviewItem
-    func makeCoordinator() -> Coordinator { Coordinator(item: item) }
+    let openURL: (URL) -> Void
+    func makeCoordinator() -> Coordinator { Coordinator(item: item, openURL: openURL) }
     func makeUIViewController(context: Context) -> QLPreviewController {
         let controller = QLPreviewController()
         controller.dataSource = context.coordinator
+        controller.delegate = context.coordinator
         return controller
     }
-    func updateUIViewController(_ controller: QLPreviewController, context: Context) {}
+    func updateUIViewController(_ controller: QLPreviewController, context: Context) { context.coordinator.openURL = openURL }
 
-    final class Coordinator: NSObject, QLPreviewControllerDataSource {
+    final class Coordinator: NSObject, QLPreviewControllerDataSource, QLPreviewControllerDelegate {
         let item: PreviewItem
-        init(item: DocumentPreviewItem) { self.item = PreviewItem(item) }
+        var openURL: (URL) -> Void
+        init(item: DocumentPreviewItem, openURL: @escaping (URL) -> Void) {
+            self.item = PreviewItem(item)
+            self.openURL = openURL
+        }
         func numberOfPreviewItems(in controller: QLPreviewController) -> Int { 1 }
         func previewController(_ controller: QLPreviewController, previewItemAt index: Int) -> any QLPreviewItem { item }
+        nonisolated func previewController(_ controller: QLPreviewController, shouldOpen url: URL, for item: any QLPreviewItem) -> Bool {
+            Task { @MainActor [weak self] in self?.openURL(url) }
+            return false
+        }
     }
 
     final class PreviewItem: NSObject, QLPreviewItem {

@@ -22,6 +22,7 @@ struct PropertyRecordsApp: App {
     var body: some Scene {
         WindowGroup {
             RootView()
+                .confirmExternalNavigation()
                 .environment(store)
                 .environment(notices)
                 .tint(Color("AccentColor"))

@@ -30,6 +30,24 @@
       shouldUseLaunchSchemeArgsEnv = "YES"
       codeCoverageEnabled = "YES"
       onlyGenerateCoverageForSpecifiedTargets = "NO">
+      <PreActions>
+         <ExecutionAction
+            ActionType = "Xcode.IDEStandardExecutionActionsCore.ExecutionActionType.ShellScriptAction">
+            <ActionContent
+               title = "Prepare the simulator photo fixture"
+               scriptText = "set -eu&#10;if [ &quot;$PLATFORM_NAME&quot; = &quot;iphonesimulator&quot; ]; then&#10;  xcrun simctl bootstatus &quot;$TARGET_DEVICE_IDENTIFIER&quot; -b&#10;  xcrun simctl addmedia &quot;$TARGET_DEVICE_IDENTIFIER&quot; &quot;$SRCROOT/UITests/Fixtures/Building.png&quot;&#10;fi&#10;">
+               <EnvironmentBuildable>
+                  <BuildableReference
+                     BuildableIdentifier = "primary"
+                     BlueprintIdentifier = "6E290DCE4CEDF0AFABF07015"
+                     BuildableName = "PropertyRecords.app"
+                     BlueprintName = "PropertyRecords"
+                     ReferencedContainer = "container:PropertyRecords.xcodeproj">
+                  </BuildableReference>
+               </EnvironmentBuildable>
+            </ActionContent>
+         </ExecutionAction>
+      </PreActions>
       <MacroExpansion>
          <BuildableReference
             BuildableIdentifier = "primary"
@@ -86,8 +104,6 @@
             ReferencedContainer = "container:PropertyRecords.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
-      <CommandLineArguments>
-      </CommandLineArguments>
    </LaunchAction>
    <ProfileAction
       buildConfiguration = "Release"
@@ -105,8 +121,6 @@
             ReferencedContainer = "container:PropertyRecords.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
-      <CommandLineArguments>
-      </CommandLineArguments>
    </ProfileAction>
    <AnalyzeAction
       buildConfiguration = "Debug">

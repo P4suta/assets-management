@@ -79,6 +79,7 @@ struct SystemReminderCenter: ReminderNotificationCenter {
 }
 
 struct ReminderReport: View {
+    @Environment(\.openURL) private var openURL
     @Environment(AppNotices.self) private var notices
     @Environment(RecordsStore.self) private var store
 
@@ -90,7 +91,7 @@ struct ReminderReport: View {
                 if notices.reminder == .denied {
                     Button("設定を開く") {
                         if let url = URL(string: UIApplication.openNotificationSettingsURLString) {
-                            Task { await UIApplication.shared.open(url) }
+                            openURL(url)
                         }
                     }
                 }

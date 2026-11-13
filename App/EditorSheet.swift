@@ -22,6 +22,7 @@ struct EditorSheet<Fields: View>: View {
                 }
                 fields()
             }
+            .accessibilityIdentifier("editor.form")
             .disabled(feedback.saving)
             .modifier(AdaptivePickerStyle())
             .scrollDismissesKeyboard(.interactively)

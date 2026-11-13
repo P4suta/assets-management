@@ -36,6 +36,7 @@ struct AppInformationView: View {
                 } footer: { Text("案内はWebサイトで表示します。記録や写真が自動で送信されることはありません。") }
                 Section { Text("© 2026 Yasunobu Sakashita") }
             }
+            .accessibilityIdentifier("app-info.list")
             .navigationTitle("アプリについて")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -45,5 +46,6 @@ struct AppInformationView: View {
                 }
             }
         }
+        .confirmExternalNavigation()
     }
 }

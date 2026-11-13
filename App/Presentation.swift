@@ -54,7 +54,7 @@ func errorMessage(_ error: any Error) -> String {
         case .roomNumber: "部屋番号"
         case .workTitle: "対応内容"
         case .contactName: "氏名"
-        case .historyText: "連絡内容"
+        case .historyText: "メモ"
         case .equipmentName: "設備名"
         }
         return name + "を入力してください。"
@@ -63,7 +63,7 @@ func errorMessage(_ error: any Error) -> String {
     case DomainError.invalidAmount: return "金額は0円から1兆円までの整数で入力してください。"
     case DomainError.missingRenewal: return "更新する部屋と契約内容を入力してください。"
     case StorageError.attachmentTooLarge: return "25 MiB以下のファイルを選択してください。"
-    case StorageError.missingAttachment: return "ファイルが見つかりません。書類一覧から追加し直してください。"
+    case StorageError.missingAttachment: return "ファイルが見つかりません。保存元の写真やバックアップを確認してください。"
     case StorageError.unreadable, StorageError.corrupted, DomainError.unsupportedFormat:
         return "記録を読み込めませんでした。保存済みのファイルは変更していません。"
     case StoreError.busy: return "保存中です。保存が終わってから再試行してください。"
@@ -141,6 +141,7 @@ struct WorkRow: View {
     @ViewBuilder private var deadline: some View {
         if let dueDate = item.dueDate {
             Text("期限 " + dueDate.formatted(date: .abbreviated, time: .omitted))
+                .fixedSize(horizontal: false, vertical: true)
                 .recordForeground(Color.secondary, selected: selected)
                 .accessibilityIdentifier("work.caption.deadline")
         }

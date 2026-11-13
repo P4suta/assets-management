@@ -41,7 +41,8 @@ private actor TestRepository: RecordsRepository {
                                                  workID: item.id, kind: .photo, name: "給湯器の配管接続部.png", storedName: name))
         }
         if let item = fixture.work.first {
-            let quote = await SamplePDF.data(title: "見積書", lines: ["桜通りレジデンス · 203号室", "給湯器の配管修繕", "見積額 ¥38,500", "みどり設備", "架空の見積書です。"])
+            let quote = await SamplePDF.data(title: "見積書", lines: ["桜通りレジデンス · 203号室", "給湯器の配管修繕", "見積額 ¥38,500", "みどり設備", "架空の見積書です。"],
+                                             link: AppInformation.supportURL)
             let name = try await backing.writeAttachment(quote, extension: "pdf")
             fixture.attachments.append(Attachment(buildingID: item.buildingID, roomID: item.roomID, workID: item.id,
                                                  kind: .document, name: "見積書.pdf", storedName: name))
@@ -79,7 +80,7 @@ enum SampleRecords {
         let renewalRoom = Room(buildingID: building.id, number: "101", residentID: resident2.id,
                                contract: Contract(start: date(2025, 1, 1), end: date(2026, 12, 31), monthlyRent: 78_000))
         let repair = WorkItem(buildingID: building.id, roomID: room.id, title: "給湯器から水漏れ",
-                              receivedAt: date(2026, 11, 11), dueDate: date(2026, 11, 12),
+                              receivedAt: date(2026, 11, 11), dueDate: now.addingTimeInterval(pastVisit ? -86_400 : 86_400),
                               notes: "給湯器の配管接続部から水が漏れる。", contractorID: contractor.id,
                               estimate: 38_500, nextVisit: now.addingTimeInterval(pastVisit ? -86_400 : 86_400))
         records.buildings = [building, managed]
