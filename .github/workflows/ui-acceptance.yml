@@ -30,14 +30,15 @@ jobs:
           - name: iPhone on iOS 26
             runner: macos-26
             developer: /Applications/Xcode_26.6.app/Contents/Developer
-            destination: platform=iOS Simulator,name=iPhone 17 Pro,OS=26.5
+            device-type: com.apple.CoreSimulator.SimDeviceType.iPhone-17-Pro
+            runtime: com.apple.CoreSimulator.SimRuntime.iOS-26-5
           - name: iPad on iPadOS 27
             runner: xcode-27
             developer: /Applications/Xcode_27.2.app/Contents/Developer
-            destination: platform=iOS Simulator,name=iPad Pro 13-inch (M5),OS=27.2
+            device-type: com.apple.CoreSimulator.SimDeviceType.iPad-Pro-13-inch-M5-12GB
+            runtime: com.apple.CoreSimulator.SimRuntime.iOS-27-2
     env:
       DEVELOPER_DIR: ${{ matrix.developer }}
-      SIMULATOR_DESTINATION: ${{ matrix.destination }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -47,6 +48,17 @@ jobs:
         with:
           version: "2026.11.8"
           install_args: xcodegen just
+      - name: Prepare an isolated Simulator and photograph
+        timeout-minutes: 5
+        env:
+          SIMULATOR_DEVICE_TYPE: ${{ matrix.device-type }}
+          SIMULATOR_RUNTIME: ${{ matrix.runtime }}
+        run: |
+          acceptance_device="$(xcrun simctl create 'Property Records native acceptance' "$SIMULATOR_DEVICE_TYPE" "$SIMULATOR_RUNTIME")"
+          xcrun simctl boot "$acceptance_device"
+          xcrun simctl bootstatus "$acceptance_device" -b
+          xcrun simctl addmedia "$acceptance_device" UITests/Fixtures/Building.png
+          printf 'SIMULATOR_DESTINATION=platform=iOS Simulator,id=%s\n' "$acceptance_device" >> "$GITHUB_ENV"
       - run: mise x xcodegen just -- just ui-test
       - name: Preserve native test results and captures
         if: ${{ !cancelled() }}
