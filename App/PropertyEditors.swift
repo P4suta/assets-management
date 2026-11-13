@@ -40,6 +40,14 @@ struct BuildingEditor: View {
                 Picker("管理方法", selection: $session.value.management) {
                     ForEach(ManagementMode.allCases, id: \.self) { Text($0.title).tag($0) }
                 }
+                .accessibilityIdentifier("property.management")
+                if session.value.management == .agency || session.value.agencyContactID != nil {
+                    Picker("管理会社の連絡先", selection: $session.value.agencyContactID) {
+                        Text("未登録").tag(UUID?.none)
+                        ForEach(store.records.contacts) { Text($0.name).tag(Optional($0.id)) }
+                    }
+                    .accessibilityIdentifier("property.agency")
+                }
                 InputField(title: "メモ", text: $session.value.notes, multiline: true)
             }
         }
@@ -108,7 +116,7 @@ struct ContactEditor: View {
                             if selected { session.value.buildingIDs.append(building.id) }
                         }))
                     }
-                } header: { Text("関連する物件") } footer: {
+                } header: { Text("追加で関連付ける物件") } footer: {
                     Text("入居者や管理会社として登録した物件にも関連付けられます。")
                 }
             }

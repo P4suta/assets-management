@@ -90,8 +90,10 @@ struct BuildingDetailView: View {
                     Section("管理会社") {
                         if let id = building.agencyContactID {
                             NavigationLink("管理会社の連絡先") { ContactDetailView(contactID: id) }
+                                .accessibilityIdentifier("property.agency.detail")
                         } else {
                             Button("管理会社の連絡先を登録") { editor = .contact(nil, .agency(buildingID)) }
+                                .accessibilityIdentifier("property.agency.add")
                         }
                     }
                 }

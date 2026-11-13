@@ -281,12 +281,19 @@ final class PropertyRecordsUITests: XCTestCase {
         back(app)
         back(app)
         tap("建物を編集", app: app)
+        tapIdentifier("property.management", app: app)
+        app.buttons["委託管理"].tap()
+        tapIdentifier("property.agency", app: app)
+        app.buttons["青葉管理"].tap()
         replace("桜通りレジデンス東館", in: "property.name", app: app)
         app.buttons["editor.save"].tap()
         app.terminate()
         app.launch()
         selectTab("物件", app: app)
         tap("桜通りレジデンス東館", app: app)
+        tapIdentifier("property.agency.detail", app: app)
+        XCTAssertTrue(row("青葉管理", app: app).waitForExistence(timeout: 5))
+        back(app)
         tap("205号室", app: app)
         let resident = row("佐藤 美咲", app: app)
         reveal(resident, app: app)
@@ -301,6 +308,27 @@ final class PropertyRecordsUITests: XCTestCase {
         selectTab("物件", app: app)
         tap("桜通りレジデンス", app: app)
         tap("203号室", app: app)
+    }
+
+    func testManagementAssignmentCanBeClearedWithoutDeletingTheContact() {
+        let app = launch(seeded: true)
+        selectTab("物件", app: app)
+        tap("青葉コート", app: app)
+        tap("建物を編集", app: app)
+        tapIdentifier("property.agency", app: app)
+        app.buttons["未登録"].tap()
+        app.buttons["editor.save"].tap()
+        app.terminate()
+        app.launch()
+        selectTab("物件", app: app)
+        tap("青葉コート", app: app)
+        let registration = app.buttons["property.agency.add"]
+        reveal(registration, app: app)
+        XCTAssertTrue(registration.waitForExistence(timeout: 5))
+        selectTab("連絡先", app: app)
+        tap("青葉管理", app: app)
+        XCTAssertTrue(app.buttons["contact.edit"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.staticTexts["関連する物件"].exists)
     }
 
     func testAmountInputIsBoundedAndRejectsOversizedValuesBeforeSaving() {
@@ -1238,7 +1266,7 @@ final class PropertyRecordsUITests: XCTestCase {
         tap("203号室", app: app)
         tap("賃貸借契約", app: app)
         tapIdentifier("contract.edit", app: app)
-        configureContractNotice(app)
+        configureContractNotice(app, monthsBeforeExpiry: 1)
         app.buttons["editor.save"].tap()
         XCTAssertTrue(app.staticTexts["更新・解約の予告"].waitForExistence(timeout: 5))
         captureStoreScreen(app, name: "5-contract-notice")
@@ -1332,7 +1360,7 @@ final class PropertyRecordsUITests: XCTestCase {
         captureStoreScreen(app, name: "Review progress overview")
     }
 
-    private func configureContractNotice(_ app: XCUIApplication) {
+    private func configureContractNotice(_ app: XCUIApplication, monthsBeforeExpiry: Int = 6) {
         let record = app.switches["contract.notice.record"]
         reveal(record, app: app)
         record.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.5)).tap()
@@ -1341,8 +1369,8 @@ final class PropertyRecordsUITests: XCTestCase {
         let months = app.steppers["contract.notice.months"]
         reveal(months, app: app)
         XCTAssertTrue(months.waitForExistence(timeout: 5))
-        for _ in 0..<5 { months.buttons.element(boundBy: 1).tap() }
-        XCTAssertTrue(app.staticTexts["満了日の6か月前"].exists)
+        for _ in 1..<monthsBeforeExpiry { months.buttons.element(boundBy: 1).tap() }
+        XCTAssertTrue(app.staticTexts["満了日の\(monthsBeforeExpiry)か月前"].exists)
     }
 
     private func captureStoreScreen(_ app: XCUIApplication, name: String) {
