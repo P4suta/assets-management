@@ -17,8 +17,32 @@ The test groups background colors within one 8-bit step per channel and uses the
 Unsupported or ambiguous images fail verification.
 The audit filter requires the affected OS, issue type, label, element type, selection, matching frame, and a fresh measured ratio of at least 4.5:1.
 Unknown reports remain failures.
+On iPadOS 26.0 and 27.2, native repair, renewal, and building sheets can report unlocated text behind the sheet.
+The history, room, and contract editors reproduce the report on iPadOS 27.2.
+The schedule editor reproduces it on iPadOS 26.0 with labeled native date and notification controls.
+The equipment editor reproduces it on iPadOS 26.0 with readable name and model fields.
+The same text report occurs in Files' Connect to Server sheet and an independent SwiftUI form, including with its background hidden from accessibility.
+The qualifier requires the exact OS, text-report description, editor screen, floating form bounds, readable labeled inputs, and reachable Save and Cancel controls.
+Most qualified editors accept at most one unlocated text report per audit.
+The repair editor on iPadOS 26.0 and the renewal editor on iPadOS 27.2 accept at most two, matching their reproduced reports.
+Located elements, other issue descriptions, unexpected report counts, and unknown contexts remain failures.
+Predicate fixtures reject unsupported versions, other screens, empty or invalid bounds, and an unreadable editor.
 [Apple's issue-handler example](https://developer.apple.com/videos/play/wwdc2023/10035/?time=597) supports filtering a specific contrast false positive after checking the label.
 The screen tour also audits contrast with Increase Contrast enabled.
+Completed-item filter labels use the [primary content color](https://developer.apple.com/documentation/swiftui/color/primary) on the sidebar surface.
+A regression measures both filter states from their rendered label screenshots and requires at least 4.5:1.
+The iPadOS 27.2 Documents and Building audits can flag their sidebar section headers despite a measured ratio of 5.245:1.
+The header qualifier requires the exact OS, recognized sidebar header, owning list, matching native element, and a fresh measurement of at least 4.5:1.
+Unselected record metadata uses primary content colors with [Increase Contrast](https://developer.apple.com/documentation/swiftui/environmentvalues/colorschemecontrast).
+Its native regression measures work and property captions and requires at least 4.5:1.
+At AX5 on iPadOS 27.2, native adaptive tabs can report partial Dynamic Type support without a located element.
+An independent SwiftUI TabView reproduces the same report, while Settings' General title reports partial support with a located element.
+The qualifier for native tabs requires the exact runtime, AX5, native tabs at the top, an unlocated report of partial support, and at most two reports.
+Located issues, full unsupported reports, and unknown contexts remain failures.
+The AX5 full audit remains failing on an inline room option crossing the native repair sheet's scroll edge.
+The test keeps the inline room option report as a failure.
+Complementary Light and Dark AX5 journeys check long property names, visible keyboards, discard, save retry, bounded repair estimates, and contract and renewal amounts.
+Rendered label measurements require the complete label inside its scroll viewport.
 A [VoiceOver journey](https://developer.apple.com/documentation/xcuiautomation/xcuivoiceoverservice) checks editor labels in both directions and rejects background labels on iOS 27 or later.
 iOS 26 SDK builds [exclude the unavailable service](https://developer.apple.com/documentation/xcode/adding-a-build-configuration-file-to-your-project#Apply-a-setting-conditionally-to-a-platform-or-architecture) and report a skipped VoiceOver test.
 Run the interface suite on iOS 26 and an available later runtime after changing app behavior.
@@ -39,6 +63,9 @@ Amount input and stored amounts share one whole-yen range.
 The parser accepts digits in either width and correctly grouped thousands separators.
 The input retains at most 17 Unicode scalars and blocks saving after a rejected edit.
 The native field uses [the text field delegate](https://developer.apple.com/documentation/uikit/uitextfielddelegate/textfield(_:shouldchangecharactersinranges:replacementstring:)) to validate edits.
+The field keeps the standard number pad and [disables its popover](https://developer.apple.com/documentation/uikit/uitextinputtraits/allowsnumberpadpopover) to prevent the popup from intercepting editor actions on iPad.
+Native journeys clear and save amounts before and after keyboard focus.
+The journeys wait for stable native editor and keyboard frames before the next action.
 The field accepts the proposed width through [SwiftUI measurement](https://developer.apple.com/documentation/swiftui/uiviewrepresentable/sizethatfits(_:uiview:context:)) to preserve space for clearing input.
 Interface journeys check the clear button's size and position with the largest text size and an open keyboard.
 Hosted tests exercise replacement, deletion, noncontiguous ranges, and changes that bypass the delegate.

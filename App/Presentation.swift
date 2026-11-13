@@ -126,6 +126,7 @@ struct WorkRow: View {
         VStack(alignment: .leading, spacing: 8) {
             Text(item.title).recordForeground(Color.primary, selected: selected)
             Text(store.records.locationText(item)).font(.subheadline).recordForeground(Color.secondary, selected: selected)
+                .accessibilityIdentifier("work.caption.location")
             ViewThatFits(in: .horizontal) {
                 HStack { status; deadline }
                 VStack(alignment: .leading, spacing: 8) { status; deadline }
