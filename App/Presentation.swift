@@ -35,6 +35,19 @@ extension ManagementMode {
     var title: String { self == .selfManaged ? "自主管理" : "委託管理" }
 }
 
+extension ContactCategory {
+    var title: String {
+        switch self {
+        case .resident: "入居者"
+        case .maintenance: "メンテナンス"
+        case .management: "管理会社"
+        case .insurance: "保険"
+        case .fireSafety: "消防・防災"
+        case .other: "その他"
+        }
+    }
+}
+
 extension CommunicationMethod {
     var title: String {
         switch self {
@@ -53,13 +66,14 @@ func errorMessage(_ error: any Error) -> String {
         case .buildingName: "建物名"
         case .roomNumber: "部屋番号"
         case .workTitle: "対応内容"
-        case .contactName: "氏名"
+        case .contactName: "名称"
         case .historyText: "メモ"
         case .equipmentName: "設備名"
         }
         return name + "を入力してください。"
     case DomainError.duplicateRoom: return "部屋番号が重複しています。別の部屋番号を入力してください。"
     case DomainError.invalidDates: return "契約終了日は開始日以降の日付にしてください。"
+    case DomainError.invalidNotice: return "予告期限と事前通知の日数を確認してください。"
     case DomainError.invalidAmount: return "金額は0円から1兆円までの整数で入力してください。"
     case DomainError.missingRenewal: return "更新する部屋と契約内容を入力してください。"
     case StorageError.attachmentTooLarge: return "25 MiB以下のファイルを選択してください。"
@@ -158,19 +172,11 @@ struct InputField: View {
         VStack(alignment: .leading, spacing: 8) {
             Text(title).font(.subheadline).foregroundStyle(Color.secondary)
                 .fixedSize(horizontal: false, vertical: true)
+                .accessibilityHidden(true)
             TextField("", text: $text, axis: multiline || textSize.isAccessibilitySize ? .vertical : .horizontal)
                 .accessibilityLabel(title)
                 .accessibilityIdentifier(identifier)
         }
         .padding(.vertical, 4)
-    }
-}
-
-struct AdaptivePickerStyle: ViewModifier {
-    @Environment(\.dynamicTypeSize) private var textSize
-
-    @ViewBuilder func body(content: Content) -> some View {
-        if textSize.isAccessibilitySize { content.pickerStyle(.inline) }
-        else { content.pickerStyle(.automatic) }
     }
 }

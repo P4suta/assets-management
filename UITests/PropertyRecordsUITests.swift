@@ -107,6 +107,105 @@ final class PropertyRecordsUITests: XCTestCase {
         XCTAssertTrue(memo.exists)
     }
 
+    func testContactDirectoryCanClassifySearchAndDeleteASharedContact() throws {
+        let app = launch(seeded: true)
+        selectTab("連絡先", app: app)
+        tapIdentifier("contacts.add", app: app)
+        enter("保険の事故受付", into: "contact.name", app: app)
+        enter("さくら保険", into: "contact.company", app: app)
+        enter("夜間も受付", into: "contact.notes", app: app)
+        tapIdentifier("contact.category", app: app)
+        app.buttons["保険"].tap()
+        let emergency = app.switches["contact.emergency"]
+        reveal(emergency, app: app)
+        emergency.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.5)).tap()
+        let property = app.switches["桜通りレジデンス"]
+        reveal(property, app: app)
+        property.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.5)).tap()
+        app.buttons["editor.save"].tap()
+        tap("保険の事故受付", app: app)
+        XCTAssertTrue(row("夜間も受付", app: app).waitForExistence(timeout: 5))
+        XCTAssertTrue(row("桜通りレジデンス", app: app).exists)
+        try audit(app, name: "Contact")
+        app.terminate()
+        app.launch()
+        selectTab("連絡先", app: app)
+        let search = app.searchFields.firstMatch
+        search.tap()
+        search.typeText("さくら保険")
+        tap("保険の事故受付", app: app)
+        tap("連絡先を削除", app: app)
+        let confirmation = app.alerts["連絡先を削除"]
+        XCTAssertTrue(confirmation.waitForExistence(timeout: 5))
+        confirmation.buttons["キャンセル"].tap()
+        XCTAssertTrue(app.buttons["contact.edit"].isHittable)
+        tap("連絡先を削除", app: app)
+        confirmation.buttons["削除"].tap()
+        XCTAssertTrue(app.staticTexts["連絡先は削除されました"].waitForExistence(timeout: 5))
+        app.terminate()
+        app.launch()
+        selectTab("連絡先", app: app)
+        app.searchFields.firstMatch.tap()
+        app.searchFields.firstMatch.typeText("さくら保険")
+        XCTAssertTrue(app.staticTexts["連絡先が見つかりません"].waitForExistence(timeout: 5))
+    }
+
+    func testContractNoticeSurvivesRotationSavingAndRelaunch() throws {
+        defer { XCUIDevice.shared.orientation = .portrait }
+        let app = launch(seeded: true)
+        openSampleRoom(app)
+        tap("賃貸借契約", app: app)
+        tapIdentifier("contract.edit", app: app)
+        let record = app.switches["contract.notice.record"]
+        reveal(record, app: app)
+        record.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.5)).tap()
+        tapIdentifier("contract.notice.timing", app: app)
+        app.buttons["満了日から計算"].tap()
+        let months = app.steppers["contract.notice.months"]
+        reveal(months, app: app)
+        XCTAssertTrue(months.waitForExistence(timeout: 5))
+        for _ in 0..<5 { months.buttons.element(boundBy: 1).tap() }
+        XCTAssertTrue(app.staticTexts["満了日の6か月前"].exists)
+        for orientation in [UIDeviceOrientation.landscapeLeft, .portrait] {
+            XCUIDevice.shared.orientation = orientation
+            reveal(months, app: app)
+            XCTAssertTrue(app.staticTexts["満了日の6か月前"].exists)
+            XCTAssertTrue(app.buttons["editor.save"].isHittable)
+        }
+        app.buttons["editor.save"].tap()
+        XCTAssertTrue(app.staticTexts["予告期限、2026年9月30日"].waitForExistence(timeout: 5))
+        try audit(app, name: "Contract")
+        app.terminate()
+        app.launch()
+        openSampleRoom(app)
+        tap("賃貸借契約", app: app)
+        XCTAssertTrue(app.staticTexts["予告期限、2026年9月30日"].waitForExistence(timeout: 5))
+        tapIdentifier("contract.edit", app: app)
+        reveal(months, app: app)
+        XCTAssertTrue(app.staticTexts["満了日の6か月前"].exists)
+        XCTAssertEqual(app.switches["contract.notice.notify"].value as? String, "0")
+        app.buttons["editor.cancel"].tap()
+    }
+
+    func testContactEmailConfirmsTheAddressAndKeepsTelephoneNotesReadable() {
+        let app = launch(seeded: true)
+        selectTab("連絡先", app: app)
+        tapIdentifier("contacts.add", app: app)
+        enter("設備の相談窓口", into: "contact.name", app: app)
+        enter("受付9時〜17時", into: "contact.phone", app: app)
+        enter("qa+repair@example.invalid", into: "contact.email", app: app)
+        app.buttons["editor.save"].tap()
+        tap("設備の相談窓口", app: app)
+        XCTAssertTrue(row("受付9時〜17時", app: app).waitForExistence(timeout: 5))
+        XCTAssertFalse(app.descendants(matching: .any)["contact.phone.open"].firstMatch.exists)
+        tapIdentifier("contact.email.open", app: app)
+        let confirmation = app.alerts["外部リンクを開く"]
+        XCTAssertTrue(confirmation.waitForExistence(timeout: 5))
+        XCTAssertTrue(confirmation.staticTexts["mailto:qa%2Brepair@example.invalid"].exists)
+        confirmation.buttons["キャンセル"].tap()
+        XCTAssertTrue(app.buttons["contact.edit"].wait(for: \.isHittable, toEqual: true, timeout: 5))
+    }
+
     func testContractAmountRejectsValuesAboveTheStoredLimit() {
         let app = launch(seeded: true)
         openSampleRoom(app)
@@ -385,7 +484,7 @@ final class PropertyRecordsUITests: XCTestCase {
     func testStoredDocumentsRemainReadableAndPhotosUseADateTitle() {
         let app = launch(seeded: true)
         tapWork("給湯器から水漏れ", app: app)
-        tap("見積書.pdf", app: app)
+        tap("見積書.pdf", app: app, list: app.collectionViews["work.detail"])
         XCTAssertTrue(app.buttons["preview.close"].waitForExistence(timeout: 8))
         XCTAssertTrue(app.navigationBars["見積書.pdf"].exists)
         app.buttons["preview.close"].tap()
@@ -402,7 +501,7 @@ final class PropertyRecordsUITests: XCTestCase {
     func testPDFExternalLinkCanBeCancelledWithoutClosingThePreview() {
         let app = launch(seeded: true)
         tapWork("給湯器から水漏れ", app: app)
-        tap("見積書.pdf", app: app)
+        tap("見積書.pdf", app: app, list: app.collectionViews["work.detail"])
         XCTAssertTrue(app.buttons["preview.close"].waitForExistence(timeout: 8))
         let link = app.descendants(matching: .any).matching(NSPredicate(
             format: "label CONTAINS %@ OR value CONTAINS %@", "サポートページを開く", "https://assets-management.yasunobu.dev/support/"
@@ -560,6 +659,39 @@ final class PropertyRecordsUITests: XCTestCase {
                                     "A deadline must have enough height to display its complete date.")
     }
 
+    func testLargestTextResidentSelectionKeepsTheRoomMemoReachable() throws {
+        guard UIApplication.shared.preferredContentSizeCategory == .accessibilityExtraExtraExtraLarge else {
+            throw XCTSkip("Resident selection and memo visibility require AX5.")
+        }
+        let app = launch(seeded: true)
+        openSampleRoom(app)
+        tapIdentifier("room.edit", app: app)
+        let form = app.collectionViews["editor.form"]
+        let memo = form.textFields["メモ"].firstMatch
+        XCTAssertTrue(memo.waitForExistence(timeout: 5))
+        XCTAssertTrue(form.frame.contains(memo.frame), "The memo must remain visible beside the collapsed resident selector.")
+        XCTAssertTrue(memo.isHittable)
+        let resident = form.buttons["room.resident"]
+        resident.tap()
+        let choice = app.buttons["鈴木 一郎"].firstMatch
+        XCTAssertTrue(choice.waitForExistence(timeout: 5))
+        choice.tap()
+        XCTAssertTrue(resident.wait(for: \.isHittable, toEqual: true, timeout: 5))
+        XCTAssertTrue(form.frame.contains(memo.frame))
+        memo.tap()
+        memo.typeText("鍵の場所を確認")
+        waitForEditorLayout(memo, app: app)
+        app.buttons["editor.save"].tap()
+        app.terminate()
+        app.launch()
+        openSampleRoom(app)
+        tapIdentifier("room.edit", app: app)
+        XCTAssertTrue(resident.waitForExistence(timeout: 5))
+        XCTAssertTrue((resident.label + (resident.value as? String ?? "")).contains("鈴木 一郎"))
+        XCTAssertEqual(memo.value as? String, "鍵の場所を確認")
+        try audit(app, name: "Room Editor")
+    }
+
     private func longPropertyNameKeyboardJourney(requiresKeyboard: Bool = false) -> XCUIApplication {
         let app = launch()
         app.buttons["property.add"].tap()
@@ -657,6 +789,13 @@ final class PropertyRecordsUITests: XCTestCase {
         try audit(app, name: "Equipment")
         app.buttons["設備を追加"].tap()
         try audit(app, name: "Equipment Editor")
+        app.buttons["editor.cancel"].tap()
+        selectTab("連絡先", app: app)
+        try audit(app, name: "Contacts")
+        tap("高橋", app: app)
+        try audit(app, name: "Contact")
+        tapIdentifier("contact.edit", app: app)
+        try audit(app, name: "Contact Editor")
         app.buttons["editor.cancel"].tap()
     }
 
@@ -1001,34 +1140,70 @@ final class PropertyRecordsUITests: XCTestCase {
         #endif
     }
 
+    func testLargestTextResidentPickerVoiceOverStaysWithinTheEditor() throws {
+        #if VOICEOVER_AUTOMATION
+        guard #available(iOS 27.0, *),
+              UIApplication.shared.preferredContentSizeCategory == .accessibilityExtraExtraExtraLarge else {
+            throw XCTSkip("Resident picker VoiceOver automation requires iOS 27 and AX5.")
+        }
+        let app = launch(seeded: true)
+        openSampleRoom(app)
+        tapIdentifier("room.edit", app: app)
+        app.buttons["room.resident"].tap()
+        let choice = app.buttons["鈴木 一郎"].firstMatch
+        XCTAssertTrue(choice.waitForExistence(timeout: 5))
+        try assertModalVoiceOver(expected: ["未登録", "高橋", "佐藤", "花子", "鈴木", "一郎", "青葉管理"],
+                                 app: app, retainedControl: choice)
+        choice.tap()
+        XCTAssertTrue(app.buttons["room.resident"].wait(for: \.isHittable, toEqual: true, timeout: 5))
+        XCTAssertTrue(app.buttons["editor.save"].isHittable)
+        try assertModalVoiceOver(expected: ["キャンセル", "保存", "部屋番号", "入居者", "メモ", "鈴木", "一郎"],
+                                 app: app, uniqueLabels: ["部屋番号"])
+        #else
+        throw XCTSkip("Native VoiceOver automation requires the iOS 27 SDK or later.")
+        #endif
+    }
+
     #if VOICEOVER_AUTOMATION
     @available(iOS 27.0, *)
-    private func assertModalVoiceOver(expected: [String], app: XCUIApplication) throws {
+    private func assertModalVoiceOver(expected: [String], app: XCUIApplication, retainedControl: XCUIElement? = nil,
+                                     uniqueLabels: [String] = []) throws {
         let service = XCUIDevice.shared.voiceOverService
         let wasEnabled = service.isEnabled
         addTeardownBlock { @MainActor in
             if !wasEnabled && service.isEnabled { try service.disable() }
         }
         try service.enable()
-        let forbidden = ["共用灯の交換", "消防設備点検", "メモを追加", "対応を追加"]
-        for forward in [true, false] {
+        let forbidden = ["共用灯の交換", "消防設備点検", "メモを追加", "対応を追加", "賃貸借契約", "写真を追加"]
+        func traverse(forward: Bool) throws -> [String] {
             var speech = [try service.currentSpeech().utterance]
+            var repetitions = 0
             for _ in 0..<48 {
                 do {
                     let output = try forward ? service.moveForward() : service.moveBackward()
+                    repetitions = output.utterance == speech.last ? repetitions + 1 : 0
                     speech.append(output.utterance)
+                    if repetitions == 2 { return speech }
                 } catch let error as XCUIVoiceOverService.Error where error.code == .noSpeech {
-                    break
+                    return speech
                 }
             }
+            XCTFail("VoiceOver must reach the navigation boundary within the traversal limit.")
+            return speech
+        }
+        let initial = try traverse(forward: false).joined(separator: "\n")
+        for label in forbidden { XCTAssertFalse(initial.contains(label), initial) }
+        for forward in [true, false] {
+            let speech = try traverse(forward: forward)
             let transcript = speech.joined(separator: "\n")
             let attachment = XCTAttachment(string: transcript)
             attachment.name = forward ? "Modal VoiceOver forward" : "Modal VoiceOver backward"
             attachment.lifetime = .keepAlways
             add(attachment)
             for label in expected { XCTAssertTrue(transcript.contains(label), transcript) }
+            for label in uniqueLabels { XCTAssertEqual(transcript.components(separatedBy: label).count - 1, 1, transcript) }
             for label in forbidden { XCTAssertFalse(transcript.contains(label), transcript) }
-            XCTAssertTrue(app.buttons["editor.cancel"].exists)
+            XCTAssertTrue((retainedControl ?? app.buttons["editor.cancel"]).exists)
         }
         if !wasEnabled { try service.disable() }
     }
@@ -1052,10 +1227,27 @@ final class PropertyRecordsUITests: XCTestCase {
         let photo = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "photo.")).firstMatch
         reveal(photo, app: app)
         XCTAssertTrue(photo.waitForExistence(timeout: 8))
+        let image = photo.images.matching(NSPredicate(format: "identifier BEGINSWITH %@", "photo.image.")).firstMatch
+        XCTAssertTrue(image.waitForExistence(timeout: 8))
+        XCTAssertGreaterThan(image.frame.height, 100)
+        reveal(photo, app: app)
         captureStoreScreen(app, name: "3-repair")
         selectTab("物件", app: app)
         tap("桜通りレジデンス", app: app)
         captureStoreScreen(app, name: "2-properties")
+        tap("203号室", app: app)
+        tap("賃貸借契約", app: app)
+        tapIdentifier("contract.edit", app: app)
+        configureContractNotice(app)
+        app.buttons["editor.save"].tap()
+        XCTAssertTrue(app.staticTexts["更新・解約の予告"].waitForExistence(timeout: 5))
+        captureStoreScreen(app, name: "5-contract-notice")
+        selectTab("連絡先", app: app)
+        XCTAssertTrue(row("高橋", app: app).waitForExistence(timeout: 5))
+        captureStoreScreen(app, name: "6-contacts")
+        selectTab("物件", app: app)
+        back(app)
+        back(app)
         XCUIDevice.shared.appearance = .dark
         XCTAssertTrue(row("203号室", app: app).waitForExistence(timeout: 5))
         captureStoreScreen(app, name: "4-properties-dark")
@@ -1075,8 +1267,32 @@ final class PropertyRecordsUITests: XCTestCase {
         tap("賃貸借契約", app: app)
         tapIdentifier("contract.edit", app: app)
         enter("82000", into: "contract.rent", app: app)
+        configureContractNotice(app)
+        let notify = app.switches["contract.notice.notify"]
+        reveal(notify, app: app)
+        notify.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.5)).tap()
         app.buttons["editor.save"].tap()
+        let allow = XCUIApplication(bundleIdentifier: "com.apple.springboard").alerts.buttons["許可"]
+        if allow.waitForExistence(timeout: 3) { allow.tap() }
         XCTAssertTrue(app.staticTexts["家賃、¥82,000"].waitForExistence(timeout: 5))
+        captureStoreScreen(app, name: "Review contract notice")
+        selectTab("連絡先", app: app)
+        tapIdentifier("contacts.add", app: app)
+        enter("設備の相談窓口", into: "contact.name", app: app)
+        enter("さくら設備", into: "contact.company", app: app)
+        enter("夜間の連絡も受付", into: "contact.notes", app: app)
+        tapIdentifier("contact.category", app: app)
+        app.buttons["メンテナンス"].tap()
+        let emergency = app.switches["contact.emergency"]
+        reveal(emergency, app: app)
+        emergency.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.5)).tap()
+        let property = app.switches[building]
+        reveal(property, app: app)
+        property.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.5)).tap()
+        app.buttons["editor.save"].tap()
+        tap("設備の相談窓口", app: app)
+        XCTAssertTrue(row("夜間の連絡も受付", app: app).waitForExistence(timeout: 5))
+        captureStoreScreen(app, name: "Review shared contact")
         selectTab("対応", app: app)
         app.buttons["work.add"].tap()
         field("work.building", app: app).tap()
@@ -1095,9 +1311,12 @@ final class PropertyRecordsUITests: XCTestCase {
         XCTAssertTrue(row("現地確認を依頼", app: app).waitForExistence(timeout: 5))
         setWorkStatus("対応中", app: app)
         app.buttons["work.edit"].tap()
+        XCTAssertTrue(app.buttons["editor.save"].waitForExistence(timeout: 5))
+        waitForEditorLayout(field("work.title", app: app), app: app)
         for orientation in [UIDeviceOrientation.landscapeLeft, .portrait] {
             XCUIDevice.shared.orientation = orientation
             XCTAssertTrue(field("work.title", app: app).waitForExistence(timeout: 5))
+            waitForEditorLayout(field("work.title", app: app), app: app)
             XCTAssertEqual(inputText("work.title", app: app), "共用灯の交換")
             XCTAssertTrue(app.buttons["editor.save"].isHittable)
         }
@@ -1111,6 +1330,19 @@ final class PropertyRecordsUITests: XCTestCase {
         XCTAssertTrue(heading.waitForExistence(timeout: 5))
         XCTAssertFalse(heading.frame.intersects(createdRepair.frame))
         captureStoreScreen(app, name: "Review progress overview")
+    }
+
+    private func configureContractNotice(_ app: XCUIApplication) {
+        let record = app.switches["contract.notice.record"]
+        reveal(record, app: app)
+        record.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.5)).tap()
+        tapIdentifier("contract.notice.timing", app: app)
+        app.buttons["満了日から計算"].tap()
+        let months = app.steppers["contract.notice.months"]
+        reveal(months, app: app)
+        XCTAssertTrue(months.waitForExistence(timeout: 5))
+        for _ in 0..<5 { months.buttons.element(boundBy: 1).tap() }
+        XCTAssertTrue(app.staticTexts["満了日の6か月前"].exists)
     }
 
     private func captureStoreScreen(_ app: XCUIApplication, name: String) {
@@ -1144,7 +1376,7 @@ final class PropertyRecordsUITests: XCTestCase {
         if standard.exists {
             standard.tap()
         } else {
-            let symbol = title == "物件" ? "building.2.fill" : "checklist"
+            let symbol = title == "物件" ? "building.2.fill" : title == "連絡先" ? "person.crop.rectangle.stack.fill" : "checklist"
             let predicate = NSPredicate(format: "identifier == %@ AND label == %@", symbol, title)
             let adaptive = app.descendants(matching: .any).matching(predicate).firstMatch
             XCTAssertTrue(adaptive.waitForExistence(timeout: 5))
@@ -1173,22 +1405,32 @@ final class PropertyRecordsUITests: XCTestCase {
         let cancel = app.buttons["editor.cancel"]
         let keyboard = app.keyboards.firstMatch
         var previous: EditorLayout?
+        var observed: EditorLayout?
         let settled = NSPredicate { _, _ in
             guard input.exists, save.exists, cancel.exists else { return false }
             let window = app.windows.firstMatch.frame
             let keyboardFrame = keyboard.exists ? keyboard.frame : nil
-            guard !input.frame.isEmpty, input.frame.intersects(window),
-                  window.contains(save.frame), window.contains(cancel.frame),
+            let current = EditorLayout(input: input.frame, keyboard: keyboardFrame, save: save.frame, cancel: cancel.frame)
+            observed = current
+            guard !current.input.isEmpty, current.input.intersects(window),
+                  window.contains(current.save), window.contains(current.cancel),
                   keyboardFrame.map({ !$0.isEmpty && window.contains($0) }) ?? true else {
                 previous = nil
                 return false
             }
-            let current = EditorLayout(input: input.frame, keyboard: keyboardFrame, save: save.frame, cancel: cancel.frame)
             defer { previous = current }
             return current == previous
         }
         let expectation = XCTNSPredicateExpectation(predicate: settled, object: input)
-        XCTAssertEqual(XCTWaiter.wait(for: [expectation], timeout: 10), .completed,
+        let result = XCTWaiter.wait(for: [expectation], timeout: 10)
+        if result != .completed {
+            let detail = XCTAttachment(string: "Previous: \(String(describing: previous))\nObserved: \(String(describing: observed))\n\(app.debugDescription)")
+            detail.name = "Unsettled editor frames"
+            detail.lifetime = .keepAlways
+            add(detail)
+            captureStoreScreen(app, name: "Unsettled editor")
+        }
+        XCTAssertEqual(result, .completed,
                        "The editor and keyboard must settle before the next action.")
     }
 
@@ -1234,7 +1476,8 @@ final class PropertyRecordsUITests: XCTestCase {
 
     private func inputText(_ identifier: String, app: XCUIApplication) -> String? {
         let element = field(identifier, app: app)
-        reveal(element, app: app)
+        if !element.exists { reveal(element, app: app) }
+        XCTAssertTrue(element.waitForExistence(timeout: 5))
         return element.value as? String
     }
 

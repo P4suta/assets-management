@@ -53,11 +53,11 @@ struct WorkListView: View {
                     .accessibilityIdentifier("work.add")
             }
         }
-        .sheet(item: $editor) { EditorDestinationView(destination: $0) }
+        .editorPresentation($editor)
         .alert("物件を登録してください", isPresented: $registration) {
             Button("物件を登録", action: onRegister)
             Button("キャンセル", role: .cancel) {}
-        } message: { Text("対応を追加する前に、建物と部屋を登録してください。") }
+        } message: { Text("対応を追加する前に、建物を登録してください。") }
     }
 
     @ViewBuilder private func rows(_ values: [WorkItem]) -> some View {
@@ -84,6 +84,7 @@ struct WorkDetailView: View {
         List {
             ReminderReport()
             if let item {
+                ReminderReservationIssue(target: .work(item.id))
                 Section {
                     Text(item.title).font(.title2).bold()
                     Text(store.records.locationText(item)).foregroundStyle(Color.secondary)
@@ -123,7 +124,7 @@ struct WorkDetailView: View {
                 }
             }
         }
-        .sheet(item: $editor) { EditorDestinationView(destination: $0) }
+        .editorPresentation($editor)
         .alert("保存できませんでした", isPresented: Binding(get: { failure != nil }, set: { if !$0 { failure = nil } })) {
             Button("閉じる", role: .cancel) {}
         } message: { Text(failure ?? "") }

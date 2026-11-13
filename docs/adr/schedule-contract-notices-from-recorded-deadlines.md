@@ -7,7 +7,7 @@ status: proposed
 
 ## Context
 
-People need time to prepare for renewal or termination notices.
+People need preparation time for renewal or termination.
 [The ministry's fixed-term lease guidance](https://www.mlit.go.jp/jutakukentiku/house/jutakukentiku_house_tk3_000060.html) describes conditional notice periods.
 One universal six-month rule can't represent rental agreements.
 
@@ -15,6 +15,7 @@ One universal six-month rule can't represent rental agreements.
 
 Record a deadline or a user-selected interval before contract expiry, with an optional advance reminder.
 Treat presets as date calculations rather than legal determinations.
+Use Japan time for [picker dates](https://developer.apple.com/documentation/swiftui/environmentvalues/timezone), [display formatting](https://developer.apple.com/documentation/foundation/date/formatstyle), calculations, and reminders.
 Use typed work and contract targets in the existing serialized notification coordinator.
 Keep notification content generic and open the related record after selection, following [Apple's notification guidance](https://developer.apple.com/design/human-interface-guidelines/notifications).
 Defer navigation while an editor is open.
@@ -34,4 +35,4 @@ Reconsider external delivery when the product gains an authorized synchronizatio
 
 ## Confirmation
 
-Check legacy snapshots, month ends, leap years, time zones, changed contracts, denied permission, retries, target collisions, and deferred navigation.
+Check migration, month ends, leap years, travel, changed contracts, permission, retries, target collisions, and deferred navigation.

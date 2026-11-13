@@ -67,10 +67,10 @@ private actor TestRepository: RecordsRepository {
 enum SampleRecords {
     static func make(now: Date = Date(), pastVisit: Bool = false) throws -> Records {
         var records = Records()
-        let contractor = Contact(name: "高橋", company: "みどり設備", notes: "架空の連絡先です。")
-        let resident = Contact(name: "佐藤 花子", notes: "架空の連絡先です。")
-        let resident2 = Contact(name: "鈴木 一郎", notes: "架空の連絡先です。")
-        let agency = Contact(name: "青葉管理", notes: "架空の管理会社です。")
+        let contractor = Contact(name: "高橋", company: "みどり設備", notes: "架空の連絡先です。", category: .maintenance, isEmergency: true)
+        let resident = Contact(name: "佐藤 花子", notes: "架空の連絡先です。", category: .resident)
+        let resident2 = Contact(name: "鈴木 一郎", notes: "架空の連絡先です。", category: .resident)
+        let agency = Contact(name: "青葉管理", notes: "架空の管理会社です。", category: .management)
         let building = Building(name: "桜通りレジデンス", address: "東京都世田谷区桜通り2-8")
         let managed = Building(name: "青葉コート", address: "横浜市青葉区青葉台1-3",
                                management: .agency, agencyContactID: agency.id)

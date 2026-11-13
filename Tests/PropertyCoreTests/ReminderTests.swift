@@ -148,7 +148,7 @@ private actor ControlledNotificationCenter: ReminderNotificationCenter {
         records.work[0].dueDate = deadline
         let plan = try ReminderPlan(records: records, now: max(reminderNow, deadline), calendar: calendar)
         #expect(plan.requests.isEmpty)
-        #expect(plan.expiredWorkIDs == [records.work[0].id])
+        #expect(plan.expiredTargets == [.work(records.work[0].id)])
     }
 
     @Test(arguments: ["2026-03-08T06:30:00Z", "2026-11-01T05:30:00Z", "2026-11-01T06:30:00Z"])

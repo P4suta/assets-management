@@ -163,6 +163,8 @@ struct RenewalEditor: View {
                 DatePicker("契約満了日", selection: $session.value.end, displayedComponents: .date)
                 AmountField(title: "月額家賃（円）", input: $session.value.rent, identifier: "renewal.rent")
             }
+            .environment(\.calendar, ContractDates.calendar)
+            .environment(\.timeZone, ContractDates.timeZone)
             Section {
                 DatePicker("期限", selection: $session.value.due, displayedComponents: .date).accessibilityIdentifier("renewal.deadline")
                 Toggle("期限を通知", isOn: $session.value.notify)
@@ -179,8 +181,8 @@ struct RenewalEditor: View {
                     start = draft.start
                     end = draft.end
                 } else {
-                    start = Calendar.current.date(byAdding: .day, value: 1, to: contract?.end ?? Date()) ?? Date()
-                    end = Calendar.current.date(byAdding: .year, value: 2, to: start) ?? start
+                    start = ContractDates.calendar.date(byAdding: .day, value: 1, to: contract?.end ?? Date()) ?? Date()
+                    end = ContractDates.calendar.date(byAdding: .year, value: 2, to: start) ?? start
                 }
                 return RenewalFields(start: start, end: end, due: item.dueDate ?? Date(),
                                      rent: AmountInput(contract?.monthlyRent.map(String.init) ?? ""), notify: item.reminderEnabled)

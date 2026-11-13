@@ -66,6 +66,7 @@ struct RoomEditor: View {
                     Text("未登録").tag(UUID?.none)
                     ForEach(store.records.contacts) { Text($0.name).tag(Optional($0.id)) }
                 }
+                .accessibilityIdentifier("room.resident")
                 InputField(title: "メモ", text: $session.value.notes, multiline: true)
             }
         }
@@ -82,15 +83,49 @@ struct ContactEditor: View {
     var body: some View {
         EditorSheet(feedback: session.feedback, title: contactID == nil ? "連絡先を追加" : "連絡先を編集", dirty: session.dirty, save: save) {
             Section {
-                InputField(title: "氏名（必須）", text: $session.value.name, identifier: "contact.name")
-                InputField(title: "会社名", text: $session.value.company)
+                InputField(title: "名称（必須）", text: $session.value.name, identifier: "contact.name")
+                InputField(title: "会社名", text: $session.value.company, identifier: "contact.company")
                 InputField(title: "電話番号", text: $session.value.phone, identifier: "contact.phone").keyboardType(.phonePad)
                 InputField(title: "メールアドレス", text: $session.value.email, identifier: "contact.email")
                     .keyboardType(.emailAddress).textInputAutocapitalization(.never).autocorrectionDisabled()
-                InputField(title: "メモ", text: $session.value.notes, multiline: true)
+                InputField(title: "メモ", text: $session.value.notes, identifier: "contact.notes", multiline: true)
+            }
+            Section("分類") {
+                Picker("種類", selection: $session.value.category) {
+                    ForEach(ContactCategory.allCases, id: \.self) { Text($0.title).tag($0) }
+                }
+                .accessibilityIdentifier("contact.category")
+                Toggle("緊急連絡先", isOn: $session.value.isEmergency)
+                    .accessibilityIdentifier("contact.emergency")
+            }
+            if !store.records.buildings.isEmpty {
+                Section {
+                    ForEach(store.records.buildings) { building in
+                        Toggle(building.name, isOn: Binding(get: {
+                            session.value.buildingIDs.contains(building.id)
+                        }, set: { selected in
+                            session.value.buildingIDs.removeAll { $0 == building.id }
+                            if selected { session.value.buildingIDs.append(building.id) }
+                        }))
+                    }
+                } header: { Text("関連する物件") } footer: {
+                    Text("入居者や管理会社として登録した物件にも関連付けられます。")
+                }
             }
         }
-        .onAppear { session.prepare { store.records.contacts.first { $0.id == contactID } ?? session.value } }
+        .onAppear {
+            session.prepare {
+                if let contact = store.records.contacts.first(where: { $0.id == contactID }) { return contact }
+                var contact = session.value
+                switch assignment {
+                case .resident: contact.category = .resident
+                case .agency: contact.category = .management
+                case .contractor: contact.category = .maintenance
+                case .none: break
+                }
+                return contact
+            }
+        }
     }
 
     private func save() async throws {
@@ -117,32 +152,90 @@ struct ContactEditor: View {
 
 struct ContractEditor: View {
     @Environment(RecordsStore.self) private var store
+    @Environment(AppNotices.self) private var notices
     @Bindable var session: EditorSession<ContractFields>
     let roomID: UUID
 
     var body: some View {
         EditorSheet(feedback: session.feedback, title: "契約を編集", dirty: session.dirty, canSave: session.value.rent.isValid, save: {
             let fields = session.value
-            let contract = Contract(start: fields.start, end: fields.end, monthlyRent: try fields.rent.value())
+            let contract = Contract(start: fields.start, end: fields.end, monthlyRent: try fields.rent.value(), notice: fields.notice)
             try await store.save { records in
                 var records = records
                 guard let index = records.rooms.firstIndex(where: { $0.id == roomID }) else { throw DomainError.invalidReference }
                 records.rooms[index].contract = contract
                 return records
             }
+            await notices.synchronize(store.records, reporting: .contract(roomID))
         }) {
             Section {
                 DatePicker("契約開始日", selection: $session.value.start, displayedComponents: .date)
                 DatePicker("契約満了日", selection: $session.value.end, displayedComponents: .date)
                 AmountField(title: "月額家賃（円）", input: $session.value.rent, identifier: "contract.rent")
             } footer: { Text("締結済みの契約内容を登録してください。") }
+            ContractNoticeFields(fields: $session.value)
         }
+        .environment(\.calendar, ContractDates.calendar)
+        .environment(\.timeZone, ContractDates.timeZone)
         .onAppear {
             session.prepare {
                 guard let contract = store.records.rooms.first(where: { $0.id == roomID })?.contract else { return session.value }
                 return ContractFields(start: contract.start, end: contract.end,
-                                      rent: AmountInput(contract.monthlyRent.map(String.init) ?? ""))
+                                      rent: AmountInput(contract.monthlyRent.map(String.init) ?? ""), notice: contract.notice)
             }
+        }
+    }
+}
+
+private struct ContractNoticeFields: View {
+    @Binding var fields: ContractFields
+
+    var body: some View {
+        Section {
+            Toggle("予告期限を記録", isOn: Binding(get: { fields.notice != nil }, set: {
+                fields.notice = $0 ? ContractNotice(timing: .date(fields.end)) : nil
+            }))
+            .accessibilityIdentifier("contract.notice.record")
+            if let notice = fields.notice {
+                Picker("期限の指定方法", selection: Binding(get: {
+                    if case .monthsBeforeExpiry = notice.timing { return true }
+                    return false
+                }, set: {
+                    fields.notice?.timing = $0 ? .monthsBeforeExpiry(1) : .date(fields.end)
+                })) {
+                    Text("日付を指定").tag(false)
+                    Text("満了日から計算").tag(true)
+                }
+                .accessibilityIdentifier("contract.notice.timing")
+                switch notice.timing {
+                case .date(let date):
+                    DatePicker("予告期限", selection: Binding(get: { date }, set: { fields.notice?.timing = .date($0) }),
+                               displayedComponents: .date)
+                        .accessibilityIdentifier("contract.notice.date")
+                case .monthsBeforeExpiry(let months):
+                    Stepper("満了日の\(months)か月前", value: Binding(get: { months }, set: {
+                        fields.notice?.timing = .monthsBeforeExpiry($0)
+                    }), in: 1...1_200)
+                    .accessibilityIdentifier("contract.notice.months")
+                    if let deadline = notice.deadline(expiry: fields.end, calendar: ContractDates.calendar) {
+                        LabeledContent("予告期限", value: deadline.formatted(ContractDates.format))
+                    }
+                }
+                Toggle("期限を通知", isOn: Binding(get: { notice.reminderEnabled }, set: { fields.notice?.reminderEnabled = $0 }))
+                    .accessibilityIdentifier("contract.notice.notify")
+                if notice.reminderEnabled {
+                    Picker("事前通知", selection: Binding(get: { notice.advanceDays }, set: { fields.notice?.advanceDays = $0 })) {
+                        Text("なし").tag(0)
+                        Text("7日前").tag(7)
+                        Text("30日前").tag(30)
+                        Text("90日前").tag(90)
+                        if ![0, 7, 30, 90].contains(notice.advanceDays) { Text("\(notice.advanceDays)日前").tag(notice.advanceDays) }
+                    }
+                    .accessibilityIdentifier("contract.notice.advance")
+                }
+            }
+        } header: { Text("更新・解約の予告") } footer: {
+            Text("契約書に記載された予告期限を設定してください。日付と午前9時の通知は日本時間が基準です。")
         }
     }
 }

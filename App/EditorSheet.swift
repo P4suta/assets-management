@@ -24,7 +24,6 @@ struct EditorSheet<Fields: View>: View {
             }
             .accessibilityIdentifier("editor.form")
             .disabled(feedback.saving)
-            .modifier(AdaptivePickerStyle())
             .scrollDismissesKeyboard(.interactively)
             .navigationTitle(title)
             .navigationBarTitleDisplayMode(.inline)

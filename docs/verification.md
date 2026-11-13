@@ -29,8 +29,8 @@ Located elements, other issue descriptions, unexpected report counts, and unknow
 Predicate fixtures reject unsupported versions, other screens, empty or invalid bounds, and an unreadable editor.
 [Apple's issue-handler example](https://developer.apple.com/videos/play/wwdc2023/10035/?time=597) supports filtering a specific contrast false positive after checking the label.
 The screen tour also audits contrast with Increase Contrast enabled.
-Completed-item filter labels use the [primary content color](https://developer.apple.com/documentation/swiftui/color/primary) on the sidebar surface.
-A regression measures both filter states from their rendered label screenshots and requires at least 4.5:1.
+Active and completed records share one searchable list.
+A regression measures both section headings from their rendered screenshots and requires at least 4.5:1.
 The iPadOS 27.2 Documents and Building audits can flag their sidebar section headers despite a measured ratio of 5.245:1.
 The header qualifier requires the exact OS, recognized sidebar header, owning list, matching native element, and a fresh measurement of at least 4.5:1.
 Unselected record metadata uses primary content colors with [Increase Contrast](https://developer.apple.com/documentation/swiftui/environmentvalues/colorschemecontrast).
@@ -41,7 +41,7 @@ The qualifier for native tabs requires the exact runtime, AX5, native tabs at th
 Located issues, full unsupported reports, and unknown contexts remain failures.
 The AX5 full audit remains failing on an inline room option crossing the native repair sheet's scroll edge.
 The test keeps the inline room option report as a failure.
-Complementary Light and Dark AX5 journeys check long property names, visible keyboards, discard, save retry, bounded repair estimates, and contract and renewal amounts.
+Complementary Light and Dark AX5 journeys check long property names, visible keyboards, discard, save retry, bounded repair estimates, and contract amounts.
 Rendered label measurements require the complete label inside its scroll viewport.
 A [VoiceOver journey](https://developer.apple.com/documentation/xcuiautomation/xcuivoiceoverservice) checks editor labels in both directions and rejects background labels on iOS 27 or later.
 iOS 26 SDK builds [exclude the unavailable service](https://developer.apple.com/documentation/xcode/adding-a-build-configuration-file-to-your-project#Apply-a-setting-conditionally-to-a-platform-or-architecture) and report a skipped VoiceOver test.
@@ -58,6 +58,13 @@ The model compares linked records and search membership with independently updat
 The finite bound isn't a proof over arbitrary operation histories.
 Controlled continuations test overlapping storage and notification operations without sleeps.
 Real temporary files test atomic replacement, file size boundaries, corrupted snapshots, and rejected symbolic links.
+Snapshots in format 1 decode into format 2 without rewriting the original file until a successful save.
+Contact tests cover categories, emergency ordering, normalized search, shared building links, and reference cleanup on deletion.
+Contract notice tests cover explicit dates, calendar-month calculations, leap years, daylight saving, advance notices, and changed deadlines.
+Travel tests keep contract calculations in Japan time while work deadlines use the supplied calendar.
+Contact destination tests preserve full-width telephone digits and encode mailbox characters without adding message headers.
+Typed notification targets keep room and work records distinct even when their identifier values match.
+Hosted tests check permission recovery without another record write and defer notification navigation while an editor remains open.
 
 Amount input and stored amounts share one whole-yen range.
 The parser accepts digits in either width and correctly grouped thousands separators.
@@ -70,10 +77,20 @@ The field accepts the proposed width through [SwiftUI measurement](https://devel
 Interface journeys check the clear button's size and position with the largest text size and an open keyboard.
 Hosted tests exercise replacement, deletion, noncontiguous ranges, and changes that bypass the delegate.
 The input follows Apple's [dynamic validation guidance](https://developer.apple.com/design/human-interface-guidelines/entering-data).
-Interface tests cover estimates, current rent, and renewal rent through rejection, correction, and saving.
+Interface tests cover estimates and current rent through rejection, correction, and saving.
 Stored amount tests corrupt each amount slot independently and verify that failed reads preserve the bytes.
-Notification fixtures place the next visit relative to the supplied clock instead of a fixed calendar date.
-Native journeys check a future visit with denied notifications and an expired visit that remains saved.
+Notification fixtures place deadlines and stored visit dates relative to the supplied clock instead of a fixed calendar date.
+Native journeys check a future deadline with denied notifications and an expired deadline that remains saved.
+
+Short memos keep the existing history format while removing communication fields from the form.
+Native journeys add and edit memos.
+Search and relaunch checks verify persistence in the combined progress list.
+Property screens keep property editing in their own tab.
+Photographs render within their records, and stored documents remain readable without a new file-import action.
+Image I/O tests cover orientation, bounded dimensions, invalid input, source size limits, and rejected symbolic links.
+Normalized photographs omit source location metadata.
+External URL tests cover cancellation, exact destination handoff, native telephone confirmation, and document-preview delegation.
+Sheet journeys keep the presenting screen open after cancellation and return to it after a confirmed browser handoff.
 
 Instrument the Swift package with Thread Sanitizer using `mise x -- just sanitize`.
 The dedicated scratch directory keeps instrumented binaries separate from ordinary builds.

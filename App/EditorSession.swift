@@ -44,6 +44,7 @@ struct ContractFields: Equatable {
     var start: Date
     var end: Date
     var rent = AmountInput()
+    var notice: ContractNotice?
 }
 
 struct ScheduleFields: Equatable {

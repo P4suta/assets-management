@@ -5,7 +5,8 @@ Support resizable windows and iPhone Duo with native adaptive navigation.
 Use native SwiftUI navigation, lists, forms, sheets, and text styles.
 Keep glass materials in system controls and navigation.
 Keep records and attachments on the device.
-The app has Actions and Properties tabs, without cash flow, payments, accounts, or shared editing.
+The app has Actions, Properties, and Contacts tabs, without cash flow, payments, accounts, or shared editing.
+Manage shared contacts and explicit contract deadlines with local reminders.
 Product copy is Japanese, and source names and documentation are English.
 
 # Checks

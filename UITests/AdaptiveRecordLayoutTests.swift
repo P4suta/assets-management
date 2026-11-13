@@ -151,13 +151,24 @@ import XCTest
         XCTAssertTrue(app.buttons["キャンセル"].firstMatch.waitForExistence(timeout: 5))
         let asset = app.images.matching(identifier: "PXGGridLayout-Info").firstMatch
         XCTAssertTrue(asset.waitForExistence(timeout: 30), app.debugDescription)
-        XCTAssertTrue(asset.wait(for: \.isHittable, toEqual: true, timeout: 5))
+        let window = app.windows.firstMatch
+        var previous: CGRect?
+        let visible = NSPredicate { _, _ in
+            guard asset.exists else { return false }
+            let frame = asset.frame
+            defer { previous = frame }
+            return !frame.isEmpty && window.frame.contains(frame) && frame == previous
+        }
+        let readiness = XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: visible, object: asset)], timeout: 30)
         let picker = XCTAttachment(string: app.debugDescription)
         picker.name = "Native photo library selection"
         picker.lifetime = .keepAlways
         add(picker)
         capture(app, name: "Native photo library")
-        asset.tap()
+        XCTAssertEqual(readiness, .completed)
+        let frame = asset.frame
+        let origin = window.coordinate(withNormalizedOffset: .zero)
+        origin.withOffset(CGVector(dx: frame.midX - window.frame.minX, dy: frame.midY - window.frame.minY)).tap()
     }
 
     func testVisibleReminderToggleMeetsIncreasedContrast() throws {

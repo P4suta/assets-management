@@ -10,11 +10,14 @@
 		057812ECB01EF2FC4761D3DC /* EditorReconstructionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F3DA74426D85FD9F1D173C6 /* EditorReconstructionTests.swift */; };
 		077195BCDB72A21EFB8C4E50 /* ExternalNavigation.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE9F8987BE9B450FF22C1CEA /* ExternalNavigation.swift */; };
 		080E827FB79166039C43047B /* PropertyEditors.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AB5151CBEA8C56316E02676 /* PropertyEditors.swift */; };
+		15F3DF1FD5163B746C880A81 /* ContactViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 80E28D765E8C56142D875402 /* ContactViews.swift */; };
 		1938EA77FF138327090B75DD /* DocumentPreviewScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = EC15DC5AA0EFDE6AA5E5B4DC /* DocumentPreviewScreen.swift */; };
 		19AE1E04AE31489C2BDC5ADB /* WorkViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6D58247B1FA2BB73A89D54F6 /* WorkViews.swift */; };
 		1EDF93509C1D7AAF7923A4F6 /* Building.png in Resources */ = {isa = PBXBuildFile; fileRef = 9C81B3B37CF691D3884BFD30 /* Building.png */; };
+		2B997A1196D8BAE893C576A3 /* ContractDates.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E0C08F857F99CBE56B82FCE /* ContractDates.swift */; };
 		3612FD545D8CA5E398FB9203 /* CameraCapture.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1DA53588064230DAF5ABB2F /* CameraCapture.swift */; };
 		370121383558F056F86CC12A /* NativeSheetTextScope.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C07F3B8B0F303E6E46B3DE2 /* NativeSheetTextScope.swift */; };
+		3904C16083A98A0B650760AB /* EditorPresentation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 624DB6EBF103B62F05070224 /* EditorPresentation.swift */; };
 		3CBA96EFEFC8E118FDFEA708 /* AppIcon.icon in Resources */ = {isa = PBXBuildFile; fileRef = A0DB349A190EF0877A6F506F /* AppIcon.icon */; };
 		4BD6678CF23744B35928B34B /* Presentation.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA6B45BC36F360755C53BFB1 /* Presentation.swift */; };
 		4E7301B83B295F059A496E96 /* Fixtures.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = E747F8EF1E40107241313871 /* Fixtures.xcassets */; };
@@ -83,7 +86,9 @@
 		512CC4C9DC0FD93EAA6CECC5 /* RecordPhotosSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordPhotosSection.swift; sourceTree = "<group>"; };
 		5C4C31B2638BDF8110B1033B /* RecordPhotoPresentation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordPhotoPresentation.swift; sourceTree = "<group>"; };
 		5FE544CE2B5686A8C19000DA /* ReleaseConfigurationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReleaseConfigurationTests.swift; sourceTree = "<group>"; };
+		624DB6EBF103B62F05070224 /* EditorPresentation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorPresentation.swift; sourceTree = "<group>"; };
 		6D58247B1FA2BB73A89D54F6 /* WorkViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkViews.swift; sourceTree = "<group>"; };
+		80E28D765E8C56142D875402 /* ContactViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContactViews.swift; sourceTree = "<group>"; };
 		874F39A4223D495FA090D5E4 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		87AF650B2F64D6B36117B0EF /* ExternalNavigationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExternalNavigationTests.swift; sourceTree = "<group>"; };
 		8FAABF65F1DA8E5E3B6CE3CD /* EditorSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorSheet.swift; sourceTree = "<group>"; };
@@ -93,6 +98,7 @@
 		9A3194A88799BE20342FA4CE /* assets-management */ = {isa = PBXFileReference; lastKnownFileType = folder; name = "assets-management"; path = .; sourceTree = SOURCE_ROOT; };
 		9AD5AEE6E5D8359C9FA60092 /* SampleRecordsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SampleRecordsTests.swift; sourceTree = "<group>"; };
 		9C81B3B37CF691D3884BFD30 /* Building.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = Building.png; sourceTree = "<group>"; };
+		9E0C08F857F99CBE56B82FCE /* ContractDates.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContractDates.swift; sourceTree = "<group>"; };
 		A0DB349A190EF0877A6F506F /* AppIcon.icon */ = {isa = PBXFileReference; lastKnownFileType = wrapper.icon; path = AppIcon.icon; sourceTree = "<group>"; };
 		A2B9A52340F025268F864F0E /* AmountField.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AmountField.swift; sourceTree = "<group>"; };
 		A8B864DCAD90048F55F756DD /* PropertyRecordsUITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = PropertyRecordsUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -207,7 +213,10 @@
 				94104B1A86E2515BA48B73ED /* AppInformationView.swift */,
 				E57BB64E93A03BF3FCE35122 /* Assets.xcassets */,
 				B1DA53588064230DAF5ABB2F /* CameraCapture.swift */,
+				80E28D765E8C56142D875402 /* ContactViews.swift */,
+				9E0C08F857F99CBE56B82FCE /* ContractDates.swift */,
 				EC15DC5AA0EFDE6AA5E5B4DC /* DocumentPreviewScreen.swift */,
+				624DB6EBF103B62F05070224 /* EditorPresentation.swift */,
 				D6FF32AEBFA2B176D67B2523 /* EditorSession.swift */,
 				8FAABF65F1DA8E5E3B6CE3CD /* EditorSheet.swift */,
 				EE9F8987BE9B450FF22C1CEA /* ExternalNavigation.swift */,
@@ -375,7 +384,10 @@
 				CE46E75151339B73415C1B96 /* AmountField.swift in Sources */,
 				C00971022A23DF79CD5D53D7 /* AppInformationView.swift in Sources */,
 				3612FD545D8CA5E398FB9203 /* CameraCapture.swift in Sources */,
+				15F3DF1FD5163B746C880A81 /* ContactViews.swift in Sources */,
+				2B997A1196D8BAE893C576A3 /* ContractDates.swift in Sources */,
 				1938EA77FF138327090B75DD /* DocumentPreviewScreen.swift in Sources */,
+				3904C16083A98A0B650760AB /* EditorPresentation.swift in Sources */,
 				B3EE94D00EDB746A2F9659D6 /* EditorSession.swift in Sources */,
 				75AE717CB21E4DD419D3A236 /* EditorSheet.swift in Sources */,
 				077195BCDB72A21EFB8C4E50 /* ExternalNavigation.swift in Sources */,

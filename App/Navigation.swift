@@ -44,6 +44,27 @@ struct BuildingNavigationView: View {
     }
 }
 
+struct ContactNavigationView: View {
+    @State private var selection: UUID?
+
+    var body: some View {
+        NavigationSplitView {
+            ContactListView(selection: $selection)
+        } detail: {
+            NavigationStack {
+                if let selection {
+                    ContactDetailView(contactID: selection)
+                } else {
+                    ContentUnavailableView("連絡先を選択", systemImage: "person.crop.rectangle.stack",
+                                           description: Text("緊急時や日常の相談に使う連絡先をまとめられます。"))
+                }
+            }
+            .id(selection)
+        }
+        .navigationSplitViewStyle(.balanced)
+    }
+}
+
 @MainActor struct EditorDestination: Identifiable {
     let id = UUID()
     let content: Content
@@ -82,7 +103,7 @@ struct BuildingNavigationView: View {
 
     static func contract(_ roomID: UUID) -> Self {
         let start = Date()
-        let end = Calendar.current.date(byAdding: .year, value: 2, to: start) ?? start
+        let end = ContractDates.calendar.date(byAdding: .year, value: 2, to: start) ?? start
         return Self(content: .contract(roomID, EditorSession(ContractFields(start: start, end: end))))
     }
 

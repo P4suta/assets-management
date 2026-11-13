@@ -6,9 +6,10 @@ extension Records {
         let normalized = Self.searchText(query)
         let digits = Self.phoneDigits(query)
         return contacts.filter { contact in
+            if query.isEmpty { return true }
             let fields = [contact.name, contact.company, contact.phone, contact.email, contact.notes]
                 + relatedBuildings(for: contact.id).map(\.name)
-            return query.isEmpty || fields.contains { Self.searchText($0).contains(normalized) }
+            return fields.contains { Self.searchText($0).contains(normalized) }
                 || (!digits.isEmpty && digits.count == query.filter(\.isNumber).count
                     && query.allSatisfy { $0.isNumber || $0.isWhitespace || "+-−ー()（）".contains($0) }
                     && Self.phoneDigits(contact.phone).contains(digits))
