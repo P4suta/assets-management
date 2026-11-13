@@ -14,7 +14,7 @@ concurrency:
 
 jobs:
   journeys:
-    name: ${{ matrix.name }}
+    name: ${{ matrix.device }} / ${{ matrix.profile }}
     if: >-
       github.repository_id == '1455076889' &&
       (github.event_name == 'workflow_dispatch' ||
@@ -26,17 +26,27 @@ jobs:
       fail-fast: false
       max-parallel: 2
       matrix:
+        device: [iPhone-iOS26, iPad-iPadOS27]
+        profile: [standard, accessibility]
         include:
-          - name: iPhone on iOS 26
+          - device: iPhone-iOS26
             runner: macos-26
             developer: /Applications/Xcode_26.6.app/Contents/Developer
             device-type: com.apple.CoreSimulator.SimDeviceType.iPhone-17-Pro
             runtime: com.apple.CoreSimulator.SimRuntime.iOS-26-5
-          - name: iPad on iPadOS 27
+          - device: iPad-iPadOS27
             runner: xcode-27
             developer: /Applications/Xcode_27.2.app/Contents/Developer
             device-type: com.apple.CoreSimulator.SimDeviceType.iPad-Pro-13-inch-M5-12GB
             runtime: com.apple.CoreSimulator.SimRuntime.iOS-27-2
+          - profile: standard
+            content-size: large
+            appearance: light
+            contrast: disabled
+          - profile: accessibility
+            content-size: accessibility-extra-extra-extra-large
+            appearance: dark
+            contrast: enabled
     env:
       DEVELOPER_DIR: ${{ matrix.developer }}
     steps:
@@ -53,18 +63,24 @@ jobs:
         env:
           SIMULATOR_DEVICE_TYPE: ${{ matrix.device-type }}
           SIMULATOR_RUNTIME: ${{ matrix.runtime }}
+          SIMULATOR_CONTENT_SIZE: ${{ matrix.content-size }}
+          SIMULATOR_APPEARANCE: ${{ matrix.appearance }}
+          SIMULATOR_CONTRAST: ${{ matrix.contrast }}
         run: |
           acceptance_device="$(xcrun simctl create 'Property Records native acceptance' "$SIMULATOR_DEVICE_TYPE" "$SIMULATOR_RUNTIME")"
           xcrun simctl boot "$acceptance_device"
           xcrun simctl bootstatus "$acceptance_device" -b
           xcrun simctl addmedia "$acceptance_device" UITests/Fixtures/Building.png
+          xcrun simctl ui "$acceptance_device" content_size "$SIMULATOR_CONTENT_SIZE"
+          xcrun simctl ui "$acceptance_device" appearance "$SIMULATOR_APPEARANCE"
+          xcrun simctl ui "$acceptance_device" increase_contrast "$SIMULATOR_CONTRAST"
           printf 'SIMULATOR_DESTINATION=platform=iOS Simulator,id=%s\n' "$acceptance_device" >> "$GITHUB_ENV"
       - run: mise x xcodegen just -- just ui-test
       - name: Preserve native test results and captures
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: native-results-${{ matrix.runner }}-${{ github.event.pull_request.head.sha || github.sha }}-${{ github.run_attempt }}
+          name: native-results-${{ matrix.device }}-${{ matrix.profile }}-${{ github.event.pull_request.head.sha || github.sha }}-${{ github.run_attempt }}
           path: .derivedData/Logs/Test/*.xcresult
           include-hidden-files: true
           if-no-files-found: error
