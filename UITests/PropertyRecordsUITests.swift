@@ -862,7 +862,8 @@ final class PropertyRecordsUITests: XCTestCase {
     }
 
     func testSelectedRecordRowsRemainReadable() throws {
-        defer { XCUIDevice.shared.appearance = .light }
+        let originalAppearance = XCUIDevice.shared.appearance
+        defer { XCUIDevice.shared.appearance = originalAppearance }
         for dark in [false, true] {
             XCUIDevice.shared.appearance = dark ? .dark : .light
             let app = launch(seeded: true)
@@ -1238,7 +1239,8 @@ final class PropertyRecordsUITests: XCTestCase {
     #endif
 
     func testStoreScreenshots() {
-        defer { XCUIDevice.shared.appearance = .light }
+        let originalAppearance = XCUIDevice.shared.appearance
+        defer { XCUIDevice.shared.appearance = originalAppearance }
         XCUIDevice.shared.appearance = .light
         let app = launch(seeded: true)
         tapWork("消防設備点検", app: app)
