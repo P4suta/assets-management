@@ -7,7 +7,7 @@ The price is free, with no accounts, advertising, tracking, or purchases.
 The bundle identifier is `com.p4suta.PropertyRecords`.
 The Apple Developer team is `XMBQLW82L9`.
 The initial version is `1.0.0`.
-The current build number is `3`.
+The current build number is `4`.
 
 Run the fast gate, hosted app tests, interface journeys on iOS 26 and a later runtime, Thread Sanitizer, and the full mutation campaign before archiving.
 The verification scope and mutation acceptance criteria are in [verification.md](verification.md).
@@ -34,9 +34,9 @@ App Store privacy answers must describe the shipped binary and its dependencies.
 The app stores records and attachments on the device and has no collection service.
 The support email is `hi@sakashita.email`.
 
-The Japanese description addresses rental property managers who need repair history, scattered documents, and renewal terms in one place.
-Its examples describe contact history, search, renewal drafts, reminders, equipment, and common-area work that the app supports.
-The promotional text describes the history users can keep.
+The Japanese description addresses rental property managers who need to find earlier repairs and keep scattered notes and photographs together.
+Its examples describe short memos, inline photographs, progress search, deadline reminders, contracts, equipment, and common-area work.
+The promotional text describes the notes, photographs, and progress users can keep.
 The marketing URL points to the app-specific landing page at its subdomain root.
 The [header artwork](../AppStore/CreativeAssets/ja/header.svg) and [search results artwork](../AppStore/CreativeAssets/ja/search-results.svg) contain the Japanese heading on a white background.
 The header uses 3840 by 1646 pixels, and the search artwork uses 3840 by 2560 pixels under Apple's [creative asset specifications](https://developer.apple.com/help/app-store-connect/reference/app-information/creative-assets-specifications).

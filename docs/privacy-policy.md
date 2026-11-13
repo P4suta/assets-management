@@ -17,7 +17,8 @@ The developer doesn't collect data through the app or share app records with thi
 The app requests camera access when you choose to take a photograph for a record.
 The system photo picker provides only the photographs you select.
 The app requests local notification permission when you enable a reminder.
-Reminder titles can appear on your device's notification screen according to your system settings.
+Generic reminder titles and messages can appear on your device's notification screen according to your system settings.
+Notifications contain no property names, contact details, or record text.
 You can change camera and notification permissions in Settings.
 Declining permission doesn't prevent saving property records.
 If you share a document through a system viewer, you choose its destination.
@@ -25,7 +26,7 @@ The system sends the selected document to that destination.
 
 ## Retention, deletion, and backups
 
-Records remain in the app's device storage until you remove the app or erase the device.
+Records remain in the app's device storage until you delete them, remove the app, or erase the device.
 Offloading the app preserves its records.
 Apple's device backup services may include app records according to your backup settings.
 Manage and delete device backups through Apple's system settings.

@@ -14,6 +14,14 @@ The active section precedes the completed section on one searchable screen.
 Open a work item to change its status and add short memos as events happen.
 Open a room's rental contract to edit its terms.
 
+## Contacts
+
+Use Contacts for maintenance, management, insurance, fire-safety, and resident contacts.
+Emergency contacts appear first.
+A contact can link to two or more buildings.
+Search names, companies, phone numbers, email addresses, notes, and related building names.
+Deleting a contact clears assignments while retaining work memos and photographs.
+
 ## Amounts and photographs
 
 Amounts are optional whole yen.
@@ -33,6 +41,14 @@ Open Settings from the notification notice and enable notifications.
 Return to the app to restore future reminders.
 Past dates don't produce a notification.
 If registration fails, use the retry action in the notification notice.
+
+Record a contract notice deadline in the room's rental contract editor.
+Choose a date from the agreement or calculate it from a selected number of months before expiry.
+The app doesn't determine legal notice requirements.
+Contract dates and the 09:00 reminders use Japan time, including during travel.
+Choose an optional advance reminder 7, 30, or 90 days beforehand.
+Open the app after changing device time or notification settings to reconcile future reminders.
+Selecting a notification opens its work item or contract after any open editor closes.
 
 Records aren't synchronized with a server or another device.
 Removing the app deletes its local records, while offloading preserves them.
