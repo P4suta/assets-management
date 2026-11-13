@@ -41,7 +41,9 @@ struct WorkListView: View {
             Section {
                 Button(completed ? "未完了の対応" : "完了した対応", systemImage: completed ? "checklist" : "checkmark") {
                     completed.toggle()
-                }.accessibilityIdentifier("work.completedFilter")
+                }
+                .foregroundStyle(Color.primary)
+                .accessibilityIdentifier("work.completedFilter")
             }
         }
         .listStyle(.insetGrouped)

@@ -97,7 +97,9 @@ private struct RecordForegroundStyle: ShapeStyle {
     let selected: Bool
 
     func resolve(in environment: EnvironmentValues) -> some ShapeStyle {
-        guard selected else { return AnyShapeStyle(color) }
+        guard selected else {
+            return AnyShapeStyle(environment.colorSchemeContrast == .increased ? Color.primary : color)
+        }
         guard environment.backgroundProminence == .increased else { return AnyShapeStyle(Color.primary) }
         var contrasted = environment
         contrasted.colorScheme = environment.colorScheme == .dark ? .light : .dark
