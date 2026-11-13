@@ -79,3 +79,4 @@ archive-resources archive_path:
 store-assets:
     asc metadata validate --dir AppStore/Metadata
     asc screenshots validate --path AppStore/Screenshots/ja/APP_IPHONE_61 --device-type APP_IPHONE_61
+    asc screenshots validate --path AppStore/Screenshots/ja/APP_IPAD_PRO_3GEN_129 --device-type APP_IPAD_PRO_3GEN_129
