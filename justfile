@@ -43,7 +43,7 @@ app-test: generate
     xcodebuild -project PropertyRecords.xcodeproj -scheme PropertyRecords -destination '{{ destination }}' -derivedDataPath .derivedData CODE_SIGNING_ALLOWED=NO -parallel-testing-enabled NO -only-testing:PropertyRecordsAppTests test -quiet
 
 ui-test: generate
-    xcodebuild -project PropertyRecords.xcodeproj -scheme PropertyRecordsInterface -destination '{{ destination }}' -derivedDataPath .derivedData CODE_SIGNING_ALLOWED=NO -parallel-testing-enabled NO '-skip-testing:PropertyRecordsUITests/PropertyRecordsUITests/testSystemSettingsAuditProbe()' test -quiet
+    xcodebuild -project PropertyRecords.xcodeproj -scheme PropertyRecordsInterface -destination '{{ destination }}' -derivedDataPath .derivedData CODE_SIGNING_ALLOWED=NO -parallel-testing-enabled NO '-skip-testing:PropertyRecordsUITests/PropertyRecordsUITests/testSystemSettingsAuditProbe()' test
 
 ui-tour: generate
     xcodebuild -project PropertyRecords.xcodeproj -scheme PropertyRecordsInterface -destination '{{ destination }}' -derivedDataPath .derivedData CODE_SIGNING_ALLOWED=NO -parallel-testing-enabled NO '-only-testing:PropertyRecordsUITests/PropertyRecordsUITests/testScreenTourAccessibility()' test -quiet
