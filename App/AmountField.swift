@@ -33,9 +33,6 @@ struct AmountField: View {
                     .foregroundStyle(Color(uiColor: .systemRed))
                     .accessibilityIdentifier(identifier + ".error")
                     .fixedSize(horizontal: false, vertical: true)
-            } else if let amount = try? input.value() {
-                Text(yen(amount)).foregroundStyle(Color.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
             }
         }
         .onChange(of: input.issue) { _, issue in
