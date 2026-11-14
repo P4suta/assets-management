@@ -89,6 +89,53 @@ import UIKit
         }
     }
 
+    @Test(arguments: [320, 600])
+    func liveTextSizeChangesResizeTheAmountFieldWithoutLosingInput(width: Int) async throws {
+        let box = InputBox("85000")
+        let scene = try #require(UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.first)
+        let window = UIWindow(windowScene: scene)
+        window.frame = CGRect(x: 0, y: 0, width: CGFloat(width), height: 900)
+        let controller = UIHostingController(rootView: Form {
+            AmountField(title: "見積額（円）", input: box.binding, identifier: "amount")
+        })
+        controller.traitOverrides.preferredContentSizeCategory = .large
+        window.rootViewController = controller
+        window.isHidden = false
+        defer { window.isHidden = true; window.rootViewController = nil }
+        #expect(window.bounds.width == CGFloat(width))
+        let initial = try #require(await amountField(in: controller.view, category: .large))
+        let initialSize = try #require(initial.font).pointSize
+        controller.traitOverrides.preferredContentSizeCategory = .accessibilityExtraExtraExtraLarge
+        let enlarged = try #require(await amountField(in: controller.view, category: .accessibilityExtraExtraExtraLarge))
+        #expect(try #require(enlarged.font).pointSize >= initialSize * 2)
+        #expect(enlarged.text == "85000")
+        #expect(box.input.text == "85000")
+        controller.traitOverrides.preferredContentSizeCategory = .large
+        let restored = try #require(await amountField(in: controller.view, category: .large))
+        #expect(try #require(restored.font).pointSize == initialSize)
+        #expect(restored.text == "85000")
+    }
+
+    private func amountField(in view: UIView, category: UIContentSizeCategory) async -> UITextField? {
+        func find(in view: UIView) -> UITextField? {
+            if let field = view as? UITextField, field.accessibilityIdentifier == "amount" { return field }
+            return view.subviews.lazy.compactMap { find(in: $0) }.first
+        }
+        let expected = UIFont.preferredFont(forTextStyle: .body, compatibleWith: UITraitCollection(preferredContentSizeCategory: category)).pointSize
+        let deadline = ContinuousClock.now.advanced(by: .seconds(5))
+        var observed: UITextField?
+        repeat {
+            view.layoutIfNeeded()
+            if let field = find(in: view), let font = field.font {
+                observed = field
+                if abs(font.pointSize - expected) < 0.01, field.bounds.height >= font.lineHeight { return field }
+            }
+            try? await Task.sleep(for: .milliseconds(10))
+        } while ContinuousClock.now < deadline
+        Issue.record("The amount field must resize for \(category.rawValue): expected \(expected), font \(String(describing: observed?.font)), frame \(String(describing: observed?.frame)).")
+        return nil
+    }
+
     @Test func nativeChangesCannotBypassTheBoundedInput() {
         let box = InputBox("85000")
         let coordinator = NativeAmountField.Coordinator(input: box.binding)
