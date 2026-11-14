@@ -22,6 +22,8 @@ schemes:
       targets:
         PropertyRecords: all
     test:
+      language: ja
+      region: JP
       targets: [PropertyRecordsAppTests]
       debugEnabled: false
       gatherCoverageData: true
@@ -30,6 +32,8 @@ schemes:
       targets:
         PropertyRecords: [test]
     test:
+      language: ja
+      region: JP
       targets: [PropertyRecordsUITests]
       debugEnabled: false
       gatherCoverageData: true
@@ -47,6 +51,8 @@ schemes:
       targets:
         PropertyRecords: [test]
     test:
+      language: ja
+      region: JP
       config: Release
       debugEnabled: false
       targets:

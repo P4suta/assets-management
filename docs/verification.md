@@ -3,6 +3,9 @@
 The fast gate runs semantic lint, secret scanning, Swift 6 type checking, deterministic tests, and a simulator build.
 Xcode builds turn off compilation caching to reduce temporary disk use during checks.
 The interface suite exercises saved records through native controls and audits accessibility.
+Native test schemes use Japanese and Japan to match the app's typography.
+An English test process can measure Japanese fallback fonts differently from the Japanese app.
+The caption fixtures and rendered measurement test reject that mismatch.
 Run the rotation checks on iPad and iPhone Duo simulators with `mise x -- just adaptive-ui-test`.
 Run window resizing with the selected record and an open editor, and verify the same title, draft value, and reachable save action afterward.
 Keep physical-device acceptance and the App Review recording separate from simulator results.

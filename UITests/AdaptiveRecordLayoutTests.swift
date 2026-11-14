@@ -19,6 +19,12 @@ import XCTest
             bars: [CGRect(x: 0, y: 68, width: 420, height: 54), CGRect(x: 116, y: 819, width: 188, height: 80)]))
         XCTAssertEqual(compact.bounds, CGRect(x: 0, y: 122, width: 420, height: 697))
         XCTAssertFalse(compact.bounds.contains(obscured))
+        let tall = CGRect(x: 16, y: 339, width: 370, height: 519)
+        XCTAssertTrue(compact.contains(tall, requireFullVisibility: false))
+        XCTAssertFalse(compact.contains(tall, requireFullVisibility: true))
+        XCTAssertFalse(compact.contains(obscured, requireFullVisibility: false))
+        XCTAssertFalse(compact.contains(.zero, requireFullVisibility: false))
+        XCTAssertFalse(compact.contains(.infinite, requireFullVisibility: false))
         XCTAssertNil(ListViewport(list: .zero, window: phone, target: obscured, bars: []))
         XCTAssertNil(ListViewport(list: phone, window: phone, target: obscured, bars: [.infinite]))
     }
@@ -59,10 +65,16 @@ import XCTest
         search.tap()
         search.typeText("未来ヶ丘\n")
         let list = app.collectionViews.firstMatch
-        XCTAssertTrue(list.staticTexts["対応済み"].waitForExistence(timeout: 5))
-        XCTAssertTrue(list.staticTexts["対応"].exists)
-        XCTAssertTrue(record("給湯器から水漏れ", app: app).exists)
-        XCTAssertTrue(record("契約更新の確認", app: app).exists)
+        for heading in ["対応", "対応済み"] {
+            let caption = list.staticTexts[heading]
+            reveal(caption, in: list, app: app)
+            XCTAssertTrue(caption.exists)
+        }
+        for title in ["給湯器から水漏れ", "契約更新の確認"] {
+            let item = record(title, app: app)
+            reveal(item, in: list, app: app)
+            XCTAssertTrue(item.exists)
+        }
         XCTAssertFalse(record("共用灯の交換", app: app).exists)
         XCTAssertFalse(app.buttons["work.completedFilter"].exists)
         capture(app, name: "Search includes active and completed records")
@@ -71,8 +83,11 @@ import XCTest
         search.tap()
         search.typeText("青葉\n")
         XCTAssertEqual(search.value as? String, "青葉")
-        XCTAssertTrue(record("共用灯の交換", app: app).waitForExistence(timeout: 5))
-        XCTAssertTrue(record("消防設備点検", app: app).exists)
+        for title in ["共用灯の交換", "消防設備点検"] {
+            let item = record(title, app: app)
+            reveal(item, in: list, app: app)
+            XCTAssertTrue(item.exists)
+        }
         XCTAssertFalse(record("給湯器から水漏れ", app: app).exists)
         XCTAssertFalse(record("契約更新の確認", app: app).exists)
     }
@@ -397,14 +412,14 @@ import XCTest
         let frame = list.frame
         let bars = (app.navigationBars.allElementsBoundByIndex + app.tabBars.allElementsBoundByIndex).filter(\.isHittable).map(\.frame)
         let target = element.exists && !element.frame.isEmpty ? element.frame : frame
-        guard let unobscured = ListViewport(list: frame, window: window.frame, target: target, bars: bars)?.bounds else {
+        guard let viewport = ListViewport(list: frame, window: window.frame, target: target, bars: bars) else {
             XCTFail("The list must provide a viewport outside visible navigation bars.")
             return
         }
+        let unobscured = viewport.bounds
         func reachable() -> Bool {
             guard element.exists && element.isHittable else { return false }
-            if element.frame.height > unobscured.height { return element.frame.intersects(unobscured) }
-            return unobscured.contains(element.frame)
+            return viewport.contains(element.frame, requireFullVisibility: false)
         }
         observing()
         if reachable() { return }

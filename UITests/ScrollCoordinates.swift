@@ -3,6 +3,12 @@ import CoreGraphics
 struct ListViewport {
     let bounds: CGRect
 
+    func contains(_ target: CGRect, requireFullVisibility: Bool) -> Bool {
+        guard !target.isEmpty, !target.isInfinite,
+              [target.minX, target.minY, target.maxX, target.maxY].allSatisfy(\.isFinite) else { return false }
+        return requireFullVisibility ? bounds.contains(target) : bounds.contains(CGPoint(x: target.midX, y: target.midY))
+    }
+
     init?(list: CGRect, window: CGRect, target: CGRect, bars: [CGRect]) {
         guard ([list, window, target] + bars).allSatisfy({
             !$0.isInfinite && [$0.minX, $0.minY, $0.maxX, $0.maxY].allSatisfy(\.isFinite)

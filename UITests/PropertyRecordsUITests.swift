@@ -20,6 +20,8 @@ final class PropertyRecordsUITests: XCTestCase {
     override func setUpWithError() throws {
         try super.setUpWithError()
         continueAfterFailure = false
+        XCTAssertEqual(Locale.preferredLanguages.first.map { String($0.prefix(2)) }, "ja",
+                       "The test process must use the app's Japanese language for text measurement.")
     }
 
     func testAddActionsOpenAndCancelEditors() {
@@ -204,6 +206,7 @@ final class PropertyRecordsUITests: XCTestCase {
         let deadline = app.staticTexts["予告期限、2026年9月30日"]
         reveal(deadline, app: app, in: app.collectionViews["contract.detail"])
         XCTAssertTrue(deadline.waitForExistence(timeout: 5))
+        reveal(app.staticTexts["contract.time-zone"], app: app, in: app.collectionViews["contract.detail"], requireFullVisibility: true)
         try audit(app, name: "Contract")
         app.terminate()
         app.launch()
@@ -1844,7 +1847,7 @@ final class PropertyRecordsUITests: XCTestCase {
             captureStoreScreen(app, name: "Unsettled editor")
         }
         XCTAssertEqual(result, .completed,
-                       "The editor and keyboard must settle before the next action.")
+                       "The editor and keyboard must settle before the next action: \(String(describing: observed)).")
     }
 
     private func editorLayout(identifier: String, label: String, elementType: XCUIElement.ElementType, app: XCUIApplication) -> EditorLayout? {
@@ -1980,17 +1983,17 @@ final class PropertyRecordsUITests: XCTestCase {
         let frame = container.frame
         let bars = (app.navigationBars.allElementsBoundByIndex + app.tabBars.allElementsBoundByIndex).filter(\.isHittable).map(\.frame)
         let target = element.exists && !element.frame.isEmpty ? element.frame : frame
-        guard let viewport = ListViewport(list: frame, window: window.frame, target: target, bars: bars)?.bounds else {
+        guard let visible = ListViewport(list: frame, window: window.frame, target: target, bars: bars) else {
             XCTFail("The list must provide a viewport outside visible navigation bars.")
             return
         }
+        let viewport = visible.bounds
         func reachable() -> Bool {
             guard element.exists else { return false }
             let target = element.elementType == .stepper ? element.buttons.element(boundBy: 1) : element
             guard target.exists && target.isHittable else { return false }
             let bounds = target.frame
-            guard viewport.contains(CGPoint(x: bounds.midX, y: bounds.midY)) else { return false }
-            if requireFullVisibility && !viewport.contains(bounds) { return false }
+            guard visible.contains(bounds, requireFullVisibility: requireFullVisibility) else { return false }
             let tabs = app.tabBars.firstMatch
             if tabs.exists && tabs.isHittable && tabs.frame.contains(CGPoint(x: bounds.midX, y: bounds.midY)) { return false }
             return keyboardFrame(app).map {
@@ -2316,9 +2319,7 @@ final class PropertyRecordsUITests: XCTestCase {
     }
 
     private func measureNativeListText(_ app: XCUIApplication, screen: String) throws -> [String: NativeListTextMeasurement] {
-        let version = ProcessInfo.processInfo.operatingSystemVersion
-        guard version.majorVersion == 27, version.minorVersion == 2, version.patchVersion == 0,
-              UIDevice.current.userInterfaceIdiom == .phone,
+        guard UIDevice.current.userInterfaceIdiom == .phone,
               UIApplication.shared.preferredContentSizeCategory == .accessibilityExtraExtraExtraLarge else { return [:] }
         let listID: String
         let captions: [XCUIElement]
