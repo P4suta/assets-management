@@ -8,6 +8,19 @@ final class PropertyRecordsUITests: XCTestCase {
         continueAfterFailure = false
     }
 
+    func testAddActionsOpenAndCancelEditors() {
+        let app = launch(seeded: true)
+        for (tab, identifier) in [("対応", "work.add"), ("物件", "property.add"), ("連絡先", "contacts.add")] {
+            selectTab(tab, app: app)
+            tapIdentifier(identifier, app: app)
+            XCTAssertTrue(app.buttons["editor.save"].waitForExistence(timeout: 5))
+            XCTAssertTrue(app.buttons["editor.save"].isHittable)
+            app.buttons["editor.cancel"].tap()
+            XCTAssertTrue(app.buttons["editor.cancel"].waitForNonExistence(timeout: 5))
+            XCTAssertTrue(app.buttons[identifier].isHittable)
+        }
+    }
+
     func testAppInformationHasAccessiblePrivacyAndSupportLinks() throws {
         let app = launch()
         selectTab("物件", app: app)
@@ -971,6 +984,9 @@ final class PropertyRecordsUITests: XCTestCase {
         for (title, location) in [("給湯器から水漏れ", "未来ヶ丘団地 · 203号室"), ("共用灯の交換", "青葉コート · 共用部分")] {
             let work = row(title, app: app)
             XCTAssertFalse(work.isSelected)
+            let heading = work.staticTexts.firstMatch
+            XCTAssertEqual(heading.label, title)
+            try assertRenderedCaptionContrast(heading, name: "Unselected work title", app: app)
             let caption = work.staticTexts["work.caption.location"].firstMatch
             XCTAssertEqual(caption.label, location)
             try assertRenderedCaptionContrast(caption, name: "Unselected work location", app: app)
@@ -988,7 +1004,7 @@ final class PropertyRecordsUITests: XCTestCase {
 
     private func assertRenderedCaptionContrast(_ caption: XCUIElement, name: String, app: XCUIApplication,
                                               background: TextContrastBackground = .uniform) throws {
-        reveal(caption, app: app)
+        reveal(caption, app: app, requireFullVisibility: true)
         XCTAssertTrue(caption.isHittable, name)
         let frame = caption.frame
         XCTAssertTrue(app.windows.firstMatch.frame.contains(frame), name)
@@ -1154,6 +1170,14 @@ final class PropertyRecordsUITests: XCTestCase {
         var laterHeader = verified
         laterHeader.label = "今後の対応"
         XCTAssertTrue(laterHeader.accepts)
+        for label in ["対応", "対応済み"] {
+            var progressHeader = verified
+            progressHeader.label = label
+            progressHeader.listIdentity = "work.list"
+            XCTAssertTrue(progressHeader.accepts)
+            progressHeader.matchingHeader = false
+            XCTAssertFalse(progressHeader.accepts)
+        }
         for ratio in [4.5, 4.499, .nan, .infinity] {
             var scope = verified
             scope.ratio = ratio
@@ -1267,14 +1291,17 @@ final class PropertyRecordsUITests: XCTestCase {
         assertAppearance(app, dark: XCUIDevice.shared.appearance == .dark)
         tapWork("消防設備点検", app: app)
         setWorkStatus("完了", app: app)
+        if UIDevice.current.userInterfaceIdiom == .pad { captureStoreScreen(app, name: "1-actions") }
         back(app)
         tapWork("給湯器から水漏れ", app: app)
-        if !row("共用灯の交換", app: app).isHittable {
-            back(app)
-            captureStoreScreen(app, name: "1-actions")
-            tapWork("給湯器から水漏れ", app: app)
-        } else {
-            captureStoreScreen(app, name: "1-actions")
+        if UIDevice.current.userInterfaceIdiom != .pad {
+            if !row("共用灯の交換", app: app).isHittable {
+                back(app)
+                captureStoreScreen(app, name: "1-actions")
+                tapWork("給湯器から水漏れ", app: app)
+            } else {
+                captureStoreScreen(app, name: "1-actions")
+            }
         }
         let photo = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "photo.")).firstMatch
         reveal(photo, app: app)
@@ -1297,6 +1324,7 @@ final class PropertyRecordsUITests: XCTestCase {
         captureStoreScreen(app, name: "5-contract-notice")
         selectTab("連絡先", app: app)
         XCTAssertTrue(row("高橋", app: app).waitForExistence(timeout: 5))
+        if UIDevice.current.userInterfaceIdiom == .pad { tap("建物保険の相談窓口", app: app) }
         captureStoreScreen(app, name: "6-contacts")
     }
 
@@ -1304,9 +1332,10 @@ final class PropertyRecordsUITests: XCTestCase {
         defer { XCUIDevice.shared.orientation = .portrait }
         XCUIDevice.shared.press(.home)
         XCTAssertTrue(XCUIApplication(bundleIdentifier: "com.apple.springboard").wait(for: .runningForeground, timeout: 5))
-        let app = launch()
-        let building = "未来ヶ丘団地"
+        let app = launch(seeded: true)
         selectTab("物件", app: app)
+        let building = unusedReviewBuilding(app)
+        let contact = building + "の設備窓口"
         app.buttons["property.add"].tap()
         enter(building, into: "property.name", app: app)
         enter("203", into: "property.room", app: app)
@@ -1328,7 +1357,7 @@ final class PropertyRecordsUITests: XCTestCase {
         captureStoreScreen(app, name: "Review contract notice")
         selectTab("連絡先", app: app)
         tapIdentifier("contacts.add", app: app)
-        enter("設備の相談窓口", into: "contact.name", app: app)
+        enter(contact, into: "contact.name", app: app)
         enter("朝焼設備", into: "contact.company", app: app)
         enter("夜間の連絡も受付", into: "contact.notes", app: app)
         tapIdentifier("contact.category", app: app)
@@ -1340,7 +1369,7 @@ final class PropertyRecordsUITests: XCTestCase {
         reveal(property, app: app)
         property.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.5)).tap()
         app.buttons["editor.save"].tap()
-        tap("設備の相談窓口", app: app)
+        tap(contact, app: app)
         XCTAssertTrue(app.staticTexts["夜間の連絡も受付"].waitForExistence(timeout: 5))
         captureStoreScreen(app, name: "Review shared contact")
         selectTab("対応", app: app)
@@ -1386,6 +1415,46 @@ final class PropertyRecordsUITests: XCTestCase {
         XCTAssertTrue(heading.waitForExistence(timeout: 5))
         XCTAssertFalse(heading.frame.intersects(createdRepair.frame))
         captureStoreScreen(app, name: "Review progress overview")
+    }
+
+    func testReviewBuildingSearchReturnsToThePropertyList() {
+        let app = launch(seeded: true)
+        selectTab("物件", app: app)
+        let name = unusedReviewBuilding(app)
+        XCTAssertEqual(name, "未来ヶ丘団地・朝焼2号棟")
+        XCTAssertNil(keyboardFrame(app))
+        app.buttons["property.add"].tap()
+        XCTAssertTrue(field("property.name", app: app).waitForExistence(timeout: 5))
+        app.buttons["editor.cancel"].tap()
+    }
+
+    private func unusedReviewBuilding(_ app: XCUIApplication) -> String {
+        let search = app.searchFields.firstMatch
+        XCTAssertTrue(search.waitForExistence(timeout: 5))
+        search.tap()
+        var previous = ""
+        for index in 1...20 {
+            let name = index == 1 ? "未来ヶ丘団地" : "未来ヶ丘団地・朝焼\(index)号棟"
+            search.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: previous.count) + name)
+            let entered = XCTNSPredicateExpectation(predicate: NSPredicate(format: "value == %@", name), object: search)
+            XCTAssertEqual(XCTWaiter.wait(for: [entered], timeout: 5), .completed)
+            if !row(name, app: app).exists {
+                search.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: name.count) + "\n")
+                let cancel = app.navigationBars.buttons.matching(NSPredicate(format: "label IN %@", ["キャンセル", "閉じる"])).firstMatch
+                if cancel.exists && cancel.isHittable { cancel.tap() }
+                let hideKeyboard = app.keyboards.buttons["キーボードを非表示"]
+                if hideKeyboard.exists && hideKeyboard.isHittable { hideKeyboard.tap() }
+                let keyboardHidden = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
+                    self.keyboardFrame(app).map { !$0.intersects(app.windows.firstMatch.frame) } ?? true
+                }, object: app)
+                XCTAssertEqual(XCTWaiter.wait(for: [keyboardHidden], timeout: 5), .completed, app.debugDescription)
+                XCTAssertTrue(app.buttons["property.add"].wait(for: \.isHittable, toEqual: true, timeout: 5))
+                return name
+            }
+            previous = name
+        }
+        XCTFail("The review fixture requires an unused building name.")
+        return ""
     }
 
     private func configureContractNotice(_ app: XCUIApplication, monthsBeforeExpiry: Int = 6) {
@@ -1465,6 +1534,7 @@ final class PropertyRecordsUITests: XCTestCase {
     }
 
     private struct EditorLayout: Equatable {
+        let window: CGRect
         let input: CGRect
         let keyboard: CGRect?
         let save: CGRect
@@ -1472,20 +1542,15 @@ final class PropertyRecordsUITests: XCTestCase {
     }
 
     private func waitForEditorLayout(_ input: XCUIElement, app: XCUIApplication) {
-        let save = app.buttons["editor.save"]
-        let cancel = app.buttons["editor.cancel"]
-        let keyboard = app.keyboards.firstMatch
+        let identifier = input.identifier
         var previous: EditorLayout?
         var observed: EditorLayout?
         let settled = NSPredicate { _, _ in
-            guard input.exists, save.exists, cancel.exists else { return false }
-            let window = app.windows.firstMatch.frame
-            let keyboardFrame = keyboard.exists ? keyboard.frame : nil
-            let current = EditorLayout(input: input.frame, keyboard: keyboardFrame, save: save.frame, cancel: cancel.frame)
+            guard let current = self.editorLayout(identifier: identifier, app: app) else { return false }
             observed = current
-            guard !current.input.isEmpty, current.input.intersects(window),
-                  window.contains(current.save), window.contains(current.cancel),
-                  keyboardFrame.map({ !$0.isEmpty && window.contains($0) }) ?? true else {
+            guard !current.input.isEmpty, current.input.intersects(current.window),
+                  current.window.contains(current.save), current.window.contains(current.cancel),
+                  current.keyboard.map({ !$0.isEmpty && current.window.contains($0) }) ?? true else {
                 previous = nil
                 return false
             }
@@ -1503,6 +1568,23 @@ final class PropertyRecordsUITests: XCTestCase {
         }
         XCTAssertEqual(result, .completed,
                        "The editor and keyboard must settle before the next action.")
+    }
+
+    private func editorLayout(identifier: String, app: XCUIApplication) -> EditorLayout? {
+        guard let root = try? app.snapshot() else { return nil }
+        func descendants(_ snapshot: any XCUIElementSnapshot) -> [any XCUIElementSnapshot] {
+            [snapshot] + snapshot.children.flatMap { descendants($0) }
+        }
+        let elements = descendants(root)
+        func frame(_ identifier: String) -> CGRect? {
+            let matching = elements.filter { $0.identifier == identifier && !$0.frame.isEmpty }
+            return matching.count == 1 ? matching.first?.frame : nil
+        }
+        guard let window = root.children.first(where: { $0.elementType == .window })?.frame,
+              let input = frame(identifier), let save = frame("editor.save"), let cancel = frame("editor.cancel") else { return nil }
+        let keyboard = elements.first { $0.elementType == .keyboard && !$0.frame.isEmpty && $0.frame.intersects(window) }?.frame
+        return EditorLayout(window: window, input: input, keyboard: keyboard,
+                            save: save, cancel: cancel)
     }
 
     private func dismissRegistrationInteractively(_ app: XCUIApplication) {
@@ -1591,7 +1673,7 @@ final class PropertyRecordsUITests: XCTestCase {
         tap(text, app: app, list: app.collectionViews["work.list"])
     }
 
-    private func reveal(_ element: XCUIElement, app: XCUIApplication, in scope: XCUIElement? = nil) {
+    private func reveal(_ element: XCUIElement, app: XCUIApplication, in scope: XCUIElement? = nil, requireFullVisibility: Bool = false) {
         let window = app.windows.firstMatch
         let container: XCUIElement
         if let scope {
@@ -1599,17 +1681,26 @@ final class PropertyRecordsUITests: XCTestCase {
             container = scope
         } else if element.exists {
             let identity = element.identifier.isEmpty ? element.label : element.identifier
+            let bar = app.navigationBars.containing(.any, identifier: identity).firstMatch
+            if bar.exists, element.isHittable, bar.frame.contains(element.frame), window.frame.contains(element.frame),
+               keyboardFrame(app).map({ !$0.intersects(element.frame) }) ?? true { return }
             let owningList = app.collectionViews.containing(.any, identifier: identity).firstMatch
             container = owningList.exists && owningList.frame.intersects(window.frame) ? owningList : foregroundList(app)
         } else {
             container = foregroundList(app)
         }
         let frame = container.frame
-        let viewport = frame.intersection(window.frame).insetBy(dx: 0, dy: 44)
+        let bars = (app.navigationBars.allElementsBoundByIndex + app.tabBars.allElementsBoundByIndex).map(\.frame)
+        let target = element.exists && !element.frame.isEmpty ? element.frame : frame
+        guard let viewport = ListViewport(list: frame, window: window.frame, target: target, bars: bars)?.bounds else {
+            XCTFail("The list must provide a viewport outside visible navigation bars.")
+            return
+        }
         func reachable() -> Bool {
             guard element.exists && element.isHittable else { return false }
             let bounds = element.frame
             guard viewport.contains(CGPoint(x: bounds.midX, y: bounds.midY)) else { return false }
+            if requireFullVisibility && !viewport.contains(bounds) { return false }
             let tabs = app.tabBars.firstMatch
             if tabs.exists && tabs.isHittable && bounds.intersects(tabs.frame) { return false }
             return keyboardFrame(app).map { !bounds.intersects($0) } ?? true
@@ -1646,6 +1737,7 @@ final class PropertyRecordsUITests: XCTestCase {
         let keyboard = app.keyboards.firstMatch
         guard keyboard.exists else { return nil }
         let keys = keyboard.frame
+        guard !keys.isEmpty, keys.intersects(app.windows.firstMatch.frame) else { return nil }
         let assistants = app.otherElements.matching(NSPredicate(format: "identifier IN %@", ["inputView", "SystemInputAssistantView"]))
         return assistants.allElementsBoundByIndex.map(\.frame)
             .filter { !$0.isEmpty && $0.intersects(keys.insetBy(dx: 0, dy: -1)) }
@@ -1720,6 +1812,7 @@ final class PropertyRecordsUITests: XCTestCase {
               selected.isSelected == (selected.identifier == "work.row.selected") else { return nil }
         let identifiers = ["work.caption.location", "work.caption.status", "work.caption.deadline"]
         let captions = selected.staticTexts.matching(NSPredicate(format: "identifier IN %@", identifiers)).allElementsBoundByIndex
+            + [selected.staticTexts.firstMatch]
         guard let caption = captions.first(where: { $0.label == element.label && $0.frame == element.frame }),
               let contrast = try? measureCaption(caption, selected: selected, app: app, requireSelection: selected.isSelected), contrast.ratio >= 4.5 else { return nil }
         return "Record caption contrast verified from its rendered image: \(contrast.ratio):1."
@@ -1740,6 +1833,7 @@ final class PropertyRecordsUITests: XCTestCase {
 
         var accepts: Bool {
             let nativeHeader = (["期限が近い対応", "今後の対応"].contains(label) && listIdentity == "work.completedFilter")
+                || (["対応", "対応済み"].contains(label) && listIdentity == "work.list")
                 || (label == "建物" && listIdentity == "サイドバー")
             guard version.majorVersion == 27, version.minorVersion == 2, version.patchVersion == 0,
                   idiom == .pad, nativeHeader, auditType == .contrast,
@@ -1799,6 +1893,9 @@ final class PropertyRecordsUITests: XCTestCase {
         let sidebar: XCUIElement
         let listIdentity: String
         switch element.label {
+        case "対応", "対応済み":
+            sidebar = app.collectionViews["work.list"].firstMatch
+            listIdentity = "work.list"
         case "期限が近い対応", "今後の対応":
             sidebar = app.collectionViews.containing(.button, identifier: "work.completedFilter").firstMatch
             listIdentity = "work.completedFilter"
@@ -1813,7 +1910,7 @@ final class PropertyRecordsUITests: XCTestCase {
         let frame = header.frame
         let image = header.screenshot()
         guard header.frame == frame, let bitmap = image.image.cgImage,
-              let contrast = try? UniformTextContrast(image: bitmap) else { return nil }
+              let contrast = try? UniformTextContrast(image: bitmap, background: listIdentity == "work.list" ? .shaded : .uniform) else { return nil }
         let scope = SidebarHeaderContrastScope(version: ProcessInfo.processInfo.operatingSystemVersion,
             idiom: UIDevice.current.userInterfaceIdiom, auditType: issue.auditType,
             elementType: element.elementType, label: element.label, listIdentity: listIdentity, matchingHeader: header.frame == element.frame,

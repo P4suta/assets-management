@@ -26,6 +26,7 @@ The measurement rejects border channel differences greater than 16 on the 8-bit 
 Gradient fixtures reject weak text, missing foreground, and unsupported background variation.
 Unsupported or ambiguous images fail verification.
 The audit filter requires the affected OS, issue type, label, element type, selection, matching frame, and a fresh measured ratio of at least 4.5:1.
+The filter also verifies work titles and the combined progress headers from current screenshots.
 Unknown reports remain failures.
 On iPadOS 26.0 and 27.2, native repair, renewal, and building sheets can report unlocated text behind the sheet.
 The history, room, and contract editors reproduce the report on iPadOS 27.2.
@@ -50,8 +51,7 @@ An independent SwiftUI TabView reproduces the same report, while Settings' Gener
 The qualifier for native tabs requires the exact runtime, AX5, three native tabs at the top, an unlocated report of partial support, and at most three reports.
 Located issues, full unsupported reports, and unknown contexts remain failures.
 The AX5 full audit on iPadOS 27.2 reports unsupported Dynamic Type without locating an element in the repair editor.
-With Increase Contrast enabled, the Actions audit also reports unlocated insufficient contrast.
-Both reports remain failures pending diagnosis.
+The report remains a failure pending diagnosis.
 Complementary Light and Dark AX5 journeys check long property names, visible keyboards, discard, save retry, bounded repair estimates, and contract amounts.
 Rendered label measurements require the complete label inside its scroll viewport.
 A [VoiceOver journey](https://developer.apple.com/documentation/xcuiautomation/xcuivoiceoverservice) checks editor labels in both directions and rejects background labels on iOS 27 or later.
@@ -95,6 +95,8 @@ The native field uses [the text field delegate](https://developer.apple.com/docu
 The field keeps the standard number pad and [disables its popover](https://developer.apple.com/documentation/uikit/uitextinputtraits/allowsnumberpadpopover) to prevent the popup from intercepting editor actions on iPad.
 Native journeys clear and save amounts before and after keyboard focus.
 The journeys wait for stable native editor and keyboard frames before the next action.
+Editor frame checks capture the input, keyboard, and toolbar in one [native snapshot](https://developer.apple.com/documentation/xcuiautomation/xcuielementsnapshotproviding/snapshot()) before comparing their positions.
+Scroll checks calculate the visible viewport from native navigation and tab bars.
 The field accepts the proposed width through [SwiftUI measurement](https://developer.apple.com/documentation/swiftui/uiviewrepresentable/sizethatfits(_:uiview:context:)) to preserve space for clearing input.
 Interface journeys check the clear button's size and position with the largest text size and an open keyboard.
 Hosted tests exercise replacement, deletion, noncontiguous ranges, and changes that bypass the delegate.
@@ -146,4 +148,5 @@ Supply the installed runner and app bundle identifiers plus the test bundle's de
 Remove the paths on the host for the app, runner, and test bundle.
 Turn off the app's Main Thread Checker.
 Run the prepared file with `mise x -- just review-journey-test /absolute/path/installed-app.xctestrun`.
+The journey has a ten-minute limit for native controls, record creation, and rotation checks.
 The recipe rejects test-run files that could install another app over the TestFlight build.

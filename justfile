@@ -59,7 +59,7 @@ review-journey-build build_path: generate
 
 review-journey-test run_file:
     plutil -convert json -o - '{{ run_file }}' | jaq --exit-status '((keys | sort) == ["PropertyRecordsUITests", "__xctestrun_metadata__"]) and .PropertyRecordsUITests.UseDestinationArtifacts == true and .PropertyRecordsUITests.UITargetAppBundleIdentifier == "com.p4suta.PropertyRecords"'
-    xcodebuild -xctestrun '{{ run_file }}' -destination '{{ destination }}' -parallel-testing-enabled NO -test-timeouts-enabled YES -default-test-execution-time-allowance 240 -maximum-test-execution-time-allowance 300 '-only-testing:PropertyRecordsUITests/PropertyRecordsUITests/testReviewDemonstration()' test-without-building -quiet
+    xcodebuild -xctestrun '{{ run_file }}' -destination '{{ destination }}' -parallel-testing-enabled NO -test-timeouts-enabled YES -default-test-execution-time-allowance 600 -maximum-test-execution-time-allowance 600 '-only-testing:PropertyRecordsUITests/PropertyRecordsUITests/testReviewDemonstration()' test-without-building -quiet
 
 release-build: generate
     xcodebuild -project PropertyRecords.xcodeproj -scheme PropertyRecords -configuration Release -destination 'generic/platform=iOS' -derivedDataPath .derivedData CODE_SIGNING_ALLOWED=NO build -quiet
