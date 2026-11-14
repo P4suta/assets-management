@@ -196,21 +196,25 @@ struct ReminderReport: View {
     var body: some View {
         if notices.reminder != .none {
             Section("通知") {
-                Text(message).font(.body).foregroundStyle(Color.primary)
-                    .fixedSize(horizontal: false, vertical: true)
-                if notices.reminder == .denied {
-                    Button("設定を開く") {
-                        if let url = URL(string: UIApplication.openNotificationSettingsURLString) {
-                            openURL(url)
+                VStack(alignment: .leading, spacing: 12) {
+                    Text(message).font(.body).foregroundStyle(Color.primary)
+                        .fixedSize(horizontal: false, vertical: true)
+                    if notices.reminder == .denied {
+                        Button("設定を開く", systemImage: "gearshape") {
+                            if let url = URL(string: UIApplication.openNotificationSettingsURLString) { openURL(url) }
                         }
+                        .frame(minHeight: 44, alignment: .leading)
                     }
-                }
-                if notices.reminder == .failed {
-                    Button("通知を再試行", systemImage: "arrow.clockwise") {
-                        Task { await notices.retry(store.records) }
+                    if notices.reminder == .failed {
+                        Button("通知を再試行", systemImage: "arrow.clockwise") {
+                            Task { await notices.retry(store.records) }
+                        }
+                        .frame(minHeight: 44, alignment: .leading)
                     }
+                    Button("閉じる", systemImage: "xmark") { notices.dismissReminder() }
+                        .frame(minHeight: 44, alignment: .leading)
                 }
-                Button("閉じる") { notices.dismissReminder() }
+                .buttonStyle(.borderless)
             }
         }
     }
