@@ -11,6 +11,21 @@ import UIKit
         var binding: Binding<AmountInput> { Binding(get: { self.input }, set: { self.input = $0 }) }
     }
 
+    @Observable final class TextSizeBox {
+        var value: DynamicTypeSize = .large
+    }
+
+    private struct ResizingAmountForm: View {
+        @Bindable var size: TextSizeBox
+        let input: Binding<AmountInput>
+
+        var body: some View {
+            Form {
+                AmountField(title: "見積額（円）", input: input, identifier: "amount")
+            }.dynamicTypeSize(size.value)
+        }
+    }
+
     @Test(arguments: ["1000000000000000000000000000", String(repeating: "８", count: 10_000)])
     func pastesAreRejectedBeforeChangingTheNativeField(text: String) throws {
         let box = InputBox("85000")
@@ -114,6 +129,46 @@ import UIKit
         let restored = try #require(await amountField(in: controller.view, category: .large))
         #expect(try #require(restored.font).pointSize == initialSize)
         #expect(restored.text == "85000")
+    }
+
+    @Test func swiftUITextSizeEnvironmentScalesTheNativeAmountField() async throws {
+        let box = InputBox("85000")
+        let scene = try #require(UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.first)
+        let window = UIWindow(windowScene: scene)
+        window.frame = CGRect(x: 0, y: 0, width: 320, height: 900)
+        let controller = UIHostingController(rootView: Form {
+            AmountField(title: "見積額（円）", input: box.binding, identifier: "amount")
+        }.dynamicTypeSize(.accessibility5))
+        controller.traitOverrides.preferredContentSizeCategory = .large
+        window.rootViewController = controller
+        window.isHidden = false
+        defer { window.isHidden = true; window.rootViewController = nil }
+        let field = try #require(await amountField(in: controller.view, category: .accessibilityExtraExtraExtraLarge))
+        #expect(field.text == "85000")
+        #expect(box.input.text == "85000")
+    }
+
+    @Test func liveSwiftUITextSizeChangesPreserveTheNativeFieldAndInput() async throws {
+        let box = InputBox("85000")
+        let size = TextSizeBox()
+        let scene = try #require(UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.first)
+        let window = UIWindow(windowScene: scene)
+        window.frame = CGRect(x: 0, y: 0, width: 320, height: 900)
+        let controller = UIHostingController(rootView: ResizingAmountForm(size: size, input: box.binding))
+        controller.traitOverrides.preferredContentSizeCategory = .large
+        window.rootViewController = controller
+        window.isHidden = false
+        defer { window.isHidden = true; window.rootViewController = nil }
+        let initial = try #require(await amountField(in: controller.view, category: .large))
+        size.value = .accessibility5
+        let enlarged = try #require(await amountField(in: controller.view, category: .accessibilityExtraExtraExtraLarge))
+        #expect(enlarged === initial)
+        #expect(enlarged.text == "85000")
+        size.value = .large
+        let restored = try #require(await amountField(in: controller.view, category: .large))
+        #expect(restored === initial)
+        #expect(restored.text == "85000")
+        #expect(box.input.text == "85000")
     }
 
     private func amountField(in view: UIView, category: UIContentSizeCategory) async -> UITextField? {
