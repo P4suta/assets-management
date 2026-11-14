@@ -9,7 +9,7 @@ struct AmountField: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(title).font(.subheadline).foregroundStyle(Color.secondary)
+            Text(LocalizedStringKey(title)).font(.subheadline).foregroundStyle(Color.secondary)
                 .fixedSize(horizontal: false, vertical: true)
             HStack {
                 Image(systemName: "yensign").accessibilityHidden(true)
@@ -33,13 +33,7 @@ struct AmountField: View {
                     .foregroundStyle(Color(uiColor: .systemRed))
                     .accessibilityIdentifier(identifier + ".error")
                     .fixedSize(horizontal: false, vertical: true)
-            } else if let amount = try? input.value() {
-                Text(yen(amount)).foregroundStyle(Color.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
             }
-            Text("0円〜1兆円。空欄は未登録です。")
-                .font(.footnote).foregroundStyle(Color.secondary)
-                .fixedSize(horizontal: false, vertical: true)
         }
         .onChange(of: input.issue) { _, issue in
             if issue != nil { UIAccessibility.post(notification: .announcement, argument: errorMessage(DomainError.invalidAmount)) }
@@ -73,6 +67,7 @@ struct NativeAmountField: UIViewRepresentable {
             let field = UITextField()
             field.delegate = self
             field.keyboardType = .numberPad
+            field.allowsNumberPadPopover = false
             field.autocorrectionType = .no
             field.autocapitalizationType = .none
             field.adjustsFontForContentSizeCategory = true

@@ -13,8 +13,48 @@ settings:
     SWIFT_VERSION: "6.0"
     SWIFT_STRICT_CONCURRENCY: complete
     SWIFT_TREAT_WARNINGS_AS_ERRORS: YES
+    COMPILATION_CACHE_ENABLE_CACHING: NO
     ENABLE_USER_SCRIPT_SANDBOXING: YES
-    TARGETED_DEVICE_FAMILY: "1"
+    TARGETED_DEVICE_FAMILY: "1,2"
+schemes:
+  PropertyRecords:
+    build:
+      targets:
+        PropertyRecords: all
+    test:
+      targets: [PropertyRecordsAppTests]
+      debugEnabled: false
+      gatherCoverageData: true
+  PropertyRecordsInterface:
+    build:
+      targets:
+        PropertyRecords: [test]
+    test:
+      targets: [PropertyRecordsUITests]
+      debugEnabled: false
+      gatherCoverageData: true
+      preActions:
+        - name: Prepare the simulator photo fixture
+          settingsTarget: PropertyRecords
+          script: |
+            set -eu
+            if [ "$PLATFORM_NAME" = "iphonesimulator" ]; then
+              xcrun simctl bootstatus "$TARGET_DEVICE_IDENTIFIER" -b
+              xcrun simctl addmedia "$TARGET_DEVICE_IDENTIFIER" "$SRCROOT/UITests/Fixtures/Building.png"
+            fi
+  PropertyRecordsReview:
+    build:
+      targets:
+        PropertyRecords: [test]
+    test:
+      config: Release
+      debugEnabled: false
+      targets:
+        - name: PropertyRecordsUITests
+          parallelizable: false
+      gatherCoverageData: false
+      preferredScreenCaptureFormat: screenRecording
+      deleteScreenshotsWhenEachTestSucceeds: false
 targets:
   PropertyRecords:
     type: application
@@ -32,8 +72,8 @@ targets:
         CODE_SIGN_STYLE: Automatic
         DEVELOPMENT_ASSET_PATHS: App/DevelopmentAssets
         MARKETING_VERSION: 1.0.0
-        CURRENT_PROJECT_VERSION: 2
-        TARGETED_DEVICE_FAMILY: "1"
+        CURRENT_PROJECT_VERSION: 6
+        TARGETED_DEVICE_FAMILY: "1,2"
         ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
         GENERATE_INFOPLIST_FILE: NO
         INFOPLIST_FILE: App/Info.plist
@@ -44,9 +84,6 @@ targets:
         INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.productivity
         INFOPLIST_KEY_UIFileSharingEnabled: YES
         INFOPLIST_KEY_LSSupportsOpeningDocumentsInPlace: YES
-    scheme:
-      testTargets: [PropertyRecordsAppTests, PropertyRecordsUITests]
-      gatherCoverageData: true
   PropertyRecordsAppTests:
     type: bundle.unit-test
     platform: iOS
@@ -69,3 +106,7 @@ targets:
       base:
         GENERATE_INFOPLIST_FILE: YES
         PRODUCT_BUNDLE_IDENTIFIER: com.p4suta.PropertyRecordsUITests
+        VOICEOVER_TEST_CONDITION: VOICEOVER_AUTOMATION
+        "VOICEOVER_TEST_CONDITION[sdk=iphoneos26.*]": ""
+        "VOICEOVER_TEST_CONDITION[sdk=iphonesimulator26.*]": ""
+        SWIFT_ACTIVE_COMPILATION_CONDITIONS: "$(inherited) $(VOICEOVER_TEST_CONDITION)"

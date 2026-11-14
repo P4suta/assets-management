@@ -32,6 +32,7 @@ public actor FileRecordsRepository: RecordsRepository {
         catch { throw StorageError.unreadable }
         let records: Records
         do { records = try JSONDecoder().decode(Records.self, from: data) }
+        catch DomainError.unsupportedFormat { throw DomainError.unsupportedFormat }
         catch { throw StorageError.corrupted }
         return try records.validatedAfterLoading()
     }

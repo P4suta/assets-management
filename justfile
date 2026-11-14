@@ -43,10 +43,23 @@ app-test: generate
     xcodebuild -project PropertyRecords.xcodeproj -scheme PropertyRecords -destination '{{ destination }}' -derivedDataPath .derivedData CODE_SIGNING_ALLOWED=NO -parallel-testing-enabled NO -only-testing:PropertyRecordsAppTests test -quiet
 
 ui-test: generate
-    xcodebuild -project PropertyRecords.xcodeproj -scheme PropertyRecords -destination '{{ destination }}' -derivedDataPath .derivedData CODE_SIGNING_ALLOWED=NO -parallel-testing-enabled NO -skip-testing:PropertyRecordsUITests/PropertyRecordsUITests/testSystemSettingsAuditProbe test -quiet
+    xcodebuild -project PropertyRecords.xcodeproj -scheme PropertyRecordsInterface -destination '{{ destination }}' -derivedDataPath .derivedData CODE_SIGNING_ALLOWED=NO -parallel-testing-enabled NO '-skip-testing:PropertyRecordsUITests/PropertyRecordsUITests/testSystemSettingsAuditProbe()' test -quiet
 
 ui-tour: generate
-    xcodebuild -project PropertyRecords.xcodeproj -scheme PropertyRecords -destination '{{ destination }}' -derivedDataPath .derivedData CODE_SIGNING_ALLOWED=NO -parallel-testing-enabled NO -only-testing:PropertyRecordsUITests/PropertyRecordsUITests/testScreenTourAccessibility test -quiet
+    xcodebuild -project PropertyRecords.xcodeproj -scheme PropertyRecordsInterface -destination '{{ destination }}' -derivedDataPath .derivedData CODE_SIGNING_ALLOWED=NO -parallel-testing-enabled NO '-only-testing:PropertyRecordsUITests/PropertyRecordsUITests/testScreenTourAccessibility()' test -quiet
+
+adaptive-ui-test: generate
+    xcodebuild -project PropertyRecords.xcodeproj -scheme PropertyRecordsInterface -destination '{{ destination }}' -derivedDataPath .derivedData CODE_SIGNING_ALLOWED=NO -parallel-testing-enabled NO '-only-testing:PropertyRecordsUITests/PropertyRecordsUITests/testSelectedWorkAndUnsavedEditSurviveRotation()' '-only-testing:PropertyRecordsUITests/PropertyRecordsUITests/testSelectedPropertyAndRoomSurviveRotation()' test -quiet
+
+store-screenshot-test: generate
+    xcodebuild -project PropertyRecords.xcodeproj -scheme PropertyRecordsInterface -destination '{{ destination }}' -derivedDataPath .derivedData CODE_SIGNING_ALLOWED=NO -parallel-testing-enabled NO '-only-testing:PropertyRecordsUITests/PropertyRecordsUITests/testStoreScreenshots()' test -quiet
+
+review-journey-build build_path: generate
+    xcodebuild -project PropertyRecords.xcodeproj -scheme PropertyRecordsReview -configuration Release -destination '{{ destination }}' -derivedDataPath '{{ build_path }}' DEVELOPMENT_TEAM=XMBQLW82L9 -allowProvisioningUpdates build-for-testing -quiet
+
+review-journey-test run_file:
+    plutil -convert json -o - '{{ run_file }}' | jaq --exit-status '((keys | sort) == ["PropertyRecordsUITests", "__xctestrun_metadata__"]) and .PropertyRecordsUITests.UseDestinationArtifacts == true and .PropertyRecordsUITests.UITargetAppBundleIdentifier == "com.p4suta.PropertyRecords"'
+    xcodebuild -xctestrun '{{ run_file }}' -destination '{{ destination }}' -parallel-testing-enabled NO -test-timeouts-enabled YES -default-test-execution-time-allowance 600 -maximum-test-execution-time-allowance 600 '-only-testing:PropertyRecordsUITests/PropertyRecordsUITests/testReviewDemonstration()' test-without-building -quiet
 
 release-build: generate
     xcodebuild -project PropertyRecords.xcodeproj -scheme PropertyRecords -configuration Release -destination 'generic/platform=iOS' -derivedDataPath .derivedData CODE_SIGNING_ALLOWED=NO build -quiet
@@ -57,7 +70,7 @@ archive archive_path: generate
 
 export archive_path output_path:
     just archive-resources '{{ archive_path }}'
-    xcodebuild -exportArchive -archivePath '{{ archive_path }}' -exportPath '{{ output_path }}' -exportOptionsPlist AppStore/ExportOptions.plist -allowProvisioningUpdates -quiet
+    PATH=/usr/bin:/bin:/usr/sbin:/sbin xcodebuild -exportArchive -archivePath '{{ archive_path }}' -exportPath '{{ output_path }}' -exportOptionsPlist AppStore/ExportOptions.plist -allowProvisioningUpdates -quiet
 
 archive-resources archive_path:
     test ! -e '{{ archive_path }}/Products/Applications/PropertyRecords.app/PhotoLicense.txt'
@@ -66,3 +79,4 @@ archive-resources archive_path:
 store-assets:
     asc metadata validate --dir AppStore/Metadata
     asc screenshots validate --path AppStore/Screenshots/ja/APP_IPHONE_61 --device-type APP_IPHONE_61
+    asc screenshots validate --path AppStore/Screenshots/ja/APP_IPAD_PRO_3GEN_129 --device-type APP_IPAD_PRO_3GEN_129

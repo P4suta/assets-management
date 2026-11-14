@@ -1,12 +1,13 @@
 # Prepare distribution
 
-The app targets iPhone with iOS 26 or later.
+The app targets iPhone and iPad with iOS 26 or later.
+Its native layout supports resizable windows and iPhone Duo.
 The App Store name is `物件管理くん`.
 The price is free, with no accounts, advertising, tracking, or purchases.
 The bundle identifier is `com.p4suta.PropertyRecords`.
 The Apple Developer team is `XMBQLW82L9`.
 The initial version is `1.0.0`.
-The current build number is `2`.
+The current build number is `6`.
 
 Run the fast gate, hosted app tests, interface journeys on iOS 26 and a later runtime, Thread Sanitizer, and the full mutation campaign before archiving.
 The verification scope and mutation acceptance criteria are in [verification.md](verification.md).
@@ -33,8 +34,12 @@ App Store privacy answers must describe the shipped binary and its dependencies.
 The app stores records and attachments on the device and has no collection service.
 The support email is `hi@sakashita.email`.
 
-The Japanese description explains repair and renewal records without a tab walkthrough.
-The promotional text describes the history users can keep.
+The Japanese description addresses rental property managers who need to find earlier repairs and keep scattered notes and photographs together.
+Its examples describe short memos, inline photographs, progress search, deadline reminders, contracts, equipment, and common-area work.
+The promotional text describes the notes, photographs, and progress users can keep.
+The marketing URL points to the app-specific landing page at its subdomain root.
+The page meets Apple's [marketing URL definition](https://developer.apple.com/help/app-store-connect/reference/app-information/platform-version-information/).
+The CLI reports its general root-path heuristic for the dedicated marketing page: `legal.url.site_root`.
 The [header artwork](../AppStore/CreativeAssets/ja/header.svg) and [search results artwork](../AppStore/CreativeAssets/ja/search-results.svg) contain the Japanese heading on a white background.
 The header uses 3840 by 1646 pixels, and the search artwork uses 3840 by 2560 pixels under Apple's [creative asset specifications](https://developer.apple.com/help/app-store-connect/reference/app-information/creative-assets-specifications).
 Each heading stays inside its template's safe area.
@@ -53,9 +58,9 @@ Assign the header to `PRODUCT_PAGE_HEADER_ASSET`.
 Assign the search artwork to `APP_STORE_SEARCH_RESULTS_ASSET`.
 For the initial version, add the app version to a draft after assigning its creative images.
 Check the image's review state before adding a separate asset item.
-Leave the draft ready for the final submission button when the owner requests that handoff.
+Leave the draft ready when the user requests a manual submission.
 
 Prepare the Japanese metadata, screenshots, free price, age rating, export compliance, privacy answers, and review notes under [Apple's version requirements](https://developer.apple.com/help/app-store-connect/reference/app-information/platform-version-information).
-Select [automatic release after approval](https://developer.apple.com/help/app-store-connect/manage-your-apps-availability/select-an-app-store-version-release-option) when the owner authorizes publication.
+Select [automatic release after approval](https://developer.apple.com/help/app-store-connect/manage-your-apps-availability/select-an-app-store-version-release-option) after the user authorizes publication.
 Upload and build processing are preparation steps.
-Submitting for App Review and releasing the app require the owner's instruction.
+Submitting for App Review and releasing the app require explicit authorization.

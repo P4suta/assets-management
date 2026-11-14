@@ -25,8 +25,8 @@
    </BuildAction>
    <TestAction
       buildConfiguration = "Debug"
-      selectedDebuggerIdentifier = "Xcode.DebuggerFoundation.Debugger.LLDB"
-      selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB"
+      selectedDebuggerIdentifier = ""
+      selectedLauncherIdentifier = "Xcode.IDEFoundation.Launcher.PosixSpawn"
       shouldUseLaunchSchemeArgsEnv = "YES"
       codeCoverageEnabled = "YES"
       onlyGenerateCoverageForSpecifiedTargets = "NO">
@@ -48,17 +48,6 @@
                BlueprintIdentifier = "ED626066C4B41CCD19FCAB30"
                BuildableName = "PropertyRecordsAppTests.xctest"
                BlueprintName = "PropertyRecordsAppTests"
-               ReferencedContainer = "container:PropertyRecords.xcodeproj">
-            </BuildableReference>
-         </TestableReference>
-         <TestableReference
-            skipped = "NO"
-            parallelizable = "NO">
-            <BuildableReference
-               BuildableIdentifier = "primary"
-               BlueprintIdentifier = "AEC6114EF489FFE157AA8C83"
-               BuildableName = "PropertyRecordsUITests.xctest"
-               BlueprintName = "PropertyRecordsUITests"
                ReferencedContainer = "container:PropertyRecords.xcodeproj">
             </BuildableReference>
          </TestableReference>
@@ -86,8 +75,6 @@
             ReferencedContainer = "container:PropertyRecords.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
-      <CommandLineArguments>
-      </CommandLineArguments>
    </LaunchAction>
    <ProfileAction
       buildConfiguration = "Release"
@@ -105,8 +92,6 @@
             ReferencedContainer = "container:PropertyRecords.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
-      <CommandLineArguments>
-      </CommandLineArguments>
    </ProfileAction>
    <AnalyzeAction
       buildConfiguration = "Debug">
