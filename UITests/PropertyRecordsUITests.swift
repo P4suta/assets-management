@@ -119,13 +119,13 @@ final class PropertyRecordsUITests: XCTestCase {
         let emergency = app.switches["contact.emergency"]
         reveal(emergency, app: app)
         emergency.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.5)).tap()
-        let property = app.switches["桜通りレジデンス"]
+        let property = app.switches["未来ヶ丘団地"]
         reveal(property, app: app)
         property.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.5)).tap()
         app.buttons["editor.save"].tap()
         tap("保険の事故受付", app: app)
-        XCTAssertTrue(row("夜間も受付", app: app).waitForExistence(timeout: 5))
-        XCTAssertTrue(row("桜通りレジデンス", app: app).exists)
+        XCTAssertTrue(app.staticTexts["夜間も受付"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["未来ヶ丘団地"].exists)
         try audit(app, name: "Contact")
         app.terminate()
         app.launch()
@@ -196,7 +196,8 @@ final class PropertyRecordsUITests: XCTestCase {
         enter("qa+repair@example.invalid", into: "contact.email", app: app)
         app.buttons["editor.save"].tap()
         tap("設備の相談窓口", app: app)
-        XCTAssertTrue(row("受付9時〜17時", app: app).waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "受付9時〜17時"))
+            .firstMatch.waitForExistence(timeout: 5))
         XCTAssertFalse(app.descendants(matching: .any)["contact.phone.open"].firstMatch.exists)
         tapIdentifier("contact.email.open", app: app)
         let confirmation = app.alerts["外部リンクを開く"]
@@ -285,14 +286,14 @@ final class PropertyRecordsUITests: XCTestCase {
         app.buttons["委託管理"].tap()
         tapIdentifier("property.agency", app: app)
         app.buttons["青葉管理"].tap()
-        replace("桜通りレジデンス東館", in: "property.name", app: app)
+        replace("未来ヶ丘団地東館", in: "property.name", app: app)
         app.buttons["editor.save"].tap()
         app.terminate()
         app.launch()
         selectTab("物件", app: app)
-        tap("桜通りレジデンス東館", app: app)
+        tap("未来ヶ丘団地東館", app: app)
         tapIdentifier("property.agency.detail", app: app)
-        XCTAssertTrue(row("青葉管理", app: app).waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["青葉管理"].waitForExistence(timeout: 5))
         back(app)
         tap("205号室", app: app)
         let resident = row("佐藤 美咲", app: app)
@@ -306,7 +307,7 @@ final class PropertyRecordsUITests: XCTestCase {
 
     private func openSampleRoom(_ app: XCUIApplication) {
         selectTab("物件", app: app)
-        tap("桜通りレジデンス", app: app)
+        tap("未来ヶ丘団地", app: app)
         tap("203号室", app: app)
     }
 
@@ -364,7 +365,7 @@ final class PropertyRecordsUITests: XCTestCase {
     func testChangingOnlyContractRentRequiresDiscardConfirmation() {
         let app = launch(seeded: true)
         selectTab("物件", app: app)
-        tap("桜通りレジデンス", app: app)
+        tap("未来ヶ丘団地", app: app)
         tap("203号室", app: app)
         tap("賃貸借契約", app: app)
         tap("契約を編集", app: app)
@@ -387,17 +388,17 @@ final class PropertyRecordsUITests: XCTestCase {
         app.buttons["property.add"].tap()
         app.buttons["editor.save"].tap()
         XCTAssertTrue(app.staticTexts["建物名を入力してください。"].waitForExistence(timeout: 5))
-        enter("桜通りレジデンス", into: "property.name", app: app)
+        enter("未来ヶ丘団地", into: "property.name", app: app)
         enter("203", into: "property.room", app: app)
         app.buttons["editor.cancel"].tap()
         app.alerts.buttons["編集を続ける"].tap()
-        XCTAssertEqual(app.textFields["property.name"].value as? String, "桜通りレジデンス")
+        XCTAssertEqual(app.textFields["property.name"].value as? String, "未来ヶ丘団地")
         app.buttons["editor.save"].tap()
-        XCTAssertTrue(row("桜通りレジデンス", app: app).waitForExistence(timeout: 5))
+        XCTAssertTrue(row("未来ヶ丘団地", app: app).waitForExistence(timeout: 5))
         app.terminate()
         app.launch()
         selectTab("物件", app: app)
-        XCTAssertTrue(row("桜通りレジデンス", app: app).waitForExistence(timeout: 5))
+        XCTAssertTrue(row("未来ヶ丘団地", app: app).waitForExistence(timeout: 5))
     }
 
     func testFailedSavePreservesInputAndRetrySucceeds() {
@@ -483,7 +484,7 @@ final class PropertyRecordsUITests: XCTestCase {
         app.buttons["editor.save"].tap()
         setWorkStatus("完了", app: app)
         selectTab("物件", app: app)
-        tap("桜通りレジデンス", app: app)
+        tap("未来ヶ丘団地", app: app)
         tap("101号室", app: app)
         tap("賃貸借契約", app: app)
         XCTAssertTrue(app.staticTexts["家賃、¥78,000"].waitForExistence(timeout: 5))
@@ -723,7 +724,7 @@ final class PropertyRecordsUITests: XCTestCase {
     private func longPropertyNameKeyboardJourney(requiresKeyboard: Bool = false) -> XCUIApplication {
         let app = launch()
         app.buttons["property.add"].tap()
-        let name = "桜通りレジデンス東棟・第一管理区画と共用設備を含む長い物件名"
+        let name = "未来ヶ丘団地東棟・第一管理区画と共用設備を含む長い物件名"
         enter(name, into: "property.name", app: app)
         enter("1203", into: "property.room", app: app)
         XCTAssertTrue(app.buttons["editor.save"].isHittable)
@@ -791,7 +792,7 @@ final class PropertyRecordsUITests: XCTestCase {
         app.buttons["property.add"].tap()
         try audit(app, name: "Property Editor")
         app.buttons["editor.cancel"].tap()
-        tap("桜通りレジデンス", app: app)
+        tap("未来ヶ丘団地", app: app)
         try audit(app, name: "Building")
         tap("建物を編集", app: app)
         try audit(app, name: "Building Editor")
@@ -880,9 +881,9 @@ final class PropertyRecordsUITests: XCTestCase {
             try audit(app, name: "Selected repair")
             try auditSelectionContrast(row("給湯器から水漏れ", app: app), app: app)
             selectTab("物件", app: app)
-            tap("桜通りレジデンス", app: app)
+            tap("未来ヶ丘団地", app: app)
             try audit(app, name: "Selected building")
-            try auditSelectionContrast(row("桜通りレジデンス", app: app), app: app)
+            try auditSelectionContrast(row("未来ヶ丘団地", app: app), app: app)
             app.terminate()
         }
     }
@@ -928,6 +929,29 @@ final class PropertyRecordsUITests: XCTestCase {
         let quantized = try UniformTextContrast(image: image(foreground: .black, background: background, dither: dither, text: true))
         XCTAssertGreaterThan(quantized.ratio, 12)
         XCTAssertThrowsError(try UniformTextContrast(image: image(foreground: nil, background: .white)))
+        let header = try XCTUnwrap(UIImage(named: "ProgressSectionHeader", in: Bundle(for: Self.self), compatibleWith: nil)?.cgImage)
+        XCTAssertGreaterThanOrEqual(try UniformTextContrast(image: header, background: .shaded).ratio, 4.5)
+        func shaded(_ foreground: UIColor?, end: UIColor = UIColor(white: 0.98, alpha: 1)) throws -> CGImage {
+            let format = UIGraphicsImageRendererFormat()
+            format.scale = 2
+            format.opaque = true
+            let colors = [UIColor(white: 0.94, alpha: 1).cgColor, end.cgColor]
+            let gradient = try XCTUnwrap(CGGradient(colorsSpace: CGColorSpace(name: CGColorSpace.sRGB),
+                                                    colors: colors as CFArray, locations: nil))
+            let bitmap = UIGraphicsImageRenderer(size: CGSize(width: 200, height: 32), format: format).image { context in
+                context.cgContext.drawLinearGradient(gradient, start: .zero, end: CGPoint(x: 0, y: 32), options: [])
+                if let foreground {
+                    ("対応" as NSString).draw(at: CGPoint(x: 12, y: 4), withAttributes: [
+                        .font: UIFont.systemFont(ofSize: 14), .foregroundColor: foreground
+                    ])
+                }
+            }
+            return try XCTUnwrap(bitmap.cgImage)
+        }
+        XCTAssertGreaterThan(try UniformTextContrast(image: shaded(.black), background: .shaded).ratio, 12)
+        XCTAssertLessThan(try UniformTextContrast(image: shaded(.lightGray), background: .shaded).ratio, 4.5)
+        XCTAssertThrowsError(try UniformTextContrast(image: shaded(nil), background: .shaded))
+        XCTAssertThrowsError(try UniformTextContrast(image: shaded(.white, end: .black), background: .shaded))
     }
 
     func testProgressSectionHeadingsRemainReadableTogether() throws {
@@ -937,7 +961,7 @@ final class PropertyRecordsUITests: XCTestCase {
         back(app)
         for (label, identifier) in [("対応", "work.section.active"), ("対応済み", "work.section.completed")] {
             let text = app.staticTexts[identifier]
-            try assertRenderedCaptionContrast(text, name: "Progress section: " + label, app: app)
+            try assertRenderedCaptionContrast(text, name: "Progress section: " + label, app: app, background: .shaded)
         }
         XCTAssertTrue(app.navigationBars["対応"].exists)
         XCTAssertFalse(app.buttons["work.completedFilter"].exists)
@@ -948,7 +972,7 @@ final class PropertyRecordsUITests: XCTestCase {
             throw XCTSkip("Unselected metadata contrast requires Increase Contrast.")
         }
         let app = launch(seeded: true)
-        for (title, location) in [("給湯器から水漏れ", "桜通りレジデンス · 203号室"), ("共用灯の交換", "青葉コート · 共用部分")] {
+        for (title, location) in [("給湯器から水漏れ", "未来ヶ丘団地 · 203号室"), ("共用灯の交換", "青葉コート · 共用部分")] {
             let work = row(title, app: app)
             XCTAssertFalse(work.isSelected)
             let caption = work.staticTexts["work.caption.location"].firstMatch
@@ -959,14 +983,15 @@ final class PropertyRecordsUITests: XCTestCase {
             }
         }
         selectTab("物件", app: app)
-        let property = row("桜通りレジデンス", app: app)
+        let property = row("未来ヶ丘団地", app: app)
         XCTAssertFalse(property.isSelected)
         for label in ["自主管理 · 2部屋"] {
             try assertRenderedCaptionContrast(property.staticTexts[label].firstMatch, name: "Unselected property " + label, app: app)
         }
     }
 
-    private func assertRenderedCaptionContrast(_ caption: XCUIElement, name: String, app: XCUIApplication) throws {
+    private func assertRenderedCaptionContrast(_ caption: XCUIElement, name: String, app: XCUIApplication,
+                                              background: TextContrastBackground = .uniform) throws {
         reveal(caption, app: app)
         XCTAssertTrue(caption.isHittable, name)
         let frame = caption.frame
@@ -977,7 +1002,7 @@ final class PropertyRecordsUITests: XCTestCase {
         capture.name = name
         capture.lifetime = .keepAlways
         add(capture)
-        let measurement = try UniformTextContrast(image: XCTUnwrap(screenshot.image.cgImage))
+        let measurement = try UniformTextContrast(image: XCTUnwrap(screenshot.image.cgImage), background: background)
         let detail = XCTAttachment(string: "\(name): \(measurement.ratio):1\nForeground pixels: \(measurement.foregroundPixels)")
         detail.name = "Unselected metadata measured contrast"
         detail.lifetime = .keepAlways
@@ -1263,7 +1288,7 @@ final class PropertyRecordsUITests: XCTestCase {
         reveal(photo, app: app)
         captureStoreScreen(app, name: "3-repair")
         selectTab("物件", app: app)
-        tap("桜通りレジデンス", app: app)
+        tap("未来ヶ丘団地", app: app)
         captureStoreScreen(app, name: "2-properties")
         tap("203号室", app: app)
         tap("賃貸借契約", app: app)
@@ -1285,12 +1310,13 @@ final class PropertyRecordsUITests: XCTestCase {
 
     func testReviewDemonstration() {
         defer { XCUIDevice.shared.orientation = .portrait }
-        let app = launch(seeded: true)
-        let building = "青葉ハイツ"
+        let app = launch()
+        let building = "未来ヶ丘団地"
         selectTab("物件", app: app)
         app.buttons["property.add"].tap()
         enter(building, into: "property.name", app: app)
         enter("203", into: "property.room", app: app)
+        enter("朝焼1-2-3", into: "property.address", app: app)
         app.buttons["editor.save"].tap()
         tap(building, app: app)
         tap("203号室", app: app)
@@ -1309,7 +1335,7 @@ final class PropertyRecordsUITests: XCTestCase {
         selectTab("連絡先", app: app)
         tapIdentifier("contacts.add", app: app)
         enter("設備の相談窓口", into: "contact.name", app: app)
-        enter("さくら設備", into: "contact.company", app: app)
+        enter("朝焼設備", into: "contact.company", app: app)
         enter("夜間の連絡も受付", into: "contact.notes", app: app)
         tapIdentifier("contact.category", app: app)
         app.buttons["メンテナンス"].tap()
@@ -1321,12 +1347,14 @@ final class PropertyRecordsUITests: XCTestCase {
         property.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.5)).tap()
         app.buttons["editor.save"].tap()
         tap("設備の相談窓口", app: app)
-        XCTAssertTrue(row("夜間の連絡も受付", app: app).waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["夜間の連絡も受付"].waitForExistence(timeout: 5))
         captureStoreScreen(app, name: "Review shared contact")
         selectTab("対応", app: app)
         app.buttons["work.add"].tap()
         field("work.building", app: app).tap()
-        tap(building, app: app)
+        let buildingOption = app.buttons[building].firstMatch
+        XCTAssertTrue(buildingOption.waitForExistence(timeout: 5))
+        buildingOption.tap()
         enter("共用灯の交換", into: "work.title", app: app)
         app.buttons["editor.save"].tap()
         let createdRepair = app.buttons.matching(NSPredicate(format: "label CONTAINS %@ AND label CONTAINS %@", "共用灯の交換", building)).firstMatch
@@ -1523,7 +1551,7 @@ final class PropertyRecordsUITests: XCTestCase {
     }
 
     private func tapIdentifier(_ identifier: String, app: XCUIApplication) {
-        let button = app.buttons[identifier]
+        let button = app.descendants(matching: .any)[identifier].firstMatch
         reveal(button, app: app)
         XCTAssertTrue(button.waitForExistence(timeout: 5), identifier)
         button.tap()
@@ -1559,7 +1587,7 @@ final class PropertyRecordsUITests: XCTestCase {
         } else if element.exists {
             let identity = element.identifier.isEmpty ? element.label : element.identifier
             let owningList = app.collectionViews.containing(.any, identifier: identity).firstMatch
-            container = owningList.exists && owningList.isHittable ? owningList : foregroundList(app)
+            container = owningList.exists && owningList.frame.intersects(window.frame) ? owningList : foregroundList(app)
         } else {
             container = foregroundList(app)
         }
@@ -1571,12 +1599,15 @@ final class PropertyRecordsUITests: XCTestCase {
             guard viewport.contains(CGPoint(x: bounds.midX, y: bounds.midY)) else { return false }
             let tabs = app.tabBars.firstMatch
             if tabs.exists && tabs.isHittable && bounds.intersects(tabs.frame) { return false }
-            let keyboard = app.keyboards.firstMatch
-            return !keyboard.exists || !bounds.intersects(keyboard.frame)
+            return keyboardFrame(app).map { !bounds.intersects($0) } ?? true
         }
         if reachable() { return }
-        let keyboard = app.keyboards.firstMatch
-        guard let coordinates = ScrollCoordinates(bounds: frame, keyboard: keyboard.isHittable ? keyboard.frame : nil) else {
+        let keyboard = keyboardFrame(app)
+        guard let coordinates = ScrollCoordinates(bounds: frame, keyboard: keyboard) else {
+            let detail = XCTAttachment(string: "Viewport: \(frame)\nKeyboard: \(String(describing: keyboard))\n\(app.debugDescription)")
+            detail.name = "Unavailable scroll viewport"
+            detail.lifetime = .keepAlways
+            add(detail)
             XCTFail("No visible viewport is available for scrolling.")
             return
         }
@@ -1585,25 +1616,34 @@ final class PropertyRecordsUITests: XCTestCase {
                                               dy: frame.minY - window.frame.minY + frame.height * coordinates.lower.dy))
         let upper = origin.withOffset(CGVector(dx: frame.minX - window.frame.minX + frame.width * coordinates.upper.dx,
                                               dy: frame.minY - window.frame.minY + frame.height * coordinates.upper.dy))
-        for _ in 0..<24 {
-            lower.press(forDuration: 0.05, thenDragTo: upper)
+        for attempt in 0..<48 {
+            let bounds = element.exists ? element.frame : .zero
+            let downward = bounds.isEmpty ? attempt >= 24 : bounds.midY < viewport.midY
+            if downward {
+                upper.press(forDuration: 0.05, thenDragTo: lower)
+            } else {
+                lower.press(forDuration: 0.05, thenDragTo: upper)
+            }
             if reachable() { return }
         }
-        let deepest = XCTAttachment(string: app.debugDescription)
-        deepest.name = "Unreached element after upward search"
-        deepest.lifetime = .deleteOnSuccess
-        add(deepest)
-        for _ in 0..<24 {
-            upper.press(forDuration: 0.05, thenDragTo: lower)
-            if reachable() { return }
-        }
+        XCTFail("The requested element must be reachable by scrolling.\n" + app.debugDescription)
+    }
+
+    private func keyboardFrame(_ app: XCUIApplication) -> CGRect? {
+        let keyboard = app.keyboards.firstMatch
+        guard keyboard.exists else { return nil }
+        let keys = keyboard.frame
+        let assistants = app.otherElements.matching(NSPredicate(format: "identifier IN %@", ["inputView", "SystemInputAssistantView"]))
+        return assistants.allElementsBoundByIndex.map(\.frame)
+            .filter { !$0.isEmpty && $0.intersects(keys.insetBy(dx: 0, dy: -1)) }
+            .reduce(keys) { $0.union($1) }
     }
 
     private func foregroundList(_ app: XCUIApplication) -> XCUIElement {
         for identifier in ["editor.form", "app-info.list", "contact.detail", "contract.detail", "equipment.list",
                            "room.detail", "property.detail", "work.detail", "work.list"] {
             let list = app.collectionViews[identifier].firstMatch
-            if list.exists && list.isHittable { return list }
+            if list.exists && list.frame.intersects(app.windows.firstMatch.frame) { return list }
         }
         let list = app.collectionViews.firstMatch
         return list.exists ? list : app.windows.firstMatch

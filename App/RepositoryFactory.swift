@@ -41,12 +41,12 @@ private actor TestRepository: RecordsRepository {
                                                  workID: item.id, kind: .photo, name: "給湯器の配管接続部.png", storedName: name))
         }
         if let item = fixture.work.first {
-            let quote = await SamplePDF.data(title: "見積書", lines: ["桜通りレジデンス · 203号室", "給湯器の配管修繕", "見積額 ¥38,500", "みどり設備", "架空の見積書です。"],
+            let quote = await SamplePDF.data(title: "見積書", lines: ["未来ヶ丘団地 · 203号室", "給湯器の配管修繕", "見積額 ¥38,500", "みどり設備", "架空の見積書です。"],
                                              link: AppInformation.supportURL)
             let name = try await backing.writeAttachment(quote, extension: "pdf")
             fixture.attachments.append(Attachment(buildingID: item.buildingID, roomID: item.roomID, workID: item.id,
                                                  kind: .document, name: "見積書.pdf", storedName: name))
-            let request = await SamplePDF.data(title: "修繕依頼書", lines: ["桜通りレジデンス · 203号室", "給湯器の配管接続部から水漏れ", "2026年11月12日 現地確認", "架空の依頼書です。"])
+            let request = await SamplePDF.data(title: "修繕依頼書", lines: ["未来ヶ丘団地 · 203号室", "給湯器の配管接続部から水漏れ", "2026年11月12日 現地確認", "架空の依頼書です。"])
             try FileManager.default.createDirectory(at: URL.documentsDirectory, withIntermediateDirectories: true)
             try request.write(to: URL.documentsDirectory.appendingPathComponent("修繕依頼書.pdf"), options: .atomic)
         }
@@ -71,9 +71,13 @@ enum SampleRecords {
         let resident = Contact(name: "佐藤 花子", notes: "架空の連絡先です。", category: .resident)
         let resident2 = Contact(name: "鈴木 一郎", notes: "架空の連絡先です。", category: .resident)
         let agency = Contact(name: "青葉管理", notes: "架空の管理会社です。", category: .management)
-        let building = Building(name: "桜通りレジデンス", address: "東京都世田谷区桜通り2-8")
+        let building = Building(name: "未来ヶ丘団地", address: "朝焼1-2-3")
         let managed = Building(name: "青葉コート", address: "横浜市青葉区青葉台1-3",
                                management: .agency, agencyContactID: agency.id)
+        let insurance = Contact(name: "建物保険の相談窓口", company: "朝焼保険", notes: "保険証券を手元に用意して相談。架空の連絡先です。",
+                                category: .insurance, isEmergency: true, buildingIDs: [building.id])
+        let fireSafety = Contact(name: "消防設備の点検窓口", company: "朝焼防災", notes: "年2回の点検日を調整。架空の連絡先です。",
+                                 category: .fireSafety, buildingIDs: [building.id, managed.id])
         let room = Room(buildingID: building.id, number: "203", residentID: resident.id,
                         contract: Contract(start: date(2025, 4, 1), end: date(2027, 3, 31), monthlyRent: 82_000),
                         equipment: [Equipment(name: "給湯器", model: "WH-203"), Equipment(name: "エアコン")])
@@ -86,7 +90,7 @@ enum SampleRecords {
         records.buildings = [building, managed]
         records.rooms = [room, renewalRoom, Room(buildingID: managed.id, number: "201"),
                          Room(buildingID: managed.id, number: "202")]
-        records.contacts = [contractor, resident, resident2, agency]
+        records.contacts = [contractor, resident, resident2, agency, insurance, fireSafety]
         records.work = [
             repair,
             WorkItem(buildingID: building.id, roomID: renewalRoom.id, kind: .renewal, title: "契約更新の確認",

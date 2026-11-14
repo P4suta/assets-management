@@ -15,6 +15,7 @@
 		19AE1E04AE31489C2BDC5ADB /* WorkViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6D58247B1FA2BB73A89D54F6 /* WorkViews.swift */; };
 		1EDF93509C1D7AAF7923A4F6 /* Building.png in Resources */ = {isa = PBXBuildFile; fileRef = 9C81B3B37CF691D3884BFD30 /* Building.png */; };
 		2B997A1196D8BAE893C576A3 /* ContractDates.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E0C08F857F99CBE56B82FCE /* ContractDates.swift */; };
+		2CAD832E262CBF9DB5BC76E5 /* ProgressSectionHeader.png in Resources */ = {isa = PBXBuildFile; fileRef = 805E9D0AED55E3E7076AA8B0 /* ProgressSectionHeader.png */; };
 		3612FD545D8CA5E398FB9203 /* CameraCapture.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1DA53588064230DAF5ABB2F /* CameraCapture.swift */; };
 		370121383558F056F86CC12A /* NativeSheetTextScope.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C07F3B8B0F303E6E46B3DE2 /* NativeSheetTextScope.swift */; };
 		3904C16083A98A0B650760AB /* EditorPresentation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 624DB6EBF103B62F05070224 /* EditorPresentation.swift */; };
@@ -88,6 +89,7 @@
 		5FE544CE2B5686A8C19000DA /* ReleaseConfigurationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReleaseConfigurationTests.swift; sourceTree = "<group>"; };
 		624DB6EBF103B62F05070224 /* EditorPresentation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorPresentation.swift; sourceTree = "<group>"; };
 		6D58247B1FA2BB73A89D54F6 /* WorkViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkViews.swift; sourceTree = "<group>"; };
+		805E9D0AED55E3E7076AA8B0 /* ProgressSectionHeader.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = ProgressSectionHeader.png; sourceTree = "<group>"; };
 		80E28D765E8C56142D875402 /* ContactViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContactViews.swift; sourceTree = "<group>"; };
 		874F39A4223D495FA090D5E4 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		87AF650B2F64D6B36117B0EF /* ExternalNavigationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExternalNavigationTests.swift; sourceTree = "<group>"; };
@@ -190,6 +192,7 @@
 			isa = PBXGroup;
 			children = (
 				9C81B3B37CF691D3884BFD30 /* Building.png */,
+				805E9D0AED55E3E7076AA8B0 /* ProgressSectionHeader.png */,
 			);
 			path = Fixtures;
 			sourceTree = "<group>";
@@ -360,6 +363,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				1EDF93509C1D7AAF7923A4F6 /* Building.png in Resources */,
+				2CAD832E262CBF9DB5BC76E5 /* ProgressSectionHeader.png in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

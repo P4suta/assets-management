@@ -14,6 +14,9 @@ The test also measures the current status and deadline screenshots using the sRG
 The measurement covers captions drawn with a single foreground color on an opaque background.
 Status symbols use [monochrome rendering](https://developer.apple.com/design/human-interface-guidelines/sf-symbols#Rendering-modes).
 The test groups background colors within one 8-bit step per channel and uses the lowest contrast for the group.
+Section headers use the image border to measure an opaque shaded background.
+The measurement rejects border channel differences greater than 16 on the 8-bit scale and requires background colors to cover most pixels.
+Gradient fixtures reject weak text, missing foreground, and unsupported background variation.
 Unsupported or ambiguous images fail verification.
 The audit filter requires the affected OS, issue type, label, element type, selection, matching frame, and a fresh measured ratio of at least 4.5:1.
 Unknown reports remain failures.

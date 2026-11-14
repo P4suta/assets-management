@@ -39,7 +39,7 @@ import XCTest
         let search = app.searchFields.firstMatch
         XCTAssertTrue(search.waitForExistence(timeout: 5))
         search.tap()
-        search.typeText("桜通り\n")
+        search.typeText("未来ヶ丘\n")
         let list = app.collectionViews.firstMatch
         XCTAssertTrue(list.staticTexts["対応済み"].waitForExistence(timeout: 5))
         XCTAssertTrue(list.staticTexts["対応"].exists)
@@ -49,7 +49,7 @@ import XCTest
         XCTAssertFalse(app.buttons["work.completedFilter"].exists)
         capture(app, name: "Search includes active and completed records")
         search.tap()
-        search.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: 3) + "青葉\n")
+        search.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: 4) + "青葉\n")
         XCTAssertTrue(record("共用灯の交換", app: app).waitForExistence(timeout: 5))
         XCTAssertTrue(record("消防設備点検", app: app).exists)
         XCTAssertFalse(record("給湯器から水漏れ", app: app).exists)
@@ -59,7 +59,7 @@ import XCTest
     func testPropertyDetailsKeepWorkActionsInTheWorkTab() {
         let app = launch()
         selectTab("物件", app: app)
-        record("桜通りレジデンス", app: app).tap()
+        record("未来ヶ丘団地", app: app).tap()
         let building = app.navigationBars["建物"]
         XCTAssertTrue(building.waitForExistence(timeout: 5))
         XCTAssertTrue(building.buttons["建物を編集"].exists)
@@ -106,7 +106,7 @@ import XCTest
         app.launch()
         XCTAssertTrue(app.buttons["work.add"].waitForExistence(timeout: 10))
         openRepair(app)
-        XCTAssertEqual(photos.count, 2)
+        XCTAssertEqual(restoredPhotoIdentifiers(app), Set([previous, identifier]))
         assertPhotoRendered(app.buttons[identifier], app: app, name: "Imported photo after relaunch")
         XCTAssertFalse(app.alerts["写真を追加できませんでした"].exists)
     }
@@ -134,7 +134,7 @@ import XCTest
         app.launch()
         XCTAssertTrue(app.buttons["work.add"].waitForExistence(timeout: 10))
         openRepair(app)
-        XCTAssertEqual(photos.count, 2)
+        XCTAssertEqual(restoredPhotoIdentifiers(app), Set([previous, identifier]))
         assertPhotoRendered(app.buttons[identifier], app: app, name: "Retried photo after relaunch")
     }
 
@@ -259,7 +259,7 @@ import XCTest
             if title == "物件" { selectTab(title, app: app) }
             assertListHeader(title, app: app, name: title + " initial portrait")
             for orientation in [UIDeviceOrientation.landscapeLeft, .landscapeRight] {
-                let record = title == "対応" ? "給湯器から水漏れ" : "桜通りレジデンス"
+                let record = title == "対応" ? "給湯器から水漏れ" : "未来ヶ丘団地"
                 let item = app.buttons.matching(NSPredicate(format: "label CONTAINS %@", record)).firstMatch
                 XCTAssertTrue(item.waitForExistence(timeout: 5))
                 item.tap()
@@ -319,7 +319,17 @@ import XCTest
         reveal(element, in: app.collectionViews["work.detail"], centered: true, app: app)
     }
 
-    private func reveal(_ element: XCUIElement, in list: XCUIElement, centered: Bool = false, app: XCUIApplication) {
+    private func restoredPhotoIdentifiers(_ app: XCUIApplication) -> Set<String> {
+        let photos = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "photo."))
+        var identifiers: Set<String> = []
+        reveal(app.buttons["photos.add"], in: app.collectionViews["work.detail"], centered: true, app: app) {
+            identifiers.formUnion(photos.allElementsBoundByIndex.map(\.identifier))
+        }
+        return identifiers
+    }
+
+    private func reveal(_ element: XCUIElement, in list: XCUIElement, centered: Bool = false, app: XCUIApplication,
+                        observing: () -> Void = {}) {
         let window = app.windows.firstMatch
         XCTAssertTrue(list.waitForExistence(timeout: 5), app.debugDescription)
         let frame = list.frame
@@ -329,6 +339,7 @@ import XCTest
             if element.frame.height > unobscured.height { return element.frame.intersects(unobscured) }
             return unobscured.contains(element.frame)
         }
+        observing()
         if reachable() { return }
         guard let coordinates = ScrollCoordinates(bounds: frame, keyboard: nil) else {
             XCTFail("The detail list must provide a visible scroll viewport.")
@@ -345,6 +356,7 @@ import XCTest
             } else {
                 upper.press(forDuration: 0.05, thenDragTo: lower)
             }
+            observing()
             if reachable() { return }
         }
         XCTFail("The list control must be reachable by scrolling.\n" + app.debugDescription)
@@ -373,7 +385,7 @@ import XCTest
         XCTAssertTrue(search.waitForExistence(timeout: 5), app.debugDescription)
         let add = app.buttons[title == "対応" ? "work.add" : "property.add"]
         XCTAssertTrue(add.waitForExistence(timeout: 5))
-        let firstRecord = record(title == "対応" ? "給湯器から水漏れ" : "桜通りレジデンス", app: app)
+        let firstRecord = record(title == "対応" ? "給湯器から水漏れ" : "未来ヶ丘団地", app: app)
         XCTAssertTrue(firstRecord.waitForExistence(timeout: 5), app.debugDescription)
         var previous: [CGRect]?
         let settled = NSPredicate { _, _ in
