@@ -865,22 +865,22 @@ final class PropertyRecordsUITests: XCTestCase {
     func testSelectedRecordRowsRemainReadable() throws {
         let app = launch(seeded: true)
         assertAppearance(app, dark: XCUIDevice.shared.appearance == .dark)
-            tapWork("給湯器から水漏れ", app: app)
-            XCTAssertTrue(app.navigationBars["修繕の詳細"].waitForExistence(timeout: 5))
-            let sidebar = app.collectionViews.containing(.button, identifier: "work.row.selected").firstMatch
-            let window = app.windows.firstMatch.frame
-            guard sidebar.exists, window.contains(sidebar.frame), sidebar.frame.width < window.width / 2,
-                  app.buttons["work.add"].isHittable else {
-                throw XCTSkip("Compact navigation does not display a selected sidebar row.")
-            }
-            XCTAssertEqual(row("給湯器から水漏れ", app: app).identifier, "work.row.selected", app.debugDescription)
-            try assertCaptionContrast(in: row("給湯器から水漏れ", app: app), app: app)
-            try audit(app, name: "Selected repair")
-            try auditSelectionContrast(row("給湯器から水漏れ", app: app), app: app)
-            selectTab("物件", app: app)
-            tap("未来ヶ丘団地", app: app)
-            try audit(app, name: "Selected building")
-            try auditSelectionContrast(row("未来ヶ丘団地", app: app), app: app)
+        tapWork("給湯器から水漏れ", app: app)
+        XCTAssertTrue(app.navigationBars["修繕の詳細"].waitForExistence(timeout: 5))
+        let sidebar = app.collectionViews.containing(.button, identifier: "work.row.selected").firstMatch
+        let window = app.windows.firstMatch.frame
+        guard sidebar.exists, window.contains(sidebar.frame), sidebar.frame.width < window.width / 2,
+              app.buttons["work.add"].isHittable else {
+            throw XCTSkip("Compact navigation does not display a selected sidebar row.")
+        }
+        XCTAssertEqual(row("給湯器から水漏れ", app: app).identifier, "work.row.selected", app.debugDescription)
+        try assertCaptionContrast(in: row("給湯器から水漏れ", app: app), app: app)
+        try audit(app, name: "Selected repair")
+        try auditSelectionContrast(row("給湯器から水漏れ", app: app), app: app)
+        selectTab("物件", app: app)
+        tap("未来ヶ丘団地", app: app)
+        try audit(app, name: "Selected building")
+        try auditSelectionContrast(row("未来ヶ丘団地", app: app), app: app)
         app.terminate()
     }
 
