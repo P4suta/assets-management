@@ -27,6 +27,9 @@ Gradient fixtures reject weak text, missing foreground, and unsupported backgrou
 Unsupported or ambiguous images fail verification.
 The audit filter requires the affected OS, issue type, label, element type, selection, matching frame, and a fresh measured ratio of at least 4.5:1.
 The filter also verifies work titles and the combined progress headers from current screenshots.
+Contact captions and section headers receive the same checks.
+The information sheet measures its storage text, support label, and copyright text while each caption is fully visible.
+Its filter accepts an offscreen contrast report only when the native label and dimensions still match the measured caption.
 Unknown reports remain failures.
 On iPadOS 26.0 and 27.2, native repair, renewal, and building sheets can report unlocated text behind the sheet.
 The history, room, and contract editors reproduce the report on iPadOS 27.2.
@@ -83,6 +86,8 @@ An interrupted or timed-out run supplies no passing result.
 When the Settings app lacks notification controls in Simulator, combine native denial and foreground journeys with hosted tests of the app's foreground handler using a controlled notification port.
 The hosted tests also construct Apple's calendar trigger to check the absolute date across time zones.
 The reminder outcome identifies the Actions and Repair lists.
+Notification messages and recovery buttons share a row using a [vertical stack](https://developer.apple.com/documentation/swiftui/vstack).
+The buttons remain separate controls at least 44 points tall.
 [SwiftUI view identity](https://developer.apple.com/documentation/swiftui/view/id(_:)) resets state when its value changes.
 Interface tests check notification guidance after launch, after saving, and after dismissal at the selected text size.
 
@@ -101,6 +106,7 @@ Typed notification targets keep room and work records distinct even when their i
 Hosted tests check permission recovery without another record write and defer notification navigation while an editor remains open.
 
 Amount input and stored amounts share one whole-yen range.
+The input shows one editable amount without repeating its value below the field.
 The parser accepts digits in either width and correctly grouped thousands separators.
 The input retains at most 17 Unicode scalars and blocks saving after a rejected edit.
 The native field uses [the text field delegate](https://developer.apple.com/documentation/uikit/uitextfielddelegate/textfield(_:shouldchangecharactersinranges:replacementstring:)) to validate edits.
