@@ -28,7 +28,7 @@ struct NativeSheetTextScope {
         let coordinates = [editor.minX, editor.minY, editor.width, editor.height,
                            window.minX, window.minY, window.width, window.height]
         guard coordinates.allSatisfy(\.isFinite), !editor.isEmpty, !window.isEmpty,
-              window.contains(editor), editor.minX >= window.minX + 16,
+              window.containsWithRoundingTolerance(editor), editor.minX >= window.minX + 16,
               editor.maxX <= window.maxX - 16 else { return false }
         let maximumReports: Int
         switch (version.majorVersion, screen) {

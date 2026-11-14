@@ -18,14 +18,16 @@ struct NativeCaptionClippingScope {
     var foregroundPixels: Int
 
     @MainActor var accepts: Bool {
-        guard version.majorVersion == 27, version.minorVersion == 2, version.patchVersion == 0,
+        let reproducedVersion = (version.majorVersion == 26 && version.minorVersion == 5)
+            || (version.majorVersion == 27 && version.minorVersion == 2)
+        guard reproducedVersion, version.patchVersion == 0,
               auditType == .textClipped,
               detail == "Text of this SwiftUI.AccessibilityNode may be clipped at larger Dynamic Type sizes.",
               elementType == .staticText, textSize == .accessibilityExtraExtraExtraLarge,
               let style = Self.fontStyle(screen: screen, label: label), matchingCaptions == 1,
               scale.isFinite, scale >= 1, scale <= 4, foregroundPixels > 0,
               [element, viewport, window].allSatisfy(Self.valid),
-              window.contains(viewport), viewport.contains(element),
+              window.containsWithRoundingTolerance(viewport), viewport.containsWithRoundingTolerance(element),
               !bars.contains(where: { $0.intersects(element) }) else { return false }
         let traits = UITraitCollection(preferredContentSizeCategory: textSize)
         let font = UIFont.preferredFont(forTextStyle: style, compatibleWith: traits)

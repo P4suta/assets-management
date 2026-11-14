@@ -24,7 +24,7 @@ struct NativeCalendarTextScope {
               !hasElement, (28...42).contains(dayCount), allDaysLabeled, reportIndex == 1 else { return false }
         return [calendar, done, window].allSatisfy {
             !$0.isEmpty && !$0.isInfinite && [$0.minX, $0.minY, $0.width, $0.height].allSatisfy(\.isFinite)
-        } && window.contains(calendar) && window.contains(done) && !calendar.intersects(done)
+        } && window.containsWithRoundingTolerance(calendar) && window.containsWithRoundingTolerance(done) && !calendar.intersects(done)
             && calendar.minX > window.minX && calendar.maxX < window.maxX
     }
 }

@@ -36,6 +36,9 @@ import XCTest
             reject(&scope)
             XCTAssertFalse(scope.accepts)
         }
+        var floorRuntime = native
+        floorRuntime.version = OperatingSystemVersion(majorVersion: 26, minorVersion: 5, patchVersion: 0)
+        XCTAssertTrue(floorRuntime.accepts)
     }
 
     func testRenderedTextHeightRejectsAnUnscaledFont() throws {

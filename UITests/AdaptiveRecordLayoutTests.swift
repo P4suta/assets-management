@@ -222,8 +222,8 @@ import XCTest
         let form = app.collectionViews["editor.form"]
         let caption = app.staticTexts["期限を通知"].firstMatch
         reveal(caption, in: form, app: app)
-        XCTAssertTrue(form.frame.contains(caption.frame))
-        XCTAssertTrue(app.windows.firstMatch.frame.contains(caption.frame))
+        XCTAssertTrue(form.frame.containsWithRoundingTolerance(caption.frame))
+        XCTAssertTrue(app.windows.firstMatch.frame.containsWithRoundingTolerance(caption.frame))
         let screenshot = caption.screenshot()
         let attachment = XCTAttachment(screenshot: screenshot)
         attachment.name = "Visible reminder toggle caption"
@@ -460,7 +460,7 @@ import XCTest
         XCTAssertGreaterThan(dueRow.frame.height, 0)
         XCTAssertLessThanOrEqual(statusRow.frame.height, dueRow.frame.height * 1.5,
                                  "A one-line status selector must keep the scale of neighboring metadata rows.")
-        XCTAssertTrue(app.windows.firstMatch.frame.contains(statusRow.frame))
+        XCTAssertTrue(app.windows.firstMatch.frame.containsWithRoundingTolerance(statusRow.frame))
         XCTAssertTrue(app.buttons["work.status"].isHittable)
         XCTAssertEqual(app.buttons["work.status"].label, "状態")
     }

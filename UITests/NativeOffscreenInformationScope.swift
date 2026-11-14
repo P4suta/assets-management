@@ -31,7 +31,7 @@ struct NativeOffscreenInformationScope {
               measurement.ratio.isFinite, measurement.ratio >= 4.5 else { return false }
         let frames = [element, list, window, measurement.visibleFrame]
         return frames.allSatisfy { !$0.isEmpty && [$0.minX, $0.minY, $0.width, $0.height].allSatisfy(\.isFinite) }
-            && window.contains(list) && list.minX > window.minX && list.maxX < window.maxX
-            && !list.contains(element) && list.contains(measurement.visibleFrame)
+            && window.containsWithRoundingTolerance(list) && list.minX > window.minX && list.maxX < window.maxX
+            && !list.containsWithRoundingTolerance(element) && list.containsWithRoundingTolerance(measurement.visibleFrame)
     }
 }

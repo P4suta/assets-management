@@ -43,14 +43,14 @@ struct NativeOffscreenReminderScope {
               measurement.ratio.isFinite, measurement.ratio >= 4.5 else { return false }
         let frames = [element, form, window, measurement.offscreenCaption, measurement.visibleCaption,
                       measurement.originalAnchor, measurement.restoredAnchor]
-        guard frames.allSatisfy(Self.valid), window.contains(form),
-              window.contains(measurement.visibleCaption), form.contains(measurement.visibleCaption),
-              form.contains(measurement.originalAnchor) else { return false }
+        guard frames.allSatisfy(Self.valid), window.containsWithRoundingTolerance(form),
+              window.containsWithRoundingTolerance(measurement.visibleCaption), form.containsWithRoundingTolerance(measurement.visibleCaption),
+              form.containsWithRoundingTolerance(measurement.originalAnchor) else { return false }
         switch (screen, formIdentity) {
         case ("Repair Editor", "editor.form"):
             return label == "期限を通知" && measurement.anchorIdentity == "work.title"
-                && window.contains(element) && form.minX > window.minX && form.maxX < window.maxX
-                && !form.intersects(element) && window.contains(measurement.offscreenCaption)
+                && window.containsWithRoundingTolerance(element) && form.minX > window.minX && form.maxX < window.maxX
+                && !form.intersects(element) && window.containsWithRoundingTolerance(measurement.offscreenCaption)
                 && !form.intersects(measurement.offscreenCaption)
         case (let context, "work.list") where ["Repair", "Selected repair", "Adaptive Repair"].contains(context):
             return label.hasPrefix("期限 ") && measurement.anchorIdentity == "work.row.selected"

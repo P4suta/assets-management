@@ -25,8 +25,11 @@ struct NativeListTypeScope {
     var reportIndex = 1
 
     var accepts: Bool {
-        guard version.majorVersion == 27, version.minorVersion == 2, version.patchVersion == 0,
-              idiom == .phone, screen == "Contact", listIdentity == "contact.detail", auditType == .dynamicType,
+        let floorRuntime = version.majorVersion == 26 && version.minorVersion == 5
+        let laterRuntime = version.majorVersion == 27 && version.minorVersion == 2
+        let contact = screen == "Contact" && listIdentity == "contact.detail"
+        guard floorRuntime || laterRuntime, version.patchVersion == 0, contact,
+              idiom == .phone, auditType == .dynamicType,
               compactDescription == "Dynamic Type font sizes are partially unsupported",
               detail == "User will not be able to change the font size of this SwiftUI.AccessibilityNode",
               !hasElement, textSize == .accessibilityExtraExtraExtraLarge, matchingCaptions,
@@ -34,9 +37,9 @@ struct NativeListTypeScope {
         let frames = [list, window] + measurements.values.map(\.frame)
         return frames.allSatisfy {
             !$0.isEmpty && !$0.isInfinite && [$0.minX, $0.minY, $0.width, $0.height].allSatisfy(\.isFinite)
-        } && window.contains(list) && measurements.allSatisfy { identifier, measurement in
+        } && window.containsWithRoundingTolerance(list) && measurements.allSatisfy { identifier, measurement in
             identifier.hasPrefix("contact.related.") && !measurement.label.isEmpty
-                && list.contains(measurement.frame) && window.contains(measurement.frame)
+                && list.containsWithRoundingTolerance(measurement.frame) && window.containsWithRoundingTolerance(measurement.frame)
                 && measurement.minimumHeight > 0 && measurement.renderedHeight >= measurement.minimumHeight
         }
     }

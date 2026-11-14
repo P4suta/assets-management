@@ -1,12 +1,23 @@
 import CoreGraphics
 
+extension CGRect {
+    func containsWithRoundingTolerance(_ target: CGRect) -> Bool {
+        let edges = [minX, minY, maxX, maxY, target.minX, target.minY, target.maxX, target.maxY]
+        guard !isEmpty, !target.isEmpty, edges.allSatisfy(\.isFinite) else { return false }
+        let magnitude = max(1, edges.map(abs).max() ?? 1)
+        let tolerance = magnitude.ulp * 8
+        return target.minX >= minX - tolerance && target.minY >= minY - tolerance
+            && target.maxX <= maxX + tolerance && target.maxY <= maxY + tolerance
+    }
+}
+
 struct ListViewport {
     let bounds: CGRect
 
     func contains(_ target: CGRect, requireFullVisibility: Bool) -> Bool {
         guard !target.isEmpty, !target.isInfinite,
               [target.minX, target.minY, target.maxX, target.maxY].allSatisfy(\.isFinite) else { return false }
-        return requireFullVisibility ? bounds.contains(target) : bounds.contains(CGPoint(x: target.midX, y: target.midY))
+        return requireFullVisibility ? bounds.containsWithRoundingTolerance(target) : bounds.contains(CGPoint(x: target.midX, y: target.midY))
     }
 
     init?(list: CGRect, window: CGRect, target: CGRect, bars: [CGRect]) {
