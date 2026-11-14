@@ -53,7 +53,8 @@ Start a same-repository pull request's run by adding the label: `release-accepta
 Remove and reapply the label to check a later head.
 The workflow also supports dispatching a selected candidate after the workflow reaches the default branch.
 Ordinary commits don't launch the heavy workflow.
-At most two jobs run concurrently, and each job stops after 60 minutes.
+At most two jobs run concurrently, and each job stops after 110 minutes.
+The interface step stops after 80 minutes, leaving time to preserve results before the job limit.
 The native test results and captures remain available for seven days.
 An interrupted or timed-out run supplies no passing result.
 When the Settings app lacks notification controls in Simulator, combine native denial and foreground journeys with hosted tests of the app's foreground handler using a controlled notification port.
