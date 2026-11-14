@@ -1223,6 +1223,17 @@ final class PropertyRecordsUITests: XCTestCase {
         XCTAssertGreaterThanOrEqual(measurement.ratio, 4.5, name)
     }
 
+    func testScrollPanStaysInsideInsetLandscapeForm() throws {
+        let viewport = CGRect(x: 0, y: 78, width: 874, height: 324)
+        let coordinates = try XCTUnwrap(ScrollCoordinates(bounds: viewport, keyboard: nil, rowLeading: 78))
+        let panX = viewport.minX + viewport.width * coordinates.lower.dx
+        XCTAssertGreaterThan(panX, 78)
+        XCTAssertLessThan(panX, 94)
+        for leading in [-1.0, 874, Double.nan, Double.infinity] {
+            XCTAssertNil(ScrollCoordinates(bounds: viewport, keyboard: nil, rowLeading: leading))
+        }
+    }
+
     func testScrollCoordinatesIgnoreEmptyAndUnrelatedKeyboards() throws {
         let bounds = CGRect(x: 20, y: 100, width: 300, height: 600)
         let natural = try XCTUnwrap(ScrollCoordinates(bounds: bounds, keyboard: nil))
@@ -1522,7 +1533,12 @@ final class PropertyRecordsUITests: XCTestCase {
         try service.enable()
         let forbidden = ["共用灯の交換", "消防設備点検", "メモを追加", "対応を追加", "賃貸借契約", "写真を追加"]
         func traverse(forward: Bool) throws -> [String] {
-            var speech = [try service.currentSpeech().utterance]
+            var speech: [String]
+            do {
+                speech = [try service.currentSpeech().utterance]
+            } catch let error as XCUIVoiceOverService.Error where error.code == .noSpeech {
+                speech = []
+            }
             var repetitions = 0
             for _ in 0..<48 {
                 do {
@@ -2016,7 +2032,8 @@ final class PropertyRecordsUITests: XCTestCase {
         func reachable() -> Bool {
             guard element.exists else { return false }
             let target = element.elementType == .stepper ? element.buttons.element(boundBy: 1) : element
-            guard target.exists && target.isHittable else { return false }
+            guard target.exists,
+                  target.isHittable || (requireFullVisibility && target.elementType == .staticText) else { return false }
             let bounds = target.frame
             if scope == nil {
                 let identity = target.identifier.isEmpty ? target.label : target.identifier
@@ -2033,7 +2050,9 @@ final class PropertyRecordsUITests: XCTestCase {
         }
         if reachable() { return }
         let keyboard = keyboardFrame(app)
-        guard let coordinates = ScrollCoordinates(bounds: viewport, keyboard: keyboard) else {
+        let rowLeading = container.cells.allElementsBoundByIndex.map(\.frame)
+            .filter { $0.intersects(viewport) }.map(\.minX).min()
+        guard let coordinates = ScrollCoordinates(bounds: viewport, keyboard: keyboard, rowLeading: rowLeading) else {
             let detail = XCTAttachment(string: "Viewport: \(frame)\nKeyboard: \(String(describing: keyboard))\n\(app.debugDescription)")
             detail.name = "Unavailable scroll viewport"
             detail.lifetime = .keepAlways

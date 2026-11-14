@@ -30,10 +30,12 @@ struct ScrollCoordinates {
     let lower: CGVector
     let upper: CGVector
 
-    init?(bounds: CGRect, keyboard: CGRect?) {
+    init?(bounds: CGRect, keyboard: CGRect?, rowLeading: CGFloat? = nil) {
         guard !bounds.isEmpty, !bounds.isInfinite,
               [bounds.minX, bounds.minY, bounds.maxX, bounds.maxY].allSatisfy(\.isFinite) else { return nil }
-        let horizontal = min(24 / bounds.width, 0.5)
+        let leading = rowLeading ?? bounds.minX + min(16, bounds.width / 4)
+        guard leading.isFinite, leading >= bounds.minX, leading < bounds.midX else { return nil }
+        let horizontal = min((leading - bounds.minX + 8) / bounds.width, 0.5)
         let panX = bounds.minX + bounds.width * horizontal
         var bottom = bounds.maxY
         if let keyboard, !keyboard.isEmpty,

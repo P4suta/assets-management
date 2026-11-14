@@ -426,7 +426,9 @@ import XCTest
         }
         observing()
         if reachable() { return }
-        guard let coordinates = ScrollCoordinates(bounds: unobscured, keyboard: nil) else {
+        let rowLeading = list.cells.allElementsBoundByIndex.map(\.frame)
+            .filter { $0.intersects(unobscured) }.map(\.minX).min()
+        guard let coordinates = ScrollCoordinates(bounds: unobscured, keyboard: nil, rowLeading: rowLeading) else {
             XCTFail("The detail list must provide a visible scroll viewport.")
             return
         }
