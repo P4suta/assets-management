@@ -64,6 +64,28 @@ extension NativePresentationTests {
         #expect(frozenHeight < standardHeight * 2)
     }
 
+    @Test func dateGlyphMeasurementExcludesConnectedBorderPixels() throws {
+        for size in [CGFloat(17), CGFloat(53)] {
+            func capture(rounded: Bool) -> UIImage {
+                let format = UIGraphicsImageRendererFormat()
+                format.opaque = true
+                return UIGraphicsImageRenderer(size: CGSize(width: 400, height: 160), format: format).image { context in
+                    UIColor.black.setFill()
+                    context.fill(CGRect(x: 0, y: 0, width: 400, height: 160))
+                    UIColor.white.setFill()
+                    UIBezierPath(roundedRect: CGRect(x: 0, y: 0, width: 400, height: 160),
+                        cornerRadius: rounded ? 60 : 0).fill()
+                    ("2025/04/01" as NSString).draw(at: CGPoint(x: 80, y: 40),
+                        withAttributes: [.font: UIFont.systemFont(ofSize: size), .foregroundColor: UIColor.black])
+                }
+            }
+            let plain = try dateGlyphHeight(in: #require(capture(rounded: false).cgImage), dark: false)
+            let rounded = try dateGlyphHeight(in: #require(capture(rounded: true).cgImage), dark: false)
+            #expect(plain == rounded)
+            #expect(plain > 0)
+        }
+    }
+
     @Test func dateRecognitionRejectsNativeEllipsis() throws {
         for width in [CGFloat(197), CGFloat(320)] {
             let label = UILabel(frame: CGRect(x: 0, y: 0, width: width, height: 80))
@@ -137,13 +159,36 @@ extension NativePresentationTests {
             context.draw(image, in: CGRect(x: 0, y: 0, width: image.width, height: image.height))
         }
         let target = dark ? 255 : 0
+        var foreground = (0..<(image.width * image.height)).map { pixel in
+            let offset = pixel * 4
+            return pixels[offset + 3] == 255 && (0..<3).allSatisfy { abs(Int(pixels[offset + $0]) - target) <= 1 }
+        }
+        var border: [Int] = []
+        func remove(_ pixel: Int) {
+            if foreground[pixel] {
+                foreground[pixel] = false
+                border.append(pixel)
+            }
+        }
+        for column in 0..<image.width {
+            remove(column)
+            remove((image.height - 1) * image.width + column)
+        }
+        for row in 0..<image.height {
+            remove(row * image.width)
+            remove((row + 1) * image.width - 1)
+        }
+        while let pixel = border.popLast() {
+            let column = pixel % image.width
+            if column > 0 { remove(pixel - 1) }
+            if column + 1 < image.width { remove(pixel + 1) }
+            if pixel >= image.width { remove(pixel - image.width) }
+            if pixel + image.width < foreground.count { remove(pixel + image.width) }
+        }
         var rows: [Int] = []
         for row in 0..<image.height {
-            let foreground = (0..<image.width).filter { column in
-                let offset = (row * image.width + column) * 4
-                return pixels[offset + 3] == 255 && (0..<3).allSatisfy { abs(Int(pixels[offset + $0]) - target) <= 1 }
-            }.count
-            if foreground >= 2 { rows.append(row) }
+            let count = foreground[(row * image.width)..<((row + 1) * image.width)].filter { $0 }.count
+            if count >= 2 { rows.append(row) }
         }
         return try #require(rows.last) - #require(rows.first) + 1
     }
