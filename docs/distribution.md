@@ -7,7 +7,7 @@ The price is free, with no accounts, advertising, tracking, or purchases.
 The bundle identifier is `com.p4suta.PropertyRecords`.
 The Apple Developer team is `XMBQLW82L9`.
 The initial version is `1.0.0`.
-The current build number is `4`.
+The current build number is `6`.
 
 Run the fast gate, hosted app tests, interface journeys on iOS 26 and a later runtime, Thread Sanitizer, and the full mutation campaign before archiving.
 The verification scope and mutation acceptance criteria are in [verification.md](verification.md).

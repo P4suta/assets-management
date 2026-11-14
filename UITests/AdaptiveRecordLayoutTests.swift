@@ -364,15 +364,15 @@ import XCTest
         }
         observing()
         if reachable() { return }
-        guard let coordinates = ScrollCoordinates(bounds: frame, keyboard: nil) else {
+        guard let coordinates = ScrollCoordinates(bounds: unobscured, keyboard: nil) else {
             XCTFail("The detail list must provide a visible scroll viewport.")
             return
         }
         let origin = window.coordinate(withNormalizedOffset: .zero)
-        let lower = origin.withOffset(CGVector(dx: frame.minX - window.frame.minX + frame.width * coordinates.lower.dx,
-                                              dy: frame.minY - window.frame.minY + frame.height * coordinates.lower.dy))
-        let upper = origin.withOffset(CGVector(dx: frame.minX - window.frame.minX + frame.width * coordinates.upper.dx,
-                                              dy: frame.minY - window.frame.minY + frame.height * coordinates.upper.dy))
+        let lower = origin.withOffset(CGVector(dx: unobscured.minX - window.frame.minX + unobscured.width * coordinates.lower.dx,
+                                              dy: unobscured.minY - window.frame.minY + unobscured.height * coordinates.lower.dy))
+        let upper = origin.withOffset(CGVector(dx: unobscured.minX - window.frame.minX + unobscured.width * coordinates.upper.dx,
+                                              dy: unobscured.minY - window.frame.minY + unobscured.height * coordinates.upper.dy))
         for _ in 0..<8 {
             if !element.exists || element.frame.midY > frame.midY {
                 lower.press(forDuration: 0.05, thenDragTo: upper)

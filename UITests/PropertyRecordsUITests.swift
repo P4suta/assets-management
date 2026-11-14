@@ -679,6 +679,148 @@ final class PropertyRecordsUITests: XCTestCase {
         _ = longPropertyNameKeyboardJourney(requiresKeyboard: true)
     }
 
+    func testLargestTextWorkPropertySelectionDisplaysTheCompleteName() throws {
+        guard UIApplication.shared.preferredContentSizeCategory == .accessibilityExtraExtraExtraLarge else {
+            throw XCTSkip("Property selection wrapping requires AX5.")
+        }
+        let app = longPropertyNameKeyboardJourney(requiresKeyboard: true)
+        let name = "未来ヶ丘団地東棟・第一管理区画と共用設備を含む長い物件名"
+        selectTab("対応", app: app)
+        app.buttons["work.add"].tap()
+        let selection = app.buttons["work.building"]
+        XCTAssertTrue(selection.waitForExistence(timeout: 5))
+        XCTAssertEqual(selection.value as? String, name)
+        let image = XCTAttachment(screenshot: app.screenshot())
+        image.name = "Largest text complete property selection"
+        image.lifetime = .keepAlways
+        add(image)
+        try app.performAccessibilityAudit(for: .textClipped)
+        selection.tap()
+        let option = app.buttons[name].firstMatch
+        XCTAssertTrue(option.waitForExistence(timeout: 5))
+        option.tap()
+        XCTAssertTrue(selection.wait(for: \.isHittable, toEqual: true, timeout: 5))
+        XCTAssertEqual(selection.value as? String, name)
+        app.buttons["editor.cancel"].tap()
+        XCTAssertTrue(app.buttons["work.add"].waitForExistence(timeout: 5))
+    }
+
+    func testLargestTextMemoCaptionDisplaysWithoutClipping() throws {
+        guard UIApplication.shared.preferredContentSizeCategory == .accessibilityExtraExtraExtraLarge else {
+            throw XCTSkip("Memo caption wrapping requires AX5.")
+        }
+        let app = launch(seeded: true)
+        tapWork("給湯器から水漏れ", app: app)
+        tapIdentifier("memo.add", app: app)
+        XCTAssertTrue(app.textFields["history.text"].waitForExistence(timeout: 5))
+        let caption = app.staticTexts["メモ（必須）"].firstMatch
+        let font = UIFont.preferredFont(forTextStyle: .subheadline)
+        let required = (caption.label as NSString).boundingRect(with: CGSize(width: caption.frame.width, height: .greatestFiniteMagnitude),
+            options: .usesLineFragmentOrigin, attributes: [.font: font], context: nil)
+        let details = XCTAttachment(string: "Font: \(font)\nFrame: \(caption.frame)\nRequired: \(required)")
+        details.name = "Memo caption font measurement"
+        details.lifetime = .keepAlways
+        add(details)
+        XCTAssertGreaterThanOrEqual(caption.frame.height + 1 / (try XCTUnwrap(renderingScale)), required.height)
+        try audit(app, name: "History Editor")
+    }
+
+    func testCaptionClippingScopeRejectsUnverifiedReports() {
+        let valid = NativeCaptionClippingScope(version: OperatingSystemVersion(majorVersion: 27, minorVersion: 2, patchVersion: 0),
+            screen: "History Editor", auditType: .textClipped,
+            detail: "Text of this SwiftUI.AccessibilityNode may be clipped at larger Dynamic Type sizes.",
+            elementType: .staticText, label: "メモ（必須）", textSize: .accessibilityExtraExtraExtraLarge,
+            element: CGRect(x: 40, y: 196, width: 245.333333, height: 58.666667),
+            viewport: CGRect(x: 0, y: 142, width: 420, height: 700), window: CGRect(x: 0, y: 0, width: 420, height: 912),
+            bars: [CGRect(x: 0, y: 88, width: 420, height: 54)], scale: 3, matchingCaptions: 1, foregroundPixels: 1_000)
+        XCTAssertTrue(valid.accepts)
+        let invalid: [(inout NativeCaptionClippingScope) -> Void] = [
+            { $0.version.majorVersion = 26 }, { $0.version.minorVersion = 3 }, { $0.version.patchVersion = 1 },
+            { $0.screen = "Repair" }, { $0.auditType = .dynamicType }, { $0.detail = "Unknown report" },
+            { $0.elementType = .button }, { $0.label = "Unknown caption" }, { $0.textSize = .large },
+            { $0.element.size.height = 40 }, { $0.element.size.width = 100 }, { $0.element.origin.y = 10 },
+            { $0.element.size.height = .infinity }, { $0.element.origin.x = .nan },
+            { $0.viewport.size.height = 40 }, { $0.window.size.width = 20 },
+            { $0.bars.append($0.element) }, { $0.scale = 0 }, { $0.scale = .nan },
+            { $0.matchingCaptions = 0 }, { $0.matchingCaptions = 2 }, { $0.foregroundPixels = 0 }
+        ]
+        for invalidate in invalid {
+            var candidate = valid
+            invalidate(&candidate)
+            XCTAssertFalse(candidate.accepts)
+        }
+    }
+
+    func testLargestTextContractEditorRemainsReadable() throws {
+        guard UIApplication.shared.preferredContentSizeCategory == .accessibilityExtraExtraExtraLarge else {
+            throw XCTSkip("Contract editor readability requires AX5.")
+        }
+        let app = launch(seeded: true)
+        openSampleRoom(app)
+        tap("賃貸借契約", app: app)
+        tap("契約を編集", app: app)
+        try audit(app, name: "Contract Editor")
+    }
+
+    func testNativeDateClippingScopeRejectsUnverifiedReports() {
+        let first = RenderedDateValue(value: "2025/04/01", recognized: "2025/04/01",
+            bounds: CGRect(x: 40, y: 200, width: 299, height: 77.5), required: CGSize(width: 274.7, height: 63.25))
+        let second = RenderedDateValue(value: "2027/03/31", recognized: "2027/03/31",
+            bounds: CGRect(x: 40, y: 400, width: 296, height: 77.5), required: CGSize(width: 271.7, height: 63.25))
+        let valid = NativeDateClippingScope(version: OperatingSystemVersion(majorVersion: 27, minorVersion: 2, patchVersion: 0),
+            screen: "Contract Editor", auditType: .textClipped,
+            detail: "Text of this UILabel may be clipped at larger Dynamic Type sizes.", hasElement: false, largest: true,
+            viewport: CGRect(x: 0, y: 142, width: 420, height: 700), window: CGRect(x: 0, y: 0, width: 420, height: 912),
+            dates: [first, second], reportIndex: 1)
+        XCTAssertTrue(valid.accepts)
+        let invalid: [(inout NativeDateClippingScope) -> Void] = [
+            { $0.version.majorVersion = 26 }, { $0.version.minorVersion = 3 }, { $0.version.patchVersion = 1 },
+            { $0.screen = "Repair Editor" }, { $0.auditType = .dynamicType }, { $0.detail = "Unknown report" },
+            { $0.hasElement = true }, { $0.largest = false }, { $0.reportIndex = 2 },
+            { $0.viewport = .zero }, { $0.window = .zero }, { $0.dates.removeLast() },
+            { $0.dates[0].recognized = "2025/04/0" }, { $0.dates[0].value = "invalid" },
+            { $0.dates[0].bounds.size.width = 200 }, { $0.dates[0].bounds.size.height = 30 },
+            { $0.dates[0].bounds.origin.y = 1 }, { $0.dates[0].bounds.size.width = .nan },
+            { $0.dates[0].required.width = .infinity }, { $0.dates[0].bounds = $0.dates[1].bounds }
+        ]
+        for invalidate in invalid {
+            var candidate = valid
+            invalidate(&candidate)
+            XCTAssertFalse(candidate.accepts)
+        }
+    }
+
+    func testRenderedDateRecognitionRejectsIncompleteAndMissingText() throws {
+        func render(_ value: String) -> CGImage? {
+            UIGraphicsImageRenderer(size: CGSize(width: 400, height: 100)).image { context in
+                UIColor.white.setFill()
+                context.fill(CGRect(x: 0, y: 0, width: 400, height: 100))
+                (value as NSString).draw(at: CGPoint(x: 20, y: 20), withAttributes: [
+                    .font: UIFont.systemFont(ofSize: 48), .foregroundColor: UIColor.black
+                ])
+            }.cgImage
+        }
+        let complete = try XCTUnwrap(render("2025/04/01"))
+        XCTAssertEqual(try RenderedDateRecognition.text(in: complete), "2025/04/01")
+        XCTAssertNotEqual(try RenderedDateRecognition.text(in: XCTUnwrap(render("2025/04/0"))), "2025/04/01")
+        XCTAssertEqual(try RenderedDateRecognition.text(in: XCTUnwrap(render(""))), "")
+        let clipped = try XCTUnwrap(complete.cropping(to: CGRect(x: 0, y: 0, width: complete.width / 2, height: complete.height)))
+        XCTAssertNotEqual(try RenderedDateRecognition.text(in: clipped), "2025/04/01")
+    }
+
+    func testLargestTextRepairEditorSupportsDynamicType() throws {
+        guard UIApplication.shared.preferredContentSizeCategory == .accessibilityExtraExtraExtraLarge else {
+            throw XCTSkip("Repair editor scaling requires AX5.")
+        }
+        let app = launch(seeded: true)
+        tapWork("給湯器から水漏れ", app: app)
+        tapIdentifier("work.edit", app: app)
+        XCTAssertTrue(app.buttons["editor.save"].waitForExistence(timeout: 5))
+        try audit(app, name: "Repair Editor")
+        reveal(field("work.estimate", app: app), app: app)
+        try audit(app, name: "Repair Editor")
+    }
+
     func testLargestTextDeadlinesKeepTheirCompleteRenderedHeight() throws {
         guard UIApplication.shared.preferredContentSizeCategory == .accessibilityExtraExtraExtraLarge else {
             throw XCTSkip("Deadline wrapping requires AX5.")
@@ -743,8 +885,11 @@ final class PropertyRecordsUITests: XCTestCase {
         XCTAssertTrue(app.buttons["editor.save"].isHittable)
         if requiresKeyboard {
             let keyboard = app.keyboards.firstMatch
-            XCTAssertTrue(keyboard.waitForExistence(timeout: 5))
-            XCTAssertTrue(app.windows.firstMatch.frame.intersects(keyboard.frame))
+            field("property.room", app: app).tap()
+            let visible = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
+                keyboard.exists && !keyboard.frame.isEmpty && app.windows.firstMatch.frame.intersects(keyboard.frame)
+            }, object: keyboard)
+            XCTAssertEqual(XCTWaiter.wait(for: [visible], timeout: 5), .completed)
         }
         let keyboard = XCTAttachment(screenshot: app.screenshot())
         keyboard.name = "Long name with keyboard"
@@ -849,6 +994,7 @@ final class PropertyRecordsUITests: XCTestCase {
         replace("配管修繕の現地確認", in: "work.title", app: app)
         for orientation in [UIDeviceOrientation.landscapeLeft, .portrait, .landscapeRight, .portrait] {
             XCUIDevice.shared.orientation = orientation
+            reveal(field("work.title", app: app), app: app, in: app.collectionViews["editor.form"])
             XCTAssertTrue(field("work.title", app: app).waitForExistence(timeout: 5))
             XCTAssertEqual(inputText("work.title", app: app), "配管修繕の現地確認")
             XCTAssertTrue(app.buttons["editor.save"].isHittable)
@@ -1543,10 +1689,12 @@ final class PropertyRecordsUITests: XCTestCase {
 
     private func waitForEditorLayout(_ input: XCUIElement, app: XCUIApplication) {
         let identifier = input.identifier
+        let label = input.label
+        let elementType = input.elementType
         var previous: EditorLayout?
         var observed: EditorLayout?
         let settled = NSPredicate { _, _ in
-            guard let current = self.editorLayout(identifier: identifier, app: app) else { return false }
+            guard let current = self.editorLayout(identifier: identifier, label: label, elementType: elementType, app: app) else { return false }
             observed = current
             guard !current.input.isEmpty, current.input.intersects(current.window),
                   current.window.contains(current.save), current.window.contains(current.cancel),
@@ -1570,7 +1718,7 @@ final class PropertyRecordsUITests: XCTestCase {
                        "The editor and keyboard must settle before the next action.")
     }
 
-    private func editorLayout(identifier: String, app: XCUIApplication) -> EditorLayout? {
+    private func editorLayout(identifier: String, label: String, elementType: XCUIElement.ElementType, app: XCUIApplication) -> EditorLayout? {
         guard let root = try? app.snapshot() else { return nil }
         func descendants(_ snapshot: any XCUIElementSnapshot) -> [any XCUIElementSnapshot] {
             [snapshot] + snapshot.children.flatMap { descendants($0) }
@@ -1580,8 +1728,12 @@ final class PropertyRecordsUITests: XCTestCase {
             let matching = elements.filter { $0.identifier == identifier && !$0.frame.isEmpty }
             return matching.count == 1 ? matching.first?.frame : nil
         }
+        let inputs = elements.filter {
+            !$0.frame.isEmpty && (identifier.isEmpty ? $0.elementType == elementType && $0.label == label : $0.identifier == identifier)
+        }
         guard let window = root.children.first(where: { $0.elementType == .window })?.frame,
-              let input = frame(identifier), let save = frame("editor.save"), let cancel = frame("editor.cancel") else { return nil }
+              inputs.count == 1, let input = inputs.first?.frame,
+              let save = frame("editor.save"), let cancel = frame("editor.cancel") else { return nil }
         let keyboard = elements.first { $0.elementType == .keyboard && !$0.frame.isEmpty && $0.frame.intersects(window) }?.frame
         return EditorLayout(window: window, input: input, keyboard: keyboard,
                             save: save, cancel: cancel)
@@ -1590,7 +1742,9 @@ final class PropertyRecordsUITests: XCTestCase {
     private func dismissRegistrationInteractively(_ app: XCUIApplication) {
         let header = app.navigationBars["物件を追加"]
         XCTAssertTrue(header.waitForExistence(timeout: 5))
-        let start = header.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
+        let top = max(app.collectionViews["editor.form"].frame.minY + 2, header.frame.minY - 10)
+        let start = header.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0))
+            .withOffset(CGVector(dx: 0, dy: top - header.frame.minY))
         let end = app.windows.firstMatch.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.9))
         start.press(forDuration: 0.1, thenDragTo: end)
     }
@@ -1608,18 +1762,9 @@ final class PropertyRecordsUITests: XCTestCase {
             reveal(element, app: app)
             element.tap()
         } else {
-            element.press(forDuration: 1.1)
-            let selectAll = app.descendants(matching: .any)["すべてを選択"].firstMatch
-            for _ in 0..<8 {
-                if selectAll.exists { break }
-                let next = app.buttons["進む"]
-                if !next.exists { break }
-                next.tap()
-            }
-            XCTAssertTrue(selectAll.waitForExistence(timeout: 3), app.debugDescription)
-            selectAll.tap()
+            element.tap(withNumberOfTaps: 3, numberOfTouches: 1)
         }
-        element.typeText(value)
+        app.typeText(value)
         waitForEditorLayout(element, app: app)
     }
 
@@ -1690,7 +1835,7 @@ final class PropertyRecordsUITests: XCTestCase {
             container = foregroundList(app)
         }
         let frame = container.frame
-        let bars = (app.navigationBars.allElementsBoundByIndex + app.tabBars.allElementsBoundByIndex).map(\.frame)
+        let bars = (app.navigationBars.allElementsBoundByIndex + app.tabBars.allElementsBoundByIndex).filter(\.isHittable).map(\.frame)
         let target = element.exists && !element.frame.isEmpty ? element.frame : frame
         guard let viewport = ListViewport(list: frame, window: window.frame, target: target, bars: bars)?.bounds else {
             XCTFail("The list must provide a viewport outside visible navigation bars.")
@@ -1702,12 +1847,12 @@ final class PropertyRecordsUITests: XCTestCase {
             guard viewport.contains(CGPoint(x: bounds.midX, y: bounds.midY)) else { return false }
             if requireFullVisibility && !viewport.contains(bounds) { return false }
             let tabs = app.tabBars.firstMatch
-            if tabs.exists && tabs.isHittable && bounds.intersects(tabs.frame) { return false }
+            if tabs.exists && tabs.isHittable && tabs.frame.contains(CGPoint(x: bounds.midX, y: bounds.midY)) { return false }
             return keyboardFrame(app).map { !bounds.intersects($0) } ?? true
         }
         if reachable() { return }
         let keyboard = keyboardFrame(app)
-        guard let coordinates = ScrollCoordinates(bounds: frame, keyboard: keyboard) else {
+        guard let coordinates = ScrollCoordinates(bounds: viewport, keyboard: keyboard) else {
             let detail = XCTAttachment(string: "Viewport: \(frame)\nKeyboard: \(String(describing: keyboard))\n\(app.debugDescription)")
             detail.name = "Unavailable scroll viewport"
             detail.lifetime = .keepAlways
@@ -1716,17 +1861,20 @@ final class PropertyRecordsUITests: XCTestCase {
             return
         }
         let origin = window.coordinate(withNormalizedOffset: .zero)
-        let lower = origin.withOffset(CGVector(dx: frame.minX - window.frame.minX + frame.width * coordinates.lower.dx,
-                                              dy: frame.minY - window.frame.minY + frame.height * coordinates.lower.dy))
-        let upper = origin.withOffset(CGVector(dx: frame.minX - window.frame.minX + frame.width * coordinates.upper.dx,
-                                              dy: frame.minY - window.frame.minY + frame.height * coordinates.upper.dy))
+        let lower = origin.withOffset(CGVector(dx: viewport.minX - window.frame.minX + viewport.width * coordinates.lower.dx,
+                                              dy: viewport.minY - window.frame.minY + viewport.height * coordinates.lower.dy))
+        let upper = origin.withOffset(CGVector(dx: viewport.minX - window.frame.minX + viewport.width * coordinates.upper.dx,
+                                              dy: viewport.minY - window.frame.minY + viewport.height * coordinates.upper.dy))
+        let middle = viewport.minY + viewport.height * (coordinates.upper.dy + coordinates.lower.dy) / 2
+        let span = viewport.height * (coordinates.lower.dy - coordinates.upper.dy)
         for attempt in 0..<48 {
             let bounds = element.exists ? element.frame : .zero
-            let downward = bounds.isEmpty ? attempt >= 24 : bounds.midY < viewport.midY
+            let downward = bounds.isEmpty ? attempt >= 24 : bounds.midY < middle
+            let distance = bounds.isEmpty ? span : min(max(20, abs(bounds.midY - middle)), span)
             if downward {
-                upper.press(forDuration: 0.05, thenDragTo: lower)
+                upper.press(forDuration: 0.05, thenDragTo: upper.withOffset(CGVector(dx: 0, dy: distance)))
             } else {
-                lower.press(forDuration: 0.05, thenDragTo: upper)
+                lower.press(forDuration: 0.05, thenDragTo: lower.withOffset(CGVector(dx: 0, dy: -distance)))
             }
             if reachable() { return }
         }
@@ -1943,6 +2091,11 @@ final class PropertyRecordsUITests: XCTestCase {
         var unlocatedSheetTextReports = 0
         var unlocatedAdaptiveTypeReports = 0
         var offscreenReminderReports = 0
+        var verifiedCaptions: Set<String> = []
+        var verifiedDateReports = 0
+        let previousFailurePolicy = continueAfterFailure
+        continueAfterFailure = true
+        defer { continueAfterFailure = previousFailurePolicy }
         try app.performAccessibilityAudit(for: types) { issue in
             print("Accessibility audit: \(name): \(issue.detailedDescription): \(issue.element?.debugDescription ?? "no element")")
             XCTContext.runActivity(named: "Audit \(name)") { activity in
@@ -1950,6 +2103,17 @@ final class PropertyRecordsUITests: XCTestCase {
                 detail.name = "App audit detail"
                 detail.lifetime = .keepAlways
                 activity.add(detail)
+            }
+            if let label = issue.element?.label, !verifiedCaptions.contains(label),
+               let reason = self.verifiedCaptionClipping(issue, app: app, screen: name) {
+                verifiedCaptions.insert(label)
+                print("Verified rendered caption: \(reason)")
+                return true
+            }
+            if let reason = self.verifiedNativeDateClipping(issue, app: app, screen: name, reportIndex: verifiedDateReports + 1) {
+                verifiedDateReports += 1
+                print("Verified rendered dates: \(reason)")
+                return true
             }
             if let reason = self.verifiedOffscreenReminderContrast(issue, app: app, screen: name,
                 measurement: reminderMeasurement, reportIndex: offscreenReminderReports + 1) {
@@ -1979,6 +2143,71 @@ final class PropertyRecordsUITests: XCTestCase {
             }
             return false
         }
+    }
+
+    private func verifiedCaptionClipping(_ issue: XCUIAccessibilityAuditIssue, app: XCUIApplication, screen: String) -> String? {
+        guard issue.auditType == .textClipped, let element = issue.element,
+              NativeCaptionClippingScope.fontStyle(screen: screen, label: element.label) != nil,
+              let scale = renderingScale else { return nil }
+        let viewport = app.collectionViews[screen == "Contact" ? "contact.detail" : "editor.form"]
+        guard viewport.exists else { return nil }
+        let frame = element.frame
+        let matches = viewport.staticTexts.matching(NSPredicate(format: "label == %@", element.label))
+            .allElementsBoundByIndex.filter { $0.frame == frame }
+        let image = element.screenshot()
+        guard element.frame == frame, let bitmap = image.image.cgImage,
+              let pixels = try? UniformTextContrast(image: bitmap) else { return nil }
+        let scope = NativeCaptionClippingScope(version: ProcessInfo.processInfo.operatingSystemVersion,
+            screen: screen, auditType: issue.auditType, detail: issue.detailedDescription, elementType: element.elementType,
+            label: element.label, textSize: UIApplication.shared.preferredContentSizeCategory,
+            element: frame, viewport: viewport.frame, window: app.windows.firstMatch.frame,
+            bars: (app.navigationBars.allElementsBoundByIndex + app.tabBars.allElementsBoundByIndex).filter(\.isHittable).map(\.frame),
+            scale: scale, matchingCaptions: matches.count, foregroundPixels: pixels.foregroundPixels)
+        guard scope.accepts else { return nil }
+        let capture = XCTAttachment(screenshot: image)
+        capture.name = "Verified complete caption " + element.label
+        capture.lifetime = .keepAlways
+        add(capture)
+        return "\(element.label): \(frame), \(pixels.foregroundPixels) rendered foreground pixels."
+    }
+
+    private var renderingScale: CGFloat? {
+        UIApplication.shared.connectedScenes.compactMap { ($0 as? UIWindowScene)?.traitCollection.displayScale }.first
+    }
+
+    private func verifiedNativeDateClipping(_ issue: XCUIAccessibilityAuditIssue, app: XCUIApplication,
+                                           screen: String, reportIndex: Int) -> String? {
+        guard issue.auditType == .textClipped, issue.element == nil, screen == "Contract Editor",
+              issue.detailedDescription == "Text of this UILabel may be clipped at larger Dynamic Type sizes." else { return nil }
+        let form = app.collectionViews["editor.form"]
+        guard form.exists else { return nil }
+        let pickers = form.datePickers.allElementsBoundByIndex
+        guard pickers.count == 2 else { return nil }
+        let font = UIFont.preferredFont(forTextStyle: .body,
+            compatibleWith: UITraitCollection(preferredContentSizeCategory: .accessibilityExtraExtraExtraLarge))
+        let bars = (app.navigationBars.allElementsBoundByIndex + app.tabBars.allElementsBoundByIndex).filter(\.isHittable).map(\.frame)
+        var dates: [RenderedDateValue] = []
+        for picker in pickers {
+            let button = picker.buttons.firstMatch
+            guard button.exists, button.isHittable, let value = button.value as? String else { return nil }
+            let bounds = button.frame
+            guard !bars.contains(where: { $0.intersects(bounds) }) else { return nil }
+            let image = button.screenshot()
+            guard button.frame == bounds, let bitmap = image.image.cgImage,
+                  let recognized = try? RenderedDateRecognition.text(in: bitmap) else { return nil }
+            let required = (value as NSString).boundingRect(with: CGSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude),
+                options: .usesLineFragmentOrigin, attributes: [.font: font], context: nil)
+            dates.append(RenderedDateValue(value: value, recognized: recognized, bounds: bounds, required: required.size))
+            let capture = XCTAttachment(screenshot: image)
+            capture.name = "Recognized native date " + recognized
+            capture.lifetime = .keepAlways
+            add(capture)
+        }
+        let scope = NativeDateClippingScope(version: ProcessInfo.processInfo.operatingSystemVersion,
+            screen: screen, auditType: issue.auditType, detail: issue.detailedDescription, hasElement: false,
+            largest: UIApplication.shared.preferredContentSizeCategory == .accessibilityExtraExtraExtraLarge,
+            viewport: form.frame, window: app.windows.firstMatch.frame, dates: dates, reportIndex: reportIndex)
+        return scope.accepts ? dates.map(\.value).joined(separator: ", ") : nil
     }
 
     private func measureOffscreenReminder(_ app: XCUIApplication, screen: String) throws -> ReminderCaptionMeasurement? {

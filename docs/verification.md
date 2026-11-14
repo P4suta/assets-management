@@ -50,8 +50,20 @@ At AX5 on iPadOS 27.2, native adaptive tabs can report partial Dynamic Type supp
 An independent SwiftUI TabView reproduces the same report, while Settings' General title reports partial support with a located element.
 The qualifier for native tabs requires the exact runtime, AX5, three native tabs at the top, an unlocated report of partial support, and at most three reports.
 Located issues, full unsupported reports, and unknown contexts remain failures.
-The AX5 full audit on iPadOS 27.2 reports unsupported Dynamic Type without locating an element in the repair editor.
-The report remains a failure pending diagnosis.
+Editor sheets use Apple's [page presentation sizing](https://developer.apple.com/documentation/swiftui/view/presentationsizing(_:)) to keep the available space at AX5.
+The repair journey audits the initial form and the amount field after scrolling.
+Full unsupported Dynamic Type reports remain failures.
+On iOS 27.2, a Japanese development region reproduces clipped-text predictions for complete captions in an independent SwiftUI form.
+The caption qualifier requires the exact runtime, report, screen, label, text style, and largest text size.
+It checks a unique matching native element, an unobscured viewport, fresh rendered foreground pixels, and the complete text's bounds using the system font.
+Its tolerance is one display pixel.
+Rejecting fixtures cover other runtimes and reports, unknown captions, insufficient width and height, invalid geometry, overlapping bars, missing pixels, and duplicate elements.
+The compact native date picker on iOS 27.2 scales its internal labels with [UIKit's automatic fitting](https://developer.apple.com/documentation/uikit/uilabel/adjustsfontsizetofitwidth).
+Hosted tests inspect both date labels at iPhone and iPad widths and require their actual text rectangles to fit.
+Hosted tests require an effective date font of at least twice the standard body size, using UIKit's `minimumScaleFactor` property.
+The contract qualifier requires two unobscured native date controls whose fresh images match their complete date values through local text recognition with language correction turned off.
+It accepts at most one unlocated UILabel clipping prediction in that exact context.
+Other unlocated clipping reports and unknown contexts remain failures.
 Complementary Light and Dark AX5 journeys check long property names, visible keyboards, discard, save retry, bounded repair estimates, and contract amounts.
 Rendered label measurements require the complete label inside its scroll viewport.
 A [VoiceOver journey](https://developer.apple.com/documentation/xcuiautomation/xcuivoiceoverservice) checks editor labels in both directions and rejects background labels on iOS 27 or later.

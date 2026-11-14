@@ -14,7 +14,9 @@
 		1826CC39F1BDBB2D71B4CAE1 /* MetadataRowLayoutTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A68FD6E9CB81C12F0F80036 /* MetadataRowLayoutTests.swift */; };
 		1938EA77FF138327090B75DD /* DocumentPreviewScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = EC15DC5AA0EFDE6AA5E5B4DC /* DocumentPreviewScreen.swift */; };
 		19AE1E04AE31489C2BDC5ADB /* WorkViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6D58247B1FA2BB73A89D54F6 /* WorkViews.swift */; };
+		1BCFBBAEFB7D0CBD2106CDA5 /* NativeDateClippingScope.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87112A7BE2FA2136F9781596 /* NativeDateClippingScope.swift */; };
 		1EDF93509C1D7AAF7923A4F6 /* Building.png in Resources */ = {isa = PBXBuildFile; fileRef = 9C81B3B37CF691D3884BFD30 /* Building.png */; };
+		2764D6694ACEC5F9E9A626DF /* ContractNativeTextTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D58E91DA8C31F12DB9594BE /* ContractNativeTextTests.swift */; };
 		2B997A1196D8BAE893C576A3 /* ContractDates.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E0C08F857F99CBE56B82FCE /* ContractDates.swift */; };
 		2CAD832E262CBF9DB5BC76E5 /* ProgressSectionHeader.png in Resources */ = {isa = PBXBuildFile; fileRef = 805E9D0AED55E3E7076AA8B0 /* ProgressSectionHeader.png */; };
 		3612FD545D8CA5E398FB9203 /* CameraCapture.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1DA53588064230DAF5ABB2F /* CameraCapture.swift */; };
@@ -54,6 +56,7 @@
 		EF63018A11D5FD970FB6E041 /* PropertyCore in Frameworks */ = {isa = PBXBuildFile; productRef = A18DD4E8B6EB7CDAC2589E19 /* PropertyCore */; };
 		F924499F73DE43B4442FDF07 /* PhotoProcessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = F8F3F52D2978508B2DB6DA17 /* PhotoProcessor.swift */; };
 		FAC2793078FBE708A55C92E3 /* RepositoryFactory.swift in Sources */ = {isa = PBXBuildFile; fileRef = B31EBC3943F38DDD8384448C /* RepositoryFactory.swift */; };
+		FFB35F7521960E59C9A2ED91 /* NativeCaptionClippingScope.swift in Sources */ = {isa = PBXBuildFile; fileRef = 847528EF52C6B902484D3B6D /* NativeCaptionClippingScope.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -92,8 +95,11 @@
 		6D58247B1FA2BB73A89D54F6 /* WorkViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkViews.swift; sourceTree = "<group>"; };
 		805E9D0AED55E3E7076AA8B0 /* ProgressSectionHeader.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = ProgressSectionHeader.png; sourceTree = "<group>"; };
 		80E28D765E8C56142D875402 /* ContactViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContactViews.swift; sourceTree = "<group>"; };
+		847528EF52C6B902484D3B6D /* NativeCaptionClippingScope.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeCaptionClippingScope.swift; sourceTree = "<group>"; };
+		87112A7BE2FA2136F9781596 /* NativeDateClippingScope.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeDateClippingScope.swift; sourceTree = "<group>"; };
 		874F39A4223D495FA090D5E4 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		87AF650B2F64D6B36117B0EF /* ExternalNavigationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExternalNavigationTests.swift; sourceTree = "<group>"; };
+		8D58E91DA8C31F12DB9594BE /* ContractNativeTextTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContractNativeTextTests.swift; sourceTree = "<group>"; };
 		8FAABF65F1DA8E5E3B6CE3CD /* EditorSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorSheet.swift; sourceTree = "<group>"; };
 		94104B1A86E2515BA48B73ED /* AppInformationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppInformationView.swift; sourceTree = "<group>"; };
 		961C165E6CDFD0D34E9DD305 /* EditorSessionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorSessionTests.swift; sourceTree = "<group>"; };
@@ -164,6 +170,7 @@
 		3F22B842F27E18F7D3B8E38C /* AppTests */ = {
 			isa = PBXGroup;
 			children = (
+				8D58E91DA8C31F12DB9594BE /* ContractNativeTextTests.swift */,
 				1F3DA74426D85FD9F1D173C6 /* EditorReconstructionTests.swift */,
 				961C165E6CDFD0D34E9DD305 /* EditorSessionTests.swift */,
 				87AF650B2F64D6B36117B0EF /* ExternalNavigationTests.swift */,
@@ -181,6 +188,8 @@
 			isa = PBXGroup;
 			children = (
 				442DDA855467511683DD845A /* AdaptiveRecordLayoutTests.swift */,
+				847528EF52C6B902484D3B6D /* NativeCaptionClippingScope.swift */,
+				87112A7BE2FA2136F9781596 /* NativeDateClippingScope.swift */,
 				BEBC645502D46DDF0321612C /* NativeOffscreenReminderScope.swift */,
 				3C07F3B8B0F303E6E46B3DE2 /* NativeSheetTextScope.swift */,
 				B462DECE5F8A2D2135F5CF8D /* PropertyRecordsUITests.swift */,
@@ -419,6 +428,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				2764D6694ACEC5F9E9A626DF /* ContractNativeTextTests.swift in Sources */,
 				057812ECB01EF2FC4761D3DC /* EditorReconstructionTests.swift in Sources */,
 				A3107169EC6F1F73A1A1E42F /* EditorSessionTests.swift in Sources */,
 				E55EB9556A461E837828AB7E /* ExternalNavigationTests.swift in Sources */,
@@ -436,6 +446,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				75A868E257695737528B8BE8 /* AdaptiveRecordLayoutTests.swift in Sources */,
+				FFB35F7521960E59C9A2ED91 /* NativeCaptionClippingScope.swift in Sources */,
+				1BCFBBAEFB7D0CBD2106CDA5 /* NativeDateClippingScope.swift in Sources */,
 				6B57A6284ED7EE7D9B353062 /* NativeOffscreenReminderScope.swift in Sources */,
 				370121383558F056F86CC12A /* NativeSheetTextScope.swift in Sources */,
 				91DF8ECE1C3F0F3D3C488FC6 /* PropertyRecordsUITests.swift in Sources */,
@@ -617,7 +629,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 5;
+				CURRENT_PROJECT_VERSION = 6;
 				DEVELOPMENT_ASSET_PATHS = App/DevelopmentAssets;
 				DEVELOPMENT_TEAM = XMBQLW82L9;
 				GENERATE_INFOPLIST_FILE = NO;
@@ -702,7 +714,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 5;
+				CURRENT_PROJECT_VERSION = 6;
 				DEVELOPMENT_ASSET_PATHS = App/DevelopmentAssets;
 				DEVELOPMENT_TEAM = XMBQLW82L9;
 				GENERATE_INFOPLIST_FILE = NO;
