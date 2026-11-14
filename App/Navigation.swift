@@ -2,12 +2,14 @@ import PropertyCore
 import SwiftUI
 
 struct WorkNavigationView: View {
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @State private var selection: UUID?
     let onRegister: () -> Void
 
     var body: some View {
         NavigationSplitView {
-            WorkListView(selection: $selection, onRegister: onRegister)
+            WorkListView(selection: $selection, onRegister: onRegister,
+                         showsReminder: horizontalSizeClass == .compact || selection == nil)
         } detail: {
             NavigationStack {
                 if let selection {

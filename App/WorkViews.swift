@@ -9,13 +9,14 @@ struct WorkListView: View {
     @State private var editor: EditorDestination?
     @State private var registration = false
     let onRegister: () -> Void
+    let showsReminder: Bool
 
     private var active: [WorkItem] { store.records.matchingWork(query: query, completed: false) }
     private var completed: [WorkItem] { store.records.matchingWork(query: query, completed: true) }
 
     var body: some View {
         List(selection: $selection) {
-            ReminderReport()
+            if showsReminder { ReminderReport() }
             if active.isEmpty && completed.isEmpty {
                 ContentUnavailableView {
                     Label(query.isEmpty ? "対応の記録はありません" : "対応が見つかりません", systemImage: "checklist")
