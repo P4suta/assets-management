@@ -38,6 +38,8 @@ The Japanese description addresses rental property managers who need to find ear
 Its examples describe short memos, inline photographs, progress search, deadline reminders, contracts, equipment, and common-area work.
 The promotional text describes the notes, photographs, and progress users can keep.
 The marketing URL points to the app-specific landing page at its subdomain root.
+The page meets Apple's [marketing URL definition](https://developer.apple.com/help/app-store-connect/reference/app-information/platform-version-information/).
+The CLI reports its general root-path heuristic for the dedicated marketing page: `legal.url.site_root`.
 The [header artwork](../AppStore/CreativeAssets/ja/header.svg) and [search results artwork](../AppStore/CreativeAssets/ja/search-results.svg) contain the Japanese heading on a white background.
 The header uses 3840 by 1646 pixels, and the search artwork uses 3840 by 2560 pixels under Apple's [creative asset specifications](https://developer.apple.com/help/app-store-connect/reference/app-information/creative-assets-specifications).
 Each heading stays inside its template's safe area.
