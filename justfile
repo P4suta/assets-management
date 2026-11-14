@@ -70,7 +70,7 @@ archive archive_path: generate
 
 export archive_path output_path:
     just archive-resources '{{ archive_path }}'
-    xcodebuild -exportArchive -archivePath '{{ archive_path }}' -exportPath '{{ output_path }}' -exportOptionsPlist AppStore/ExportOptions.plist -allowProvisioningUpdates -quiet
+    PATH=/usr/bin:/bin:/usr/sbin:/sbin xcodebuild -exportArchive -archivePath '{{ archive_path }}' -exportPath '{{ output_path }}' -exportOptionsPlist AppStore/ExportOptions.plist -allowProvisioningUpdates -quiet
 
 archive-resources archive_path:
     test ! -e '{{ archive_path }}/Products/Applications/PropertyRecords.app/PhotoLicense.txt'
