@@ -44,6 +44,7 @@ struct EditorSheet<Fields: View>: View {
             }
             .overlay { if feedback.saving { ProgressView("保存中") } }
         }
+        .presentationSizing(.page)
         .interactiveDismissDisabled(dirty || feedback.saving)
         .background(DismissAttemptObserver(blocked: dirty || feedback.saving) { if !feedback.saving { feedback.discard = true } })
         .alert("変更を破棄しますか？", isPresented: $feedback.discard) {
