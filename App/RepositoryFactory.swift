@@ -10,6 +10,7 @@ enum RepositoryFactory {
                 .appendingPathComponent(identifier, isDirectory: true)
             return TestRepository(directory: directory,
                                   seeded: ProcessInfo.processInfo.arguments.contains("--seeded"),
+                                  legacyDocuments: ProcessInfo.processInfo.arguments.contains("--legacy-documents"),
                                   pastVisit: ProcessInfo.processInfo.environment["UITEST_PAST_VISIT"] == "1",
                                   failFirstSave: ProcessInfo.processInfo.arguments.contains("--fail-first-save"))
         }
@@ -22,11 +23,13 @@ enum RepositoryFactory {
 private actor TestRepository: RecordsRepository {
     let backing: FileRecordsRepository
     let seeded: Bool
+    let legacyDocuments: Bool
     let pastVisit: Bool
     var failFirstSave: Bool
-    init(directory: URL, seeded: Bool, pastVisit: Bool, failFirstSave: Bool) {
+    init(directory: URL, seeded: Bool, legacyDocuments: Bool, pastVisit: Bool, failFirstSave: Bool) {
         backing = FileRecordsRepository(directory: directory)
         self.seeded = seeded
+        self.legacyDocuments = legacyDocuments
         self.pastVisit = pastVisit
         self.failFirstSave = failFirstSave
     }
@@ -40,7 +43,7 @@ private actor TestRepository: RecordsRepository {
             fixture.attachments.append(Attachment(buildingID: item.buildingID, roomID: item.roomID,
                                                  workID: item.id, kind: .photo, name: "給湯器の配管接続部.png", storedName: name))
         }
-        if let item = fixture.work.first {
+        if legacyDocuments, let item = fixture.work.first {
             let quote = await SamplePDF.data(title: "見積書", lines: ["未来ヶ丘団地 · 203号室", "給湯器の配管修繕", "見積額 ¥38,500", "みどり設備", "架空の見積書です。"],
                                              link: AppInformation.supportURL)
             let name = try await backing.writeAttachment(quote, extension: "pdf")

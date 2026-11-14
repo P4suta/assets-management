@@ -7,6 +7,13 @@ Run the rotation checks on iPad and iPhone Duo simulators with `mise x -- just a
 Run window resizing with the selected record and an open editor, and verify the same title, draft value, and reachable save action afterward.
 Keep physical-device acceptance and the App Review recording separate from simulator results.
 Selected-row tests audit foreground contrast within the visible selection in both appearances.
+Appearance-sensitive journeys use the Simulator profile configured before the run.
+The journeys check the rendered background before measuring selected rows or capturing store images.
+Hosted layout tests render the contact, work, building, room, and contract detail screens at widths of 320, 420, 600, and 1,024 points.
+The 80 cases cover Light and Dark appearance with standard and AX5 text.
+The tests measure rendered separator positions and require aligned metadata rows.
+Measurement rejects missing or ambiguous lines.
+Icon-bearing metadata rows use Apple's [separator alignment guide](https://developer.apple.com/documentation/swiftui/horizontalalignment/listrowseparatorleading) to align their dividers with the content edge.
 Selected rows use the primary system label for text and status symbols.
 The style adjusts for its [highlighted background](https://developer.apple.com/documentation/swiftui/environmentvalues/backgroundprominence).
 The iPadOS 27.2 audit reports insufficient contrast for a selected deadline whose captured black text has a measured ratio of 12.298:1.
@@ -40,10 +47,11 @@ Unselected record metadata uses primary content colors with [Increase Contrast](
 Its native regression measures work and property captions and requires at least 4.5:1.
 At AX5 on iPadOS 27.2, native adaptive tabs can report partial Dynamic Type support without a located element.
 An independent SwiftUI TabView reproduces the same report, while Settings' General title reports partial support with a located element.
-The qualifier for native tabs requires the exact runtime, AX5, native tabs at the top, an unlocated report of partial support, and at most two reports.
+The qualifier for native tabs requires the exact runtime, AX5, three native tabs at the top, an unlocated report of partial support, and at most three reports.
 Located issues, full unsupported reports, and unknown contexts remain failures.
-The AX5 full audit remains failing on an inline room option crossing the native repair sheet's scroll edge.
-The test keeps the inline room option report as a failure.
+The AX5 full audit on iPadOS 27.2 reports unsupported Dynamic Type without locating an element in the repair editor.
+With Increase Contrast enabled, the Actions audit also reports unlocated insufficient contrast.
+Both reports remain failures pending diagnosis.
 Complementary Light and Dark AX5 journeys check long property names, visible keyboards, discard, save retry, bounded repair estimates, and contract amounts.
 Rendered label measurements require the complete label inside its scroll viewport.
 A [VoiceOver journey](https://developer.apple.com/documentation/xcuiautomation/xcuivoiceoverservice) checks editor labels in both directions and rejects background labels on iOS 27 or later.

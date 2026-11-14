@@ -511,7 +511,7 @@ final class PropertyRecordsUITests: XCTestCase {
     }
 
     func testStoredDocumentsRemainReadableAndPhotosUseADateTitle() {
-        let app = launch(seeded: true)
+        let app = launch(seeded: true, legacyDocuments: true)
         tapWork("給湯器から水漏れ", app: app)
         tap("見積書.pdf", app: app, list: app.collectionViews["work.detail"])
         XCTAssertTrue(app.buttons["preview.close"].waitForExistence(timeout: 8))
@@ -528,7 +528,7 @@ final class PropertyRecordsUITests: XCTestCase {
     }
 
     func testPDFExternalLinkCanBeCancelledWithoutClosingThePreview() {
-        let app = launch(seeded: true)
+        let app = launch(seeded: true, legacyDocuments: true)
         tapWork("給湯器から水漏れ", app: app)
         tap("見積書.pdf", app: app, list: app.collectionViews["work.detail"])
         XCTAssertTrue(app.buttons["preview.close"].waitForExistence(timeout: 8))
@@ -863,11 +863,8 @@ final class PropertyRecordsUITests: XCTestCase {
     }
 
     func testSelectedRecordRowsRemainReadable() throws {
-        let originalAppearance = XCUIDevice.shared.appearance
-        defer { XCUIDevice.shared.appearance = originalAppearance }
-        for dark in [false, true] {
-            XCUIDevice.shared.appearance = dark ? .dark : .light
-            let app = launch(seeded: true)
+        let app = launch(seeded: true)
+        assertAppearance(app, dark: XCUIDevice.shared.appearance == .dark)
             tapWork("給湯器から水漏れ", app: app)
             XCTAssertTrue(app.navigationBars["修繕の詳細"].waitForExistence(timeout: 5))
             let sidebar = app.collectionViews.containing(.button, identifier: "work.row.selected").firstMatch
@@ -884,8 +881,7 @@ final class PropertyRecordsUITests: XCTestCase {
             tap("未来ヶ丘団地", app: app)
             try audit(app, name: "Selected building")
             try auditSelectionContrast(row("未来ヶ丘団地", app: app), app: app)
-            app.terminate()
-        }
+        app.terminate()
     }
 
     func testTextContrastRejectsWeakAndUnsupportedImages() throws {
@@ -1123,13 +1119,16 @@ final class PropertyRecordsUITests: XCTestCase {
         var second = native
         second.reportIndex = 2
         XCTAssertTrue(second.accepts)
+        var third = native
+        third.reportIndex = 3
+        XCTAssertTrue(third.accepts)
         let rejected: [(inout AdaptiveTabTypeScope) -> Void] = [
             { $0.version.majorVersion = 26 }, { $0.version.majorVersion = 28 }, { $0.version.minorVersion = 3 }, { $0.version.patchVersion = 1 },
             { $0.idiom = .phone }, { $0.auditType = .elementDetection },
             { $0.compactDescription = "Dynamic Type font sizes are unsupported" },
             { $0.detailedDescription = "User will not be able to change the font size of this UIButton" },
             { $0.hasElement = true }, { $0.textSize = .large }, { $0.hasNativeTopTabs = false },
-            { $0.reportIndex = 0 }, { $0.reportIndex = 3 }
+            { $0.reportIndex = 0 }, { $0.reportIndex = 4 }
         ]
         for reject in rejected {
             var scope = native
@@ -1264,10 +1263,8 @@ final class PropertyRecordsUITests: XCTestCase {
     #endif
 
     func testStoreScreenshots() {
-        let originalAppearance = XCUIDevice.shared.appearance
-        defer { XCUIDevice.shared.appearance = originalAppearance }
-        XCUIDevice.shared.appearance = .light
         let app = launch(seeded: true)
+        assertAppearance(app, dark: XCUIDevice.shared.appearance == .dark)
         tapWork("消防設備点検", app: app)
         setWorkStatus("完了", app: app)
         back(app)
@@ -1286,6 +1283,7 @@ final class PropertyRecordsUITests: XCTestCase {
         XCTAssertTrue(image.waitForExistence(timeout: 8))
         XCTAssertGreaterThan(image.frame.height, 100)
         reveal(photo, app: app)
+        XCTAssertFalse(app.buttons["見積書.pdf"].exists)
         captureStoreScreen(app, name: "3-repair")
         selectTab("物件", app: app)
         tap("未来ヶ丘団地", app: app)
@@ -1300,16 +1298,12 @@ final class PropertyRecordsUITests: XCTestCase {
         selectTab("連絡先", app: app)
         XCTAssertTrue(row("高橋", app: app).waitForExistence(timeout: 5))
         captureStoreScreen(app, name: "6-contacts")
-        selectTab("物件", app: app)
-        back(app)
-        back(app)
-        XCUIDevice.shared.appearance = .dark
-        XCTAssertTrue(row("203号室", app: app).waitForExistence(timeout: 5))
-        captureStoreScreen(app, name: "4-properties-dark")
     }
 
     func testReviewDemonstration() {
         defer { XCUIDevice.shared.orientation = .portrait }
+        XCUIDevice.shared.press(.home)
+        XCTAssertTrue(XCUIApplication(bundleIdentifier: "com.apple.springboard").wait(for: .runningForeground, timeout: 5))
         let app = launch()
         let building = "未来ヶ丘団地"
         selectTab("物件", app: app)
@@ -1351,10 +1345,14 @@ final class PropertyRecordsUITests: XCTestCase {
         captureStoreScreen(app, name: "Review shared contact")
         selectTab("対応", app: app)
         app.buttons["work.add"].tap()
-        field("work.building", app: app).tap()
-        let buildingOption = app.buttons[building].firstMatch
-        XCTAssertTrue(buildingOption.waitForExistence(timeout: 5))
-        buildingOption.tap()
+        let buildingPicker = field("work.building", app: app)
+        XCTAssertTrue(buildingPicker.waitForExistence(timeout: 5))
+        if !(buildingPicker.label + (buildingPicker.value as? String ?? "")).contains(building) {
+            buildingPicker.tap()
+            let option = app.buttons[building].firstMatch
+            XCTAssertTrue(option.waitForExistence(timeout: 5))
+            option.tap()
+        }
         enter("共用灯の交換", into: "work.title", app: app)
         app.buttons["editor.save"].tap()
         let createdRepair = app.buttons.matching(NSPredicate(format: "label CONTAINS %@ AND label CONTAINS %@", "共用灯の交換", building)).firstMatch
@@ -1410,17 +1408,32 @@ final class PropertyRecordsUITests: XCTestCase {
         add(capture)
     }
 
+    private func assertAppearance(_ app: XCUIApplication, dark: Bool) {
+        let rendered = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
+            guard let image = app.screenshot().image.cgImage,
+                  let sample = image.cropping(to: CGRect(x: 3, y: image.height / 2, width: 1, height: 1)) else { return false }
+            var pixel = [UInt8](repeating: 0, count: 4)
+            guard let context = CGContext(data: &pixel, width: 1, height: 1, bitsPerComponent: 8, bytesPerRow: 4,
+                                          space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) else { return false }
+            context.draw(sample, in: CGRect(x: 0, y: 0, width: 1, height: 1))
+            return pixel.prefix(3).allSatisfy { dark ? $0 < 96 : $0 > 160 }
+        }, object: nil)
+        XCTAssertEqual(XCTWaiter.wait(for: [rendered], timeout: 15), .completed,
+                       "The native background must finish adopting the requested appearance before capture.")
+    }
+
     func testReminderNoticeAccessibilityAfterLaunch() throws {
         let app = launch(seeded: true, reminderNotice: true)
         tapWork("給湯器から水漏れ", app: app)
         try audit(app, name: "Repair")
     }
 
-    private func launch(seeded: Bool = false, failFirstSave: Bool = false, reminderNotice: Bool = false, pastVisit: Bool = false) -> XCUIApplication {
+    private func launch(seeded: Bool = false, legacyDocuments: Bool = false, failFirstSave: Bool = false, reminderNotice: Bool = false, pastVisit: Bool = false) -> XCUIApplication {
         let app = XCUIApplication()
         app.launchEnvironment["UITEST_PAST_VISIT"] = pastVisit ? "1" : "0"
         app.launchArguments = ["--ui-testing", "-AppleLanguages", "(ja)", "-AppleLocale", "ja_JP"]
-            + (seeded ? ["--seeded"] : []) + (failFirstSave ? ["--fail-first-save"] : [])
+            + (seeded ? ["--seeded"] : []) + (legacyDocuments ? ["--legacy-documents"] : [])
+            + (failFirstSave ? ["--fail-first-save"] : [])
         app.launchEnvironment["UITEST_STORAGE_ID"] = UUID().uuidString
         if reminderNotice { app.launchEnvironment["UITEST_NOTICE"] = "denied" }
         app.launch()
@@ -1758,7 +1771,7 @@ final class PropertyRecordsUITests: XCTestCase {
                 && compactDescription == "Dynamic Type font sizes are partially unsupported"
                 && detailedDescription == "User will not be able to change the font size of this UILabel"
                 && !hasElement && textSize == .accessibilityExtraExtraExtraLarge && hasNativeTopTabs
-                && (1...2).contains(reportIndex)
+                && (1...3).contains(reportIndex)
         }
     }
 
@@ -1766,7 +1779,8 @@ final class PropertyRecordsUITests: XCTestCase {
         guard issue.auditType == .dynamicType,
               issue.compactDescription == "Dynamic Type font sizes are partially unsupported", issue.element == nil else { return nil }
         let window = app.windows.firstMatch.frame
-        let tabs = [app.buttons["checklist"].firstMatch, app.buttons["building.2.fill"].firstMatch]
+        let tabs = [app.buttons["checklist"].firstMatch, app.buttons["building.2.fill"].firstMatch,
+                    app.buttons["person.crop.rectangle.stack.fill"].firstMatch]
         let nativeTabs = app.buttons["ToggleSideBar"].firstMatch.exists && tabs.allSatisfy {
             $0.exists && !$0.frame.isEmpty && window.contains($0.frame) && $0.frame.maxY < window.midY
         }
