@@ -75,7 +75,12 @@ private struct MetadataLayoutProfile: Sendable {
             let image = UIGraphicsImageRenderer(size: window.bounds.size).image { _ in
                 window.drawHierarchy(in: window.bounds, afterScreenUpdates: true)
             }
-            starts.append(try RowSeparatorMeasurement.leading(image: image, row: frame))
+            do {
+                starts.append(try RowSeparatorMeasurement.leading(image: image, row: frame))
+            } catch {
+                Attachment.record(try #require(image.pngData()), named: "\(screen)-\(width)-\(dark)-\(largest)-row-\(item).png")
+                throw error
+            }
         }
         #expect(starts.count == screen.rowCount - 1)
         let reference = try #require(starts.first)
@@ -102,12 +107,16 @@ private struct MetadataLayoutProfile: Sendable {
         let row = CGRect(x: 0, y: 0, width: 320, height: 44)
         for inset in [CGFloat(20), CGFloat(60)] {
             #expect(try RowSeparatorMeasurement.leading(image: fixture([(inset, 43.5)]), row: row) == inset)
+            #expect(try RowSeparatorMeasurement.leading(image: fixture([(inset, 43.5), (0, 44)]), row: row) == inset)
         }
         #expect(throws: RowSeparatorMeasurementError.missing) {
             try RowSeparatorMeasurement.leading(image: fixture([]), row: row)
         }
         #expect(throws: RowSeparatorMeasurementError.ambiguous) {
-            try RowSeparatorMeasurement.leading(image: fixture([(20, 42.5), (60, 45)]), row: row)
+            try RowSeparatorMeasurement.leading(image: fixture([(20, 42), (60, 43.5)]), row: row)
+        }
+        #expect(throws: RowSeparatorMeasurementError.missing) {
+            try RowSeparatorMeasurement.leading(image: fixture([(0, 44)]), row: row)
         }
     }
 
@@ -173,7 +182,9 @@ private enum RowSeparatorMeasurement {
                 && (0..<3).contains { abs(Int(bytes[index + $0]) - Int(bytes[other + $0])) >= 3 }
         }
         var starts: [Int] = []
-        for y in distance..<(crop.height - distance) {
+        let rowEnd = min(crop.height - distance, Int(ceil(row.maxY * scale - area.minY)))
+        guard rowEnd > distance else { throw RowSeparatorMeasurementError.unsupported }
+        for y in distance..<rowEnd {
             var start = 0
             for x in 0...crop.width {
                 let part = x < crop.width && differs(x, y, y - distance) && differs(x, y, y + distance)

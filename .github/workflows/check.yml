@@ -23,6 +23,16 @@ jobs:
           persist-credentials: false
       - uses: jdx/mise-action@b44d12e7d0d8ee7461bb893e1b1993500433185b # v5.2.7
       - run: mise x -- just check
-      - run: mise x -- just app-test
+      - id: host-tests
+        run: mise x -- just app-test
         env:
           SIMULATOR_DESTINATION: platform=iOS Simulator,name=iPhone 17 Pro,OS=latest
+      - name: Preserve failed native test results
+        if: ${{ failure() && steps.host-tests.outcome == 'failure' }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: hosted-app-test-results-${{ github.sha }}-${{ github.run_attempt }}
+          path: .derivedData/Logs/Test/*.xcresult
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 7
