@@ -59,12 +59,15 @@ struct ContactListView: View {
                     NavigationLink(value: contact.id) {
                         VStack(alignment: .leading, spacing: 8) {
                             Text(contact.name).recordForeground(Color.primary, selected: selection == contact.id)
+                                .accessibilityIdentifier("contact.caption.name")
                             Text(contact.category.title + (contact.company.isEmpty ? "" : " · " + contact.company))
                                 .font(.subheadline).recordForeground(Color.secondary, selected: selection == contact.id)
+                                .accessibilityIdentifier("contact.caption.category")
                         }
                         .padding(.vertical, 4)
                         .accessibilityElement(children: .combine)
                     }
+                    .accessibilityIdentifier(selection == contact.id ? "contact.row.selected" : "contact.row")
                 }
             }
         }

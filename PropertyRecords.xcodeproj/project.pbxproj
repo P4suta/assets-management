@@ -44,6 +44,7 @@
 		91DF8ECE1C3F0F3D3C488FC6 /* PropertyRecordsUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B462DECE5F8A2D2135F5CF8D /* PropertyRecordsUITests.swift */; };
 		94D68019F1CF81D8CA0B324C /* ScrollCoordinates.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4ED99829799D65BA129FF3DB /* ScrollCoordinates.swift */; };
 		9AF80082F4C7FB5347CA28DA /* PropertyViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = D31184F9098AC80725C966CC /* PropertyViews.swift */; };
+		9B3C7C2D3C88B90042C215BF /* NativeOffscreenInformationScope.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33F6573675CE64B2EF0B0B18 /* NativeOffscreenInformationScope.swift */; };
 		A3107169EC6F1F73A1A1E42F /* EditorSessionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 961C165E6CDFD0D34E9DD305 /* EditorSessionTests.swift */; };
 		AF877EDD80A922D59F7C1E16 /* PropertyRecordsApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 04919A5B49AB50183EB2F94C /* PropertyRecordsApp.swift */; };
 		B3EE94D00EDB746A2F9659D6 /* EditorSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6FF32AEBFA2B176D67B2523 /* EditorSession.swift */; };
@@ -84,6 +85,7 @@
 		0D211F59DFF41CDAEC8417AD /* WorkMemosSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkMemosSection.swift; sourceTree = "<group>"; };
 		0F7F9A1F14EF57BBA9406647 /* UniformTextContrast.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UniformTextContrast.swift; sourceTree = "<group>"; };
 		1F3DA74426D85FD9F1D173C6 /* EditorReconstructionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorReconstructionTests.swift; sourceTree = "<group>"; };
+		33F6573675CE64B2EF0B0B18 /* NativeOffscreenInformationScope.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeOffscreenInformationScope.swift; sourceTree = "<group>"; };
 		3C07F3B8B0F303E6E46B3DE2 /* NativeSheetTextScope.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeSheetTextScope.swift; sourceTree = "<group>"; };
 		442DDA855467511683DD845A /* AdaptiveRecordLayoutTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdaptiveRecordLayoutTests.swift; sourceTree = "<group>"; };
 		4EC90FD1E07B1C0F6907C896 /* ReminderService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReminderService.swift; sourceTree = "<group>"; };
@@ -190,6 +192,7 @@
 				442DDA855467511683DD845A /* AdaptiveRecordLayoutTests.swift */,
 				847528EF52C6B902484D3B6D /* NativeCaptionClippingScope.swift */,
 				87112A7BE2FA2136F9781596 /* NativeDateClippingScope.swift */,
+				33F6573675CE64B2EF0B0B18 /* NativeOffscreenInformationScope.swift */,
 				BEBC645502D46DDF0321612C /* NativeOffscreenReminderScope.swift */,
 				3C07F3B8B0F303E6E46B3DE2 /* NativeSheetTextScope.swift */,
 				B462DECE5F8A2D2135F5CF8D /* PropertyRecordsUITests.swift */,
@@ -448,6 +451,7 @@
 				75A868E257695737528B8BE8 /* AdaptiveRecordLayoutTests.swift in Sources */,
 				FFB35F7521960E59C9A2ED91 /* NativeCaptionClippingScope.swift in Sources */,
 				1BCFBBAEFB7D0CBD2106CDA5 /* NativeDateClippingScope.swift in Sources */,
+				9B3C7C2D3C88B90042C215BF /* NativeOffscreenInformationScope.swift in Sources */,
 				6B57A6284ED7EE7D9B353062 /* NativeOffscreenReminderScope.swift in Sources */,
 				370121383558F056F86CC12A /* NativeSheetTextScope.swift in Sources */,
 				91DF8ECE1C3F0F3D3C488FC6 /* PropertyRecordsUITests.swift in Sources */,

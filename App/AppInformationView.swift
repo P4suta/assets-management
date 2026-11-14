@@ -22,6 +22,7 @@ struct AppInformationView: View {
                 }
                 Section("記録とプライバシー") {
                     Text("記録と添付ファイルは端末内に保存します。開発者への自動送信、広告、利用状況の解析はありません。")
+                        .accessibilityIdentifier("app-info.records")
                     Text("端末のバックアップに記録が含まれる場合があります。バックアップは端末の設定で管理してください。")
                     if let url = AppInformation.privacyURL {
                         Link(destination: url) { Label("プライバシーポリシー", systemImage: "hand.raised") }
@@ -34,7 +35,7 @@ struct AppInformationView: View {
                             .accessibilityIdentifier("app-info.support")
                     }
                 } footer: { Text("案内はWebサイトで表示します。記録や写真が自動で送信されることはありません。") }
-                Section { Text("© 2026 Yasunobu Sakashita") }
+                Section { Text("© 2026 Yasunobu Sakashita").accessibilityIdentifier("app-info.copyright") }
             }
             .accessibilityIdentifier("app-info.list")
             .navigationTitle("アプリについて")

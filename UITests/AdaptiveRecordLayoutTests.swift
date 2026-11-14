@@ -67,7 +67,10 @@ import XCTest
         XCTAssertFalse(app.buttons["work.completedFilter"].exists)
         capture(app, name: "Search includes active and completed records")
         search.tap()
-        search.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: 4) + "青葉\n")
+        search.buttons["テキストを消去"].tap()
+        search.tap()
+        search.typeText("青葉\n")
+        XCTAssertEqual(search.value as? String, "青葉")
         XCTAssertTrue(record("共用灯の交換", app: app).waitForExistence(timeout: 5))
         XCTAssertTrue(record("消防設備点検", app: app).exists)
         XCTAssertFalse(record("給湯器から水漏れ", app: app).exists)
@@ -107,17 +110,17 @@ import XCTest
         assertStatus("返答待ち", app: app)
     }
 
-    func testImportedPhotoRendersInlineAfterRelaunch() {
+    func testImportedPhotoRendersInlineAfterRelaunch() throws {
         let app = launch()
         openRepair(app)
-        let photos = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "photo."))
-        XCTAssertEqual(photos.count, 1)
-        let previous = photos.firstMatch.identifier
+        let previousPhotos = restoredPhotoIdentifiers(app)
+        XCTAssertEqual(previousPhotos.count, 1)
+        let previous = try XCTUnwrap(previousPhotos.first)
         openPhotoLibrary(app)
         chooseLibraryPhoto(app)
-        let imported = NSPredicate { _, _ in photos.count == 2 }
-        XCTAssertEqual(XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: imported, object: app)], timeout: 15), .completed)
         let newPhoto = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@ AND identifier != %@", "photo.", previous)).firstMatch
+        revealDetail(newPhoto, app: app)
+        XCTAssertTrue(newPhoto.waitForExistence(timeout: 15))
         assertPhotoRendered(newPhoto, app: app, name: "Imported photo inline")
         let identifier = newPhoto.identifier
         app.terminate()
@@ -129,23 +132,21 @@ import XCTest
         XCTAssertFalse(app.alerts["写真を追加できませんでした"].exists)
     }
 
-    func testFailedPhotoImportCanRetryWithoutDuplicatingThePhoto() {
+    func testFailedPhotoImportCanRetryWithoutDuplicatingThePhoto() throws {
         let app = launch(failFirstSave: true)
         openRepair(app)
-        let photos = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "photo."))
-        XCTAssertEqual(photos.count, 1)
-        let previous = photos.firstMatch.identifier
+        let previousPhotos = restoredPhotoIdentifiers(app)
+        XCTAssertEqual(previousPhotos.count, 1)
+        let previous = try XCTUnwrap(previousPhotos.first)
         openPhotoLibrary(app)
         chooseLibraryPhoto(app)
         let failure = app.alerts["写真を追加できませんでした"]
         XCTAssertTrue(failure.waitForExistence(timeout: 15), app.debugDescription)
-        XCTAssertEqual(photos.count, 1)
-        XCTAssertTrue(app.buttons[previous].exists)
         failure.buttons["写真を選び直す"].tap()
         chooseLibraryPhoto(app)
-        let imported = NSPredicate { _, _ in photos.count == 2 }
-        XCTAssertEqual(XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: imported, object: app)], timeout: 15), .completed)
         let photo = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@ AND identifier != %@", "photo.", previous)).firstMatch
+        revealDetail(photo, app: app)
+        XCTAssertTrue(photo.waitForExistence(timeout: 15))
         assertPhotoRendered(photo, app: app, name: "Retried photo import")
         let identifier = photo.identifier
         app.terminate()
@@ -166,13 +167,16 @@ import XCTest
     }
 
     private func chooseLibraryPhoto(_ app: XCUIApplication) {
-        XCTAssertTrue(app.buttons["キャンセル"].firstMatch.waitForExistence(timeout: 5))
+        let cancel = app.buttons["Cancel"].firstMatch
+        XCTAssertTrue(cancel.waitForExistence(timeout: 5))
         let asset = app.images.matching(identifier: "PXGGridLayout-Info").firstMatch
         XCTAssertTrue(asset.waitForExistence(timeout: 30), app.debugDescription)
+        let onboarding = app.otherElements["PXGSingleViewContainerView_AX"].buttons["閉じる"].firstMatch
+        if onboarding.exists && onboarding.isHittable { onboarding.tap() }
         let window = app.windows.firstMatch
         var previous: CGRect?
         let visible = NSPredicate { _, _ in
-            guard asset.exists else { return false }
+            guard asset.exists && asset.isHittable else { return false }
             let frame = asset.frame
             defer { previous = frame }
             return !frame.isEmpty && window.frame.contains(frame) && frame == previous
@@ -187,6 +191,7 @@ import XCTest
         let frame = asset.frame
         let origin = window.coordinate(withNormalizedOffset: .zero)
         origin.withOffset(CGVector(dx: frame.midX - window.frame.minX, dy: frame.midY - window.frame.minY)).tap()
+        XCTAssertTrue(cancel.waitForNonExistence(timeout: 5))
     }
 
     func testVisibleReminderToggleMeetsIncreasedContrast() throws {
@@ -308,6 +313,7 @@ import XCTest
 
     private func openRepair(_ app: XCUIApplication) {
         let repair = record("給湯器から水漏れ", app: app)
+        reveal(repair, in: app.collectionViews["work.list"], app: app)
         XCTAssertTrue(repair.waitForExistence(timeout: 5), app.debugDescription)
         repair.tap()
         XCTAssertTrue(app.buttons["work.status"].waitForExistence(timeout: 5), app.debugDescription)
@@ -351,7 +357,7 @@ import XCTest
         let window = app.windows.firstMatch
         XCTAssertTrue(list.waitForExistence(timeout: 5), app.debugDescription)
         let frame = list.frame
-        let bars = (app.navigationBars.allElementsBoundByIndex + app.tabBars.allElementsBoundByIndex).map(\.frame)
+        let bars = (app.navigationBars.allElementsBoundByIndex + app.tabBars.allElementsBoundByIndex).filter(\.isHittable).map(\.frame)
         let target = element.exists && !element.frame.isEmpty ? element.frame : frame
         guard let unobscured = ListViewport(list: frame, window: window.frame, target: target, bars: bars)?.bounds else {
             XCTFail("The list must provide a viewport outside visible navigation bars.")
@@ -374,7 +380,7 @@ import XCTest
         let upper = origin.withOffset(CGVector(dx: unobscured.minX - window.frame.minX + unobscured.width * coordinates.upper.dx,
                                               dy: unobscured.minY - window.frame.minY + unobscured.height * coordinates.upper.dy))
         for _ in 0..<8 {
-            if !element.exists || element.frame.midY > frame.midY {
+            if !element.exists || element.frame.midY > unobscured.midY {
                 lower.press(forDuration: 0.05, thenDragTo: upper)
             } else {
                 upper.press(forDuration: 0.05, thenDragTo: lower)

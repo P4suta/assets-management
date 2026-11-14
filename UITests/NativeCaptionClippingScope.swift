@@ -42,7 +42,8 @@ struct NativeCaptionClippingScope {
              ("Building Editor", "建物名（必須）"), ("Room Editor", "部屋番号（必須）"),
              ("Equipment Editor", "設備名（必須）"), ("Contract Editor", "月額家賃（円）"):
             .subheadline
-        case ("Contact", "緊急連絡先"): .body
+        case ("Contact", "緊急連絡先"), ("Repair", "通知設定を開く"),
+             ("Repair", "設定を開く"), ("Repair", "閉じる"): .body
         default: nil
         }
     }
