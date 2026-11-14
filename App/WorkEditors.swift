@@ -38,9 +38,9 @@ struct WorkEditor: View {
                 Toggle("期限を設定", isOn: Binding(get: { session.value.item.dueDate != nil },
                                              set: { session.value.item.dueDate = $0 ? Date() : nil }))
                 if session.value.item.dueDate != nil {
-                    DatePicker("期限", selection: Binding(get: { session.value.item.dueDate ?? Date() },
-                                                        set: { session.value.item.dueDate = $0 }),
-                               displayedComponents: .date).accessibilityIdentifier("work.deadline")
+                    CalendarDateField("期限", selection: Binding(get: { session.value.item.dueDate ?? Date() },
+                                                               set: { session.value.item.dueDate = $0 }))
+                        .accessibilityIdentifier("work.deadline")
                     Toggle("期限を通知", isOn: $session.value.item.reminderEnabled)
                 }
             }
@@ -161,14 +161,14 @@ struct RenewalEditor: View {
             await notices.synchronize(store.records, reporting: item.id)
         }) {
             Section("更新後の契約（下書き）") {
-                DatePicker("契約開始日", selection: $session.value.start, displayedComponents: .date)
-                DatePicker("契約満了日", selection: $session.value.end, displayedComponents: .date)
+                CalendarDateField("契約開始日", selection: $session.value.start).accessibilityIdentifier("renewal.start")
+                CalendarDateField("契約満了日", selection: $session.value.end).accessibilityIdentifier("renewal.end")
                 AmountField(title: "月額家賃（円）", input: $session.value.rent, identifier: "renewal.rent")
             }
             .environment(\.calendar, ContractDates.calendar)
             .environment(\.timeZone, ContractDates.timeZone)
             Section {
-                DatePicker("期限", selection: $session.value.due, displayedComponents: .date).accessibilityIdentifier("renewal.deadline")
+                CalendarDateField("期限", selection: $session.value.due).accessibilityIdentifier("renewal.deadline")
                 Toggle("期限を通知", isOn: $session.value.notify)
             } header: { Text("対応の期限") }
               footer: { Text("下書きを保存しても、現在の契約期間は変わりません。締結後に契約内容を確定してください。") }

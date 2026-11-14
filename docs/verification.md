@@ -65,12 +65,15 @@ The caption qualifier requires the exact runtime, report, screen, label, text st
 It checks a unique matching native element, an unobscured viewport, fresh rendered foreground pixels, and the complete text's bounds using the system font.
 Its tolerance is one display pixel.
 Rejecting fixtures cover other runtimes and reports, unknown captions, insufficient width and height, invalid geometry, overlapping bars, missing pixels, and duplicate elements.
-The compact native date picker on iOS 27.2 scales its internal labels with [UIKit's automatic fitting](https://developer.apple.com/documentation/uikit/uilabel/adjustsfontsizetofitwidth).
-Hosted tests inspect both date labels at iPhone and iPad widths and require their actual text rectangles to fit.
-Hosted tests require an effective date font of at least twice the standard body size, using UIKit's `minimumScaleFactor` property.
-The contract qualifier requires two unobscured native date controls whose fresh images match their complete date values through local text recognition with language correction turned off.
-It accepts at most one unlocated UILabel clipping prediction in that exact context.
-Other unlocated clipping reports and unknown contexts remain failures.
+Date inputs show their complete values in [labeled content](https://developer.apple.com/documentation/swiftui/labeledcontent).
+The field opens Apple's [graphical calendar](https://developer.apple.com/documentation/swiftui/graphicaldatepickerstyle) in a [popover](https://developer.apple.com/documentation/swiftui/view/popover(ispresented:attachmentanchor:arrowedge:content:)), which adapts to a sheet on iPhone.
+Hosted tests recognize both contract dates at standard and AX5 text sizes with language correction turned off.
+A truncated native label is a rejecting fixture.
+Pixel tests measure rendered date text at widths of 320, 420, and 1,032 points in Light and Dark appearance.
+AX5 date text must reach at least twice its standard height.
+A forced standard text size must fail the pixel comparison.
+Calendar journeys check selection, discarded drafts, saving, relaunch, and accessibility.
+Date clipping reports fail verification.
 Complementary Light and Dark AX5 journeys check long property names, visible keyboards, discard, save retry, bounded repair estimates, and contract amounts.
 Rendered label measurements require the complete label inside its scroll viewport.
 A [VoiceOver journey](https://developer.apple.com/documentation/xcuiautomation/xcuivoiceoverservice) checks editor labels in both directions and rejects background labels on iOS 27 or later.

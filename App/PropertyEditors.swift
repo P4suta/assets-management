@@ -179,8 +179,8 @@ struct ContractEditor: View {
             await notices.synchronize(store.records, reporting: .contract(roomID))
         }) {
             Section {
-                DatePicker("契約開始日", selection: $session.value.start, displayedComponents: .date)
-                DatePicker("契約満了日", selection: $session.value.end, displayedComponents: .date)
+                CalendarDateField("契約開始日", selection: $session.value.start).accessibilityIdentifier("contract.start")
+                CalendarDateField("契約満了日", selection: $session.value.end).accessibilityIdentifier("contract.end")
                 AmountField(title: "月額家賃（円）", input: $session.value.rent, identifier: "contract.rent")
             } footer: { Text("締結済みの契約内容を登録してください。") }
             ContractNoticeFields(fields: $session.value)
@@ -219,8 +219,7 @@ private struct ContractNoticeFields: View {
                 .accessibilityIdentifier("contract.notice.timing")
                 switch notice.timing {
                 case .date(let date):
-                    DatePicker("予告期限", selection: Binding(get: { date }, set: { fields.notice?.timing = .date($0) }),
-                               displayedComponents: .date)
+                    CalendarDateField("予告期限", selection: Binding(get: { date }, set: { fields.notice?.timing = .date($0) }))
                         .accessibilityIdentifier("contract.notice.date")
                 case .monthsBeforeExpiry(let months):
                     Stepper("満了日の\(months)か月前", value: Binding(get: { months }, set: {
@@ -277,9 +276,8 @@ struct EquipmentEditor: View {
                 Toggle("設置日を記録", isOn: Binding(get: { session.value.installedOn != nil },
                                                set: { session.value.installedOn = $0 ? Date() : nil }))
                 if session.value.installedOn != nil {
-                    DatePicker("設置日", selection: Binding(get: { session.value.installedOn ?? Date() },
-                                                          set: { session.value.installedOn = $0 }),
-                               displayedComponents: .date)
+                    CalendarDateField("設置日", selection: Binding(get: { session.value.installedOn ?? Date() },
+                                                                 set: { session.value.installedOn = $0 }))
                 }
                 InputField(title: "メモ", text: $session.value.notes, multiline: true)
             }

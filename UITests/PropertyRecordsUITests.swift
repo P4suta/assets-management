@@ -3,6 +3,20 @@ import UIKit
 
 @MainActor
 final class PropertyRecordsUITests: XCTestCase {
+    @MainActor private struct AccessibilityAuditReport {
+        let auditType: XCUIAccessibilityAuditType
+        let compactDescription: String
+        let detailedDescription: String
+        let element: XCUIElement?
+
+        init(_ issue: XCUIAccessibilityAuditIssue) {
+            auditType = issue.auditType
+            compactDescription = issue.compactDescription
+            detailedDescription = issue.detailedDescription
+            element = issue.element
+        }
+    }
+
     override func setUpWithError() throws {
         try super.setUpWithError()
         continueAfterFailure = false
@@ -765,6 +779,45 @@ final class PropertyRecordsUITests: XCTestCase {
         XCTAssertFalse(settings.accepts)
     }
 
+    func testCalendarDateChangesStayInTheDraftUntilSaving() throws {
+        let app = launch(seeded: true)
+        openSampleRoom(app)
+        tap("賃貸借契約", app: app)
+        tapIdentifier("contract.edit", app: app)
+        let start = app.buttons["contract.start"]
+        reveal(start, app: app, in: app.collectionViews["editor.form"])
+        XCTAssertEqual(start.value as? String, "2025/04/01")
+        start.tap()
+        let done = app.buttons["date.done"]
+        XCTAssertTrue(done.waitForExistence(timeout: 5))
+        try audit(app, name: "Calendar Date Picker")
+        let secondDay = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "4月2日 ")).firstMatch
+        XCTAssertTrue(secondDay.waitForExistence(timeout: 5))
+        secondDay.tap()
+        done.tap()
+        XCTAssertEqual(start.value as? String, "2025/04/02")
+        app.buttons["editor.cancel"].tap()
+        let discard = app.alerts.buttons["変更を破棄"]
+        XCTAssertTrue(discard.waitForExistence(timeout: 5))
+        discard.tap()
+        tapIdentifier("contract.edit", app: app)
+        reveal(start, app: app, in: app.collectionViews["editor.form"])
+        XCTAssertEqual(start.value as? String, "2025/04/01")
+        start.tap()
+        XCTAssertTrue(done.waitForExistence(timeout: 5))
+        secondDay.tap()
+        done.tap()
+        app.buttons["editor.save"].tap()
+        app.terminate()
+        app.launch()
+        openSampleRoom(app)
+        tap("賃貸借契約", app: app)
+        tapIdentifier("contract.edit", app: app)
+        reveal(start, app: app, in: app.collectionViews["editor.form"])
+        XCTAssertEqual(start.value as? String, "2025/04/02")
+        app.buttons["editor.cancel"].tap()
+    }
+
     func testLargestTextContractEditorRemainsReadable() throws {
         guard UIApplication.shared.preferredContentSizeCategory == .accessibilityExtraExtraExtraLarge else {
             throw XCTSkip("Contract editor readability requires AX5.")
@@ -774,52 +827,6 @@ final class PropertyRecordsUITests: XCTestCase {
         tap("賃貸借契約", app: app)
         tap("契約を編集", app: app)
         try audit(app, name: "Contract Editor")
-    }
-
-    func testNativeDateClippingScopeRejectsUnverifiedReports() {
-        let first = RenderedDateValue(value: "2025/04/01", recognized: "2025/04/01",
-            bounds: CGRect(x: 40, y: 200, width: 299, height: 77.5), required: CGSize(width: 274.7, height: 63.25))
-        let second = RenderedDateValue(value: "2027/03/31", recognized: "2027/03/31",
-            bounds: CGRect(x: 40, y: 400, width: 296, height: 77.5), required: CGSize(width: 271.7, height: 63.25))
-        let valid = NativeDateClippingScope(version: OperatingSystemVersion(majorVersion: 27, minorVersion: 2, patchVersion: 0),
-            screen: "Contract Editor", auditType: .textClipped,
-            detail: "Text of this UILabel may be clipped at larger Dynamic Type sizes.", hasElement: false, largest: true,
-            viewport: CGRect(x: 0, y: 142, width: 420, height: 700), window: CGRect(x: 0, y: 0, width: 420, height: 912),
-            dates: [first, second], reportIndex: 1)
-        XCTAssertTrue(valid.accepts)
-        let invalid: [(inout NativeDateClippingScope) -> Void] = [
-            { $0.version.majorVersion = 26 }, { $0.version.minorVersion = 3 }, { $0.version.patchVersion = 1 },
-            { $0.screen = "Repair Editor" }, { $0.auditType = .dynamicType }, { $0.detail = "Unknown report" },
-            { $0.hasElement = true }, { $0.largest = false }, { $0.reportIndex = 2 },
-            { $0.viewport = .zero }, { $0.window = .zero }, { $0.dates.removeLast() },
-            { $0.dates[0].recognized = "2025/04/0" }, { $0.dates[0].value = "invalid" },
-            { $0.dates[0].bounds.size.width = 200 }, { $0.dates[0].bounds.size.height = 30 },
-            { $0.dates[0].bounds.origin.y = 1 }, { $0.dates[0].bounds.size.width = .nan },
-            { $0.dates[0].required.width = .infinity }, { $0.dates[0].bounds = $0.dates[1].bounds }
-        ]
-        for invalidate in invalid {
-            var candidate = valid
-            invalidate(&candidate)
-            XCTAssertFalse(candidate.accepts)
-        }
-    }
-
-    func testRenderedDateRecognitionRejectsIncompleteAndMissingText() throws {
-        func render(_ value: String) -> CGImage? {
-            UIGraphicsImageRenderer(size: CGSize(width: 400, height: 100)).image { context in
-                UIColor.white.setFill()
-                context.fill(CGRect(x: 0, y: 0, width: 400, height: 100))
-                (value as NSString).draw(at: CGPoint(x: 20, y: 20), withAttributes: [
-                    .font: UIFont.systemFont(ofSize: 48), .foregroundColor: UIColor.black
-                ])
-            }.cgImage
-        }
-        let complete = try XCTUnwrap(render("2025/04/01"))
-        XCTAssertEqual(try RenderedDateRecognition.text(in: complete), "2025/04/01")
-        XCTAssertNotEqual(try RenderedDateRecognition.text(in: XCTUnwrap(render("2025/04/0"))), "2025/04/01")
-        XCTAssertEqual(try RenderedDateRecognition.text(in: XCTUnwrap(render(""))), "")
-        let clipped = try XCTUnwrap(complete.cropping(to: CGRect(x: 0, y: 0, width: complete.width / 2, height: complete.height)))
-        XCTAssertNotEqual(try RenderedDateRecognition.text(in: clipped), "2025/04/01")
     }
 
     func testLargestTextRepairEditorSupportsDynamicType() throws {
@@ -2029,7 +2036,8 @@ final class PropertyRecordsUITests: XCTestCase {
     private func auditSelectionContrast(_ selected: XCUIElement, app: XCUIApplication) throws {
         guard selected.exists && selected.isHittable else { return }
         let frame = selected.frame
-        try app.performAccessibilityAudit(for: .contrast) { issue in
+        try app.performAccessibilityAudit(for: .contrast) { nativeIssue in
+            let issue = AccessibilityAuditReport(nativeIssue)
             guard let element = issue.element else { return false }
             guard frame.intersects(element.frame) else { return true }
             if self.verifiedCaptionContrast(issue, app: app) != nil { return true }
@@ -2065,7 +2073,7 @@ final class PropertyRecordsUITests: XCTestCase {
         return try UniformTextContrast(image: image)
     }
 
-    private func verifiedCaptionContrast(_ issue: XCUIAccessibilityAuditIssue, app: XCUIApplication) -> String? {
+    private func verifiedCaptionContrast(_ issue: AccessibilityAuditReport, app: XCUIApplication) -> String? {
         let version = ProcessInfo.processInfo.operatingSystemVersion
         guard version.majorVersion == 27, version.minorVersion == 2, version.patchVersion == 0, issue.auditType == .contrast,
               let element = issue.element, element.elementType == .staticText else { return nil }
@@ -2132,7 +2140,7 @@ final class PropertyRecordsUITests: XCTestCase {
         }
     }
 
-    private func nativeAdaptiveTabTypeExclusion(_ issue: XCUIAccessibilityAuditIssue, app: XCUIApplication, reportIndex: Int) -> String? {
+    private func nativeAdaptiveTabTypeExclusion(_ issue: AccessibilityAuditReport, app: XCUIApplication, reportIndex: Int) -> String? {
         guard issue.auditType == .dynamicType,
               issue.compactDescription == "Dynamic Type font sizes are partially unsupported", issue.element == nil else { return nil }
         let window = app.windows.firstMatch.frame
@@ -2150,7 +2158,7 @@ final class PropertyRecordsUITests: XCTestCase {
         return "Native adaptive tab labels partially limit Dynamic Type; reproduced by a standard SwiftUI TabView."
     }
 
-    private func verifiedSidebarHeaderContrast(_ issue: XCUIAccessibilityAuditIssue, app: XCUIApplication) -> String? {
+    private func verifiedSidebarHeaderContrast(_ issue: AccessibilityAuditReport, app: XCUIApplication) -> String? {
         guard issue.auditType == .contrast, let element = issue.element,
               element.elementType == .staticText else { return nil }
         let sidebar: XCUIElement
@@ -2211,12 +2219,12 @@ final class PropertyRecordsUITests: XCTestCase {
         var unlocatedAdaptiveTypeReports = 0
         var offscreenReminderReports = 0
         var verifiedCaptions: Set<String> = []
-        var verifiedDateReports = 0
         var verifiedInformationCaptions: Set<String> = []
         let previousFailurePolicy = continueAfterFailure
         continueAfterFailure = true
         defer { continueAfterFailure = previousFailurePolicy }
-        try app.performAccessibilityAudit(for: types) { issue in
+        try app.performAccessibilityAudit(for: types) { nativeIssue in
+            let issue = AccessibilityAuditReport(nativeIssue)
             print("Accessibility audit: \(name): \(issue.detailedDescription): \(issue.element?.debugDescription ?? "no element")")
             XCTContext.runActivity(named: "Audit \(name)") { activity in
                 let detail = XCTAttachment(string: "\(name): \(issue.auditType.rawValue): \(issue.detailedDescription)\n\(issue.element?.debugDescription ?? "no element")")
@@ -2232,11 +2240,6 @@ final class PropertyRecordsUITests: XCTestCase {
                let reason = self.verifiedCaptionClipping(issue, app: app, screen: name) {
                 verifiedCaptions.insert(label)
                 print("Verified rendered caption: \(reason)")
-                return true
-            }
-            if let reason = self.verifiedNativeDateClipping(issue, app: app, screen: name, reportIndex: verifiedDateReports + 1) {
-                verifiedDateReports += 1
-                print("Verified rendered dates: \(reason)")
                 return true
             }
             if let reason = self.verifiedOffscreenReminderContrast(issue, app: app, screen: name,
@@ -2295,7 +2298,7 @@ final class PropertyRecordsUITests: XCTestCase {
         return measurements
     }
 
-    private func verifiedInformationContrast(_ issue: XCUIAccessibilityAuditIssue, app: XCUIApplication, screen: String,
+    private func verifiedInformationContrast(_ issue: AccessibilityAuditReport, app: XCUIApplication, screen: String,
                                              measurements: [String: InformationTextMeasurement]) -> String? {
         guard issue.auditType == .contrast, let element = issue.element, element.elementType == .staticText else { return nil }
         let list = app.collectionViews["app-info.list"]
@@ -2313,7 +2316,7 @@ final class PropertyRecordsUITests: XCTestCase {
         return nil
     }
 
-    private func verifiedCaptionClipping(_ issue: XCUIAccessibilityAuditIssue, app: XCUIApplication, screen: String) -> String? {
+    private func verifiedCaptionClipping(_ issue: AccessibilityAuditReport, app: XCUIApplication, screen: String) -> String? {
         guard issue.auditType == .textClipped, let element = issue.element,
               NativeCaptionClippingScope.fontStyle(screen: screen, label: element.label) != nil,
               let scale = renderingScale else { return nil }
@@ -2353,41 +2356,6 @@ final class PropertyRecordsUITests: XCTestCase {
 
     private var renderingScale: CGFloat? {
         UIApplication.shared.connectedScenes.compactMap { ($0 as? UIWindowScene)?.traitCollection.displayScale }.first
-    }
-
-    private func verifiedNativeDateClipping(_ issue: XCUIAccessibilityAuditIssue, app: XCUIApplication,
-                                           screen: String, reportIndex: Int) -> String? {
-        guard issue.auditType == .textClipped, issue.element == nil, screen == "Contract Editor",
-              issue.detailedDescription == "Text of this UILabel may be clipped at larger Dynamic Type sizes." else { return nil }
-        let form = app.collectionViews["editor.form"]
-        guard form.exists else { return nil }
-        let pickers = form.datePickers.allElementsBoundByIndex
-        guard pickers.count == 2 else { return nil }
-        let font = UIFont.preferredFont(forTextStyle: .body,
-            compatibleWith: UITraitCollection(preferredContentSizeCategory: .accessibilityExtraExtraExtraLarge))
-        let bars = (app.navigationBars.allElementsBoundByIndex + app.tabBars.allElementsBoundByIndex).filter(\.isHittable).map(\.frame)
-        var dates: [RenderedDateValue] = []
-        for picker in pickers {
-            let button = picker.buttons.firstMatch
-            guard button.exists, button.isHittable, let value = button.value as? String else { return nil }
-            let bounds = button.frame
-            guard !bars.contains(where: { $0.intersects(bounds) }) else { return nil }
-            let image = button.screenshot()
-            guard button.frame == bounds, let bitmap = image.image.cgImage,
-                  let recognized = try? RenderedDateRecognition.text(in: bitmap) else { return nil }
-            let required = (value as NSString).boundingRect(with: CGSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude),
-                options: .usesLineFragmentOrigin, attributes: [.font: font], context: nil)
-            dates.append(RenderedDateValue(value: value, recognized: recognized, bounds: bounds, required: required.size))
-            let capture = XCTAttachment(screenshot: image)
-            capture.name = "Recognized native date " + recognized
-            capture.lifetime = .keepAlways
-            add(capture)
-        }
-        let scope = NativeDateClippingScope(version: ProcessInfo.processInfo.operatingSystemVersion,
-            screen: screen, auditType: issue.auditType, detail: issue.detailedDescription, hasElement: false,
-            largest: UIApplication.shared.preferredContentSizeCategory == .accessibilityExtraExtraExtraLarge,
-            viewport: form.frame, window: app.windows.firstMatch.frame, dates: dates, reportIndex: reportIndex)
-        return scope.accepts ? dates.map(\.value).joined(separator: ", ") : nil
     }
 
     private func measureOffscreenReminder(_ app: XCUIApplication, screen: String) throws -> ReminderCaptionMeasurement? {
@@ -2465,7 +2433,7 @@ final class PropertyRecordsUITests: XCTestCase {
                        "The original Form position must be restored before its audit.")
     }
 
-    private func verifiedOffscreenReminderContrast(_ issue: XCUIAccessibilityAuditIssue, app: XCUIApplication, screen: String,
+    private func verifiedOffscreenReminderContrast(_ issue: AccessibilityAuditReport, app: XCUIApplication, screen: String,
                                                    measurement: ReminderCaptionMeasurement?, reportIndex: Int) -> String? {
         guard let element = issue.element, let measurement else { return nil }
         let forms = app.collectionViews.matching(identifier: measurement.formIdentity)
@@ -2486,7 +2454,7 @@ final class PropertyRecordsUITests: XCTestCase {
         return "The native viewport reported an offscreen reminder caption; its visible instance measured \(measurement.ratio):1."
     }
 
-    private func nativeSheetTextExclusion(_ issue: XCUIAccessibilityAuditIssue, app: XCUIApplication, screen: String, reportIndex: Int) -> String? {
+    private func nativeSheetTextExclusion(_ issue: AccessibilityAuditReport, app: XCUIApplication, screen: String, reportIndex: Int) -> String? {
         let required: [(String, String)]
         switch screen {
         case "Repair Editor": required = [("work.title", "対応内容（必須）"), ("work.notes", "メモ")]
@@ -2538,7 +2506,7 @@ final class PropertyRecordsUITests: XCTestCase {
             reachable: caption.isHittable && button.isHittable && enabled.isHittable && reminder.isHittable).accepts
     }
 
-    private func systemDrawingExclusion(_ issue: XCUIAccessibilityAuditIssue, app: XCUIApplication, screen: String) -> String? {
+    private func systemDrawingExclusion(_ issue: AccessibilityAuditReport, app: XCUIApplication, screen: String) -> String? {
         guard UIDevice.current.systemVersion.hasPrefix("26.") else { return nil }
         // Files reproduces the 124-point native search field prediction at AX5 on iOS 26.
         if issue.auditType == .textClipped, let element = issue.element,

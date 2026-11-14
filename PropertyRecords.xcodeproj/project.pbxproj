@@ -14,14 +14,13 @@
 		1826CC39F1BDBB2D71B4CAE1 /* MetadataRowLayoutTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A68FD6E9CB81C12F0F80036 /* MetadataRowLayoutTests.swift */; };
 		1938EA77FF138327090B75DD /* DocumentPreviewScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = EC15DC5AA0EFDE6AA5E5B4DC /* DocumentPreviewScreen.swift */; };
 		19AE1E04AE31489C2BDC5ADB /* WorkViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6D58247B1FA2BB73A89D54F6 /* WorkViews.swift */; };
-		1BCFBBAEFB7D0CBD2106CDA5 /* NativeDateClippingScope.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87112A7BE2FA2136F9781596 /* NativeDateClippingScope.swift */; };
 		1EDF93509C1D7AAF7923A4F6 /* Building.png in Resources */ = {isa = PBXBuildFile; fileRef = 9C81B3B37CF691D3884BFD30 /* Building.png */; };
-		2764D6694ACEC5F9E9A626DF /* ContractNativeTextTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D58E91DA8C31F12DB9594BE /* ContractNativeTextTests.swift */; };
 		2B997A1196D8BAE893C576A3 /* ContractDates.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E0C08F857F99CBE56B82FCE /* ContractDates.swift */; };
 		2CAD832E262CBF9DB5BC76E5 /* ProgressSectionHeader.png in Resources */ = {isa = PBXBuildFile; fileRef = 805E9D0AED55E3E7076AA8B0 /* ProgressSectionHeader.png */; };
 		3612FD545D8CA5E398FB9203 /* CameraCapture.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1DA53588064230DAF5ABB2F /* CameraCapture.swift */; };
 		370121383558F056F86CC12A /* NativeSheetTextScope.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C07F3B8B0F303E6E46B3DE2 /* NativeSheetTextScope.swift */; };
 		3904C16083A98A0B650760AB /* EditorPresentation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 624DB6EBF103B62F05070224 /* EditorPresentation.swift */; };
+		3B1C555B896C10CD58C3C833 /* CalendarDateRenderingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0800CA87C55918A04581555C /* CalendarDateRenderingTests.swift */; };
 		3CBA96EFEFC8E118FDFEA708 /* AppIcon.icon in Resources */ = {isa = PBXBuildFile; fileRef = A0DB349A190EF0877A6F506F /* AppIcon.icon */; };
 		4BD6678CF23744B35928B34B /* Presentation.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA6B45BC36F360755C53BFB1 /* Presentation.swift */; };
 		4E7301B83B295F059A496E96 /* Fixtures.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = E747F8EF1E40107241313871 /* Fixtures.xcassets */; };
@@ -47,13 +46,13 @@
 		9B3C7C2D3C88B90042C215BF /* NativeOffscreenInformationScope.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33F6573675CE64B2EF0B0B18 /* NativeOffscreenInformationScope.swift */; };
 		A3107169EC6F1F73A1A1E42F /* EditorSessionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 961C165E6CDFD0D34E9DD305 /* EditorSessionTests.swift */; };
 		A8A586C1162680D04DE2AC45 /* NativePresentationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2623365A409DADC92A443E0 /* NativePresentationTests.swift */; };
+		AB198C7E1BCB28C542AC87BA /* CalendarDateField.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E6016DA22015EFF40E5A6CF /* CalendarDateField.swift */; };
 		AF877EDD80A922D59F7C1E16 /* PropertyRecordsApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 04919A5B49AB50183EB2F94C /* PropertyRecordsApp.swift */; };
 		B3EE94D00EDB746A2F9659D6 /* EditorSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6FF32AEBFA2B176D67B2523 /* EditorSession.swift */; };
 		C00971022A23DF79CD5D53D7 /* AppInformationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 94104B1A86E2515BA48B73ED /* AppInformationView.swift */; };
 		CE46E75151339B73415C1B96 /* AmountField.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2B9A52340F025268F864F0E /* AmountField.swift */; };
 		CE7AD5A3DFEF9C783CE3AD06 /* WorkEditors.swift in Sources */ = {isa = PBXBuildFile; fileRef = F22B6A80E901CD0C2C0CC77F /* WorkEditors.swift */; };
 		DC80C97748ED763BA20C26AA /* PhotoProcessorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB53F1935933ABBCE2974BF1 /* PhotoProcessorTests.swift */; };
-		DCF3BF240CD85E6E0BE2D1EF /* NativeDateControlComparisonTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C3EA3BA08D1C3E97ED7A828 /* NativeDateControlComparisonTests.swift */; };
 		E49EB7191E5EEC865396984C /* ReleaseConfigurationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FE544CE2B5686A8C19000DA /* ReleaseConfigurationTests.swift */; };
 		E55EB9556A461E837828AB7E /* ExternalNavigationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87AF650B2F64D6B36117B0EF /* ExternalNavigationTests.swift */; };
 		EF63018A11D5FD970FB6E041 /* PropertyCore in Frameworks */ = {isa = PBXBuildFile; productRef = A18DD4E8B6EB7CDAC2589E19 /* PropertyCore */; };
@@ -81,16 +80,17 @@
 
 /* Begin PBXFileReference section */
 		04919A5B49AB50183EB2F94C /* PropertyRecordsApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PropertyRecordsApp.swift; sourceTree = "<group>"; };
+		0800CA87C55918A04581555C /* CalendarDateRenderingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarDateRenderingTests.swift; sourceTree = "<group>"; };
 		0AB5151CBEA8C56316E02676 /* PropertyEditors.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PropertyEditors.swift; sourceTree = "<group>"; };
 		0B3613DDA63FCBB629B5AE3E /* PropertyRecords.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = PropertyRecords.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		0CD45BAD24CBA20050DB7AAA /* PropertyRecordsAppTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = PropertyRecordsAppTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		0D211F59DFF41CDAEC8417AD /* WorkMemosSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkMemosSection.swift; sourceTree = "<group>"; };
 		0F7F9A1F14EF57BBA9406647 /* UniformTextContrast.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UniformTextContrast.swift; sourceTree = "<group>"; };
 		1F3DA74426D85FD9F1D173C6 /* EditorReconstructionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorReconstructionTests.swift; sourceTree = "<group>"; };
-		2C3EA3BA08D1C3E97ED7A828 /* NativeDateControlComparisonTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeDateControlComparisonTests.swift; sourceTree = "<group>"; };
 		33F6573675CE64B2EF0B0B18 /* NativeOffscreenInformationScope.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeOffscreenInformationScope.swift; sourceTree = "<group>"; };
 		3C07F3B8B0F303E6E46B3DE2 /* NativeSheetTextScope.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeSheetTextScope.swift; sourceTree = "<group>"; };
 		442DDA855467511683DD845A /* AdaptiveRecordLayoutTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdaptiveRecordLayoutTests.swift; sourceTree = "<group>"; };
+		4E6016DA22015EFF40E5A6CF /* CalendarDateField.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarDateField.swift; sourceTree = "<group>"; };
 		4EC90FD1E07B1C0F6907C896 /* ReminderService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReminderService.swift; sourceTree = "<group>"; };
 		4ED99829799D65BA129FF3DB /* ScrollCoordinates.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScrollCoordinates.swift; sourceTree = "<group>"; };
 		512CC4C9DC0FD93EAA6CECC5 /* RecordPhotosSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordPhotosSection.swift; sourceTree = "<group>"; };
@@ -101,10 +101,8 @@
 		805E9D0AED55E3E7076AA8B0 /* ProgressSectionHeader.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = ProgressSectionHeader.png; sourceTree = "<group>"; };
 		80E28D765E8C56142D875402 /* ContactViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContactViews.swift; sourceTree = "<group>"; };
 		847528EF52C6B902484D3B6D /* NativeCaptionClippingScope.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeCaptionClippingScope.swift; sourceTree = "<group>"; };
-		87112A7BE2FA2136F9781596 /* NativeDateClippingScope.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeDateClippingScope.swift; sourceTree = "<group>"; };
 		874F39A4223D495FA090D5E4 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		87AF650B2F64D6B36117B0EF /* ExternalNavigationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExternalNavigationTests.swift; sourceTree = "<group>"; };
-		8D58E91DA8C31F12DB9594BE /* ContractNativeTextTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContractNativeTextTests.swift; sourceTree = "<group>"; };
 		8FAABF65F1DA8E5E3B6CE3CD /* EditorSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorSheet.swift; sourceTree = "<group>"; };
 		94104B1A86E2515BA48B73ED /* AppInformationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppInformationView.swift; sourceTree = "<group>"; };
 		961C165E6CDFD0D34E9DD305 /* EditorSessionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorSessionTests.swift; sourceTree = "<group>"; };
@@ -176,13 +174,12 @@
 		3F22B842F27E18F7D3B8E38C /* AppTests */ = {
 			isa = PBXGroup;
 			children = (
-				8D58E91DA8C31F12DB9594BE /* ContractNativeTextTests.swift */,
+				0800CA87C55918A04581555C /* CalendarDateRenderingTests.swift */,
 				1F3DA74426D85FD9F1D173C6 /* EditorReconstructionTests.swift */,
 				961C165E6CDFD0D34E9DD305 /* EditorSessionTests.swift */,
 				87AF650B2F64D6B36117B0EF /* ExternalNavigationTests.swift */,
 				9A68FD6E9CB81C12F0F80036 /* MetadataRowLayoutTests.swift */,
 				98B295EDBBE5230EDFC75B1B /* NativeAmountFieldTests.swift */,
-				2C3EA3BA08D1C3E97ED7A828 /* NativeDateControlComparisonTests.swift */,
 				A2623365A409DADC92A443E0 /* NativePresentationTests.swift */,
 				DB53F1935933ABBCE2974BF1 /* PhotoProcessorTests.swift */,
 				5FE544CE2B5686A8C19000DA /* ReleaseConfigurationTests.swift */,
@@ -197,7 +194,6 @@
 			children = (
 				442DDA855467511683DD845A /* AdaptiveRecordLayoutTests.swift */,
 				847528EF52C6B902484D3B6D /* NativeCaptionClippingScope.swift */,
-				87112A7BE2FA2136F9781596 /* NativeDateClippingScope.swift */,
 				33F6573675CE64B2EF0B0B18 /* NativeOffscreenInformationScope.swift */,
 				BEBC645502D46DDF0321612C /* NativeOffscreenReminderScope.swift */,
 				3C07F3B8B0F303E6E46B3DE2 /* NativeSheetTextScope.swift */,
@@ -236,6 +232,7 @@
 				A0DB349A190EF0877A6F506F /* AppIcon.icon */,
 				94104B1A86E2515BA48B73ED /* AppInformationView.swift */,
 				E57BB64E93A03BF3FCE35122 /* Assets.xcassets */,
+				4E6016DA22015EFF40E5A6CF /* CalendarDateField.swift */,
 				B1DA53588064230DAF5ABB2F /* CameraCapture.swift */,
 				80E28D765E8C56142D875402 /* ContactViews.swift */,
 				9E0C08F857F99CBE56B82FCE /* ContractDates.swift */,
@@ -408,6 +405,7 @@
 			files = (
 				CE46E75151339B73415C1B96 /* AmountField.swift in Sources */,
 				C00971022A23DF79CD5D53D7 /* AppInformationView.swift in Sources */,
+				AB198C7E1BCB28C542AC87BA /* CalendarDateField.swift in Sources */,
 				3612FD545D8CA5E398FB9203 /* CameraCapture.swift in Sources */,
 				15F3DF1FD5163B746C880A81 /* ContactViews.swift in Sources */,
 				2B997A1196D8BAE893C576A3 /* ContractDates.swift in Sources */,
@@ -437,13 +435,12 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				2764D6694ACEC5F9E9A626DF /* ContractNativeTextTests.swift in Sources */,
+				3B1C555B896C10CD58C3C833 /* CalendarDateRenderingTests.swift in Sources */,
 				057812ECB01EF2FC4761D3DC /* EditorReconstructionTests.swift in Sources */,
 				A3107169EC6F1F73A1A1E42F /* EditorSessionTests.swift in Sources */,
 				E55EB9556A461E837828AB7E /* ExternalNavigationTests.swift in Sources */,
 				1826CC39F1BDBB2D71B4CAE1 /* MetadataRowLayoutTests.swift in Sources */,
 				755CA590324CE483431D794E /* NativeAmountFieldTests.swift in Sources */,
-				DCF3BF240CD85E6E0BE2D1EF /* NativeDateControlComparisonTests.swift in Sources */,
 				A8A586C1162680D04DE2AC45 /* NativePresentationTests.swift in Sources */,
 				DC80C97748ED763BA20C26AA /* PhotoProcessorTests.swift in Sources */,
 				E49EB7191E5EEC865396984C /* ReleaseConfigurationTests.swift in Sources */,
@@ -458,7 +455,6 @@
 			files = (
 				75A868E257695737528B8BE8 /* AdaptiveRecordLayoutTests.swift in Sources */,
 				FFB35F7521960E59C9A2ED91 /* NativeCaptionClippingScope.swift in Sources */,
-				1BCFBBAEFB7D0CBD2106CDA5 /* NativeDateClippingScope.swift in Sources */,
 				9B3C7C2D3C88B90042C215BF /* NativeOffscreenInformationScope.swift in Sources */,
 				6B57A6284ED7EE7D9B353062 /* NativeOffscreenReminderScope.swift in Sources */,
 				370121383558F056F86CC12A /* NativeSheetTextScope.swift in Sources */,
