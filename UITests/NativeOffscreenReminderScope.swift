@@ -52,7 +52,7 @@ struct NativeOffscreenReminderScope {
                 && window.contains(element) && form.minX > window.minX && form.maxX < window.maxX
                 && !form.intersects(element) && window.contains(measurement.offscreenCaption)
                 && !form.intersects(measurement.offscreenCaption)
-        case ("Repair", "work.list"):
+        case (let context, "work.list") where ["Repair", "Selected repair", "Adaptive Repair"].contains(context):
             return label.hasPrefix("期限 ") && measurement.anchorIdentity == "work.row.selected"
                 && element == measurement.offscreenCaption && form.minX == window.minX
                 && form.width < window.width / 2 && element.minY < window.maxY && element.maxY > window.maxY

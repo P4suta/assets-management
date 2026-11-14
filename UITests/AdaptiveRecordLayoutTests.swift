@@ -288,6 +288,11 @@ import XCTest
             label: measurement.label, formIdentity: "work.list", matchingCaptionInForm: true,
             element: caption, form: sidebar, window: CGRect(x: 0, y: 0, width: 1032, height: 1376), measurement: measurement)
         XCTAssertTrue(verified.accepts)
+        for context in ["Selected repair", "Adaptive Repair"] {
+            var scope = verified
+            scope.screen = context
+            XCTAssertTrue(scope.accepts)
+        }
         let rejected: [(inout NativeOffscreenReminderScope) -> Void] = [
             { $0.screen = "Contract" }, { $0.formIdentity = "contacts.list" },
             { $0.label = "対応中" }, { $0.matchingCaptionInForm = false },

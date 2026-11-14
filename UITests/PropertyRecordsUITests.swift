@@ -214,7 +214,9 @@ final class PropertyRecordsUITests: XCTestCase {
         tapIdentifier("contract.edit", app: app)
         reveal(months, app: app)
         XCTAssertTrue(app.staticTexts["満了日の6か月前"].exists)
-        XCTAssertEqual(app.switches["contract.notice.notify"].value as? String, "0")
+        let notification = app.switches["contract.notice.notify"]
+        reveal(notification, app: app)
+        XCTAssertEqual(notification.value as? String, "0")
         app.buttons["editor.cancel"].tap()
     }
 
@@ -779,6 +781,30 @@ final class PropertyRecordsUITests: XCTestCase {
         XCTAssertFalse(settings.accepts)
     }
 
+    func testNativeCalendarTextScopeRejectsUnlabeledOrDifferentControls() {
+        let valid = NativeCalendarTextScope(version: OperatingSystemVersion(majorVersion: 27, minorVersion: 2, patchVersion: 0),
+            idiom: .pad, screen: "Calendar Date Picker", auditType: .elementDetection,
+            compactDescription: "Potentially inaccessible text",
+            detail: "This element appears to display text that should be represented using the accessibility API.", hasElement: false,
+            calendar: CGRect(x: 352, y: 302, width: 328, height: 345), done: CGRect(x: 646, y: 236, width: 36, height: 36),
+            window: CGRect(x: 0, y: 0, width: 1032, height: 1376), dayCount: 30, allDaysLabeled: true)
+        XCTAssertTrue(valid.accepts)
+        let rejected: [(inout NativeCalendarTextScope) -> Void] = [
+            { $0.version.majorVersion = 26 }, { $0.version.minorVersion = 3 }, { $0.version.patchVersion = 1 },
+            { $0.idiom = .phone }, { $0.screen = "Contract Editor" }, { $0.auditType = .dynamicType },
+            { $0.compactDescription = "Unknown" }, { $0.detail = "Unknown" }, { $0.hasElement = true },
+            { $0.calendar = .zero }, { $0.calendar.origin.x = .nan }, { $0.calendar.origin.y = 1300 },
+            { $0.calendar.origin.x = 0 }, { $0.done = .zero }, { $0.done.origin.y = 400 },
+            { $0.window = .zero }, { $0.dayCount = 27 }, { $0.dayCount = 43 },
+            { $0.allDaysLabeled = false }, { $0.reportIndex = 0 }, { $0.reportIndex = 2 }
+        ]
+        for reject in rejected {
+            var scope = valid
+            reject(&scope)
+            XCTAssertFalse(scope.accepts)
+        }
+    }
+
     func testCalendarDateChangesStayInTheDraftUntilSaving() throws {
         let app = launch(seeded: true)
         openSampleRoom(app)
@@ -1139,7 +1165,8 @@ final class PropertyRecordsUITests: XCTestCase {
         back(app)
         for (label, identifier) in [("対応", "work.section.active"), ("対応済み", "work.section.completed")] {
             let text = app.staticTexts[identifier]
-            try assertRenderedCaptionContrast(text, name: "Progress section: " + label, app: app, background: .shaded)
+            try assertRenderedCaptionContrast(text, name: "Progress section: " + label, app: app,
+                                             background: .shaded, in: app.collectionViews["work.list"])
         }
         XCTAssertTrue(app.navigationBars["対応"].exists)
         XCTAssertFalse(app.buttons["work.completedFilter"].exists)
@@ -1172,8 +1199,8 @@ final class PropertyRecordsUITests: XCTestCase {
     }
 
     private func assertRenderedCaptionContrast(_ caption: XCUIElement, name: String, app: XCUIApplication,
-                                              background: TextContrastBackground = .uniform) throws {
-        reveal(caption, app: app, requireFullVisibility: true)
+                                              background: TextContrastBackground = .uniform, in scope: XCUIElement? = nil) throws {
+        reveal(caption, app: app, in: scope, requireFullVisibility: true)
         XCTAssertTrue(caption.isHittable, name)
         let frame = caption.frame
         XCTAssertTrue(app.windows.firstMatch.frame.contains(frame), name)
@@ -1966,7 +1993,9 @@ final class PropertyRecordsUITests: XCTestCase {
             if requireFullVisibility && !viewport.contains(bounds) { return false }
             let tabs = app.tabBars.firstMatch
             if tabs.exists && tabs.isHittable && tabs.frame.contains(CGPoint(x: bounds.midX, y: bounds.midY)) { return false }
-            return keyboardFrame(app).map { !bounds.intersects($0) } ?? true
+            return keyboardFrame(app).map {
+                requireFullVisibility ? !bounds.intersects($0) : !$0.contains(CGPoint(x: bounds.midX, y: bounds.midY))
+            } ?? true
         }
         if reachable() { return }
         let keyboard = keyboardFrame(app)
@@ -2201,6 +2230,7 @@ final class PropertyRecordsUITests: XCTestCase {
         Thread.sleep(forTimeInterval: 0.7)
         let reminderMeasurement = try measureOffscreenReminder(app, screen: name)
         let informationMeasurements = try measureInformationText(app, screen: name)
+        let listTextMeasurements = try measureNativeListText(app, screen: name)
         let capture = XCTAttachment(screenshot: app.screenshot())
         capture.name = name
         capture.lifetime = .keepAlways
@@ -2218,6 +2248,8 @@ final class PropertyRecordsUITests: XCTestCase {
         var unlocatedSheetTextReports = 0
         var unlocatedAdaptiveTypeReports = 0
         var offscreenReminderReports = 0
+        var calendarTextReports = 0
+        var nativeListTypeReports = 0
         var verifiedCaptions: Set<String> = []
         var verifiedInformationCaptions: Set<String> = []
         let previousFailurePolicy = continueAfterFailure
@@ -2231,6 +2263,17 @@ final class PropertyRecordsUITests: XCTestCase {
                 detail.name = "App audit detail"
                 detail.lifetime = .keepAlways
                 activity.add(detail)
+            }
+            if let reason = self.nativeCalendarTextExclusion(issue, app: app, screen: name, reportIndex: calendarTextReports + 1) {
+                calendarTextReports += 1
+                print("Native calendar text: \(reason)")
+                return true
+            }
+            if let reason = self.verifiedNativeListTextSize(issue, app: app, screen: name,
+                measurements: listTextMeasurements, reportIndex: nativeListTypeReports + 1) {
+                nativeListTypeReports += 1
+                print("Verified native list text: \(reason)")
+                return true
             }
             if let identifier = self.verifiedInformationContrast(issue, app: app, screen: name,
                 measurements: informationMeasurements), verifiedInformationCaptions.insert(identifier).inserted {
@@ -2270,6 +2313,88 @@ final class PropertyRecordsUITests: XCTestCase {
             }
             return false
         }
+    }
+
+    private func measureNativeListText(_ app: XCUIApplication, screen: String) throws -> [String: NativeListTextMeasurement] {
+        let version = ProcessInfo.processInfo.operatingSystemVersion
+        guard version.majorVersion == 27, version.minorVersion == 2, version.patchVersion == 0,
+              UIDevice.current.userInterfaceIdiom == .phone,
+              UIApplication.shared.preferredContentSizeCategory == .accessibilityExtraExtraExtraLarge else { return [:] }
+        let listID: String
+        let captions: [XCUIElement]
+        let style: UIFont.TextStyle
+        switch screen {
+        case "Contact":
+            listID = "contact.detail"
+            captions = app.staticTexts.matching(NSPredicate(format: "identifier BEGINSWITH %@", "contact.related.")).allElementsBoundByIndex
+            style = .body
+        case "Contract":
+            listID = "contract.detail"
+            let footer = app.staticTexts["contract.time-zone"].firstMatch
+            guard footer.exists else { return [:] }
+            captions = [footer]
+            style = .footnote
+        default: return [:]
+        }
+        let list = app.collectionViews[listID]
+        let standard = UIFont.preferredFont(forTextStyle: style, compatibleWith: UITraitCollection(preferredContentSizeCategory: .large))
+        let minimum = standard.withSize(standard.pointSize * 2)
+        var measurements: [String: NativeListTextMeasurement] = [:]
+        for caption in captions {
+            reveal(caption, app: app, in: list, requireFullVisibility: true)
+            let frame = caption.frame
+            XCTAssertTrue(app.windows.firstMatch.frame.contains(frame))
+            let actual = caption.screenshot()
+            XCTAssertEqual(caption.frame, frame)
+            let bitmap = try XCTUnwrap(actual.image.cgImage)
+            let rendered = try UniformTextContrast(image: bitmap)
+            XCTAssertGreaterThanOrEqual(rendered.ratio, 2)
+            let required = (caption.label as NSString).boundingRect(with: CGSize(width: frame.width, height: CGFloat.greatestFiniteMagnitude),
+                options: .usesLineFragmentOrigin, attributes: [.font: minimum], context: nil)
+            let format = UIGraphicsImageRendererFormat()
+            format.scale = CGFloat(bitmap.width) / frame.width
+            format.opaque = true
+            let bounds = CGRect(x: 0, y: 0, width: frame.width, height: ceil(required.height))
+            let reference = UIGraphicsImageRenderer(size: bounds.size, format: format).image { context in
+                UIColor.white.setFill()
+                context.fill(bounds)
+                (caption.label as NSString).draw(in: bounds, withAttributes: [.font: minimum, .foregroundColor: UIColor.black])
+            }
+            let expected = try UniformTextContrast(image: XCTUnwrap(reference.cgImage))
+            let details = XCTAttachment(string: "\(caption.identifier): \(frame)\nRendered height: \(rendered.foregroundHeight)\nMinimum height: \(expected.foregroundHeight)")
+            details.name = "Native list text size"
+            details.lifetime = .keepAlways
+            add(details)
+            let capture = XCTAttachment(screenshot: actual)
+            capture.name = "Measured list text " + caption.identifier
+            capture.lifetime = .keepAlways
+            add(capture)
+            XCTAssertGreaterThanOrEqual(rendered.foregroundHeight, expected.foregroundHeight)
+            measurements[caption.identifier] = NativeListTextMeasurement(label: caption.label, frame: frame,
+                renderedHeight: rendered.foregroundHeight, minimumHeight: expected.foregroundHeight)
+        }
+        return measurements
+    }
+
+    private func verifiedNativeListTextSize(_ issue: AccessibilityAuditReport, app: XCUIApplication,
+        screen: String, measurements: [String: NativeListTextMeasurement], reportIndex: Int) -> String? {
+        guard issue.auditType == .dynamicType, issue.element == nil, screen == "Contact", !measurements.isEmpty else { return nil }
+        let lists = app.collectionViews.matching(identifier: "contact.detail")
+        guard lists.count == 1 else { return nil }
+        let list = lists.firstMatch
+        let matching = measurements.allSatisfy { identifier, measurement in
+            let captions = list.staticTexts.matching(identifier: identifier)
+            return captions.count == 1 && captions.firstMatch.label == measurement.label
+                && captions.firstMatch.frame == measurement.frame && captions.firstMatch.isHittable
+        }
+        let scope = NativeListTypeScope(version: ProcessInfo.processInfo.operatingSystemVersion,
+            idiom: UIDevice.current.userInterfaceIdiom, screen: screen, auditType: issue.auditType,
+            compactDescription: issue.compactDescription, detail: issue.detailedDescription, hasElement: issue.element != nil,
+            textSize: UIApplication.shared.preferredContentSizeCategory, listIdentity: list.identifier,
+            matchingCaptions: matching, measurements: measurements, list: list.frame,
+            window: app.windows.firstMatch.frame, reportIndex: reportIndex)
+        guard scope.accepts else { return nil }
+        return "A standard List with ForEach reproduces partial support; the related property text exceeds twice the standard rendered height."
     }
 
     private func measureInformationText(_ app: XCUIApplication, screen: String) throws -> [String: InformationTextMeasurement] {
@@ -2362,7 +2487,8 @@ final class PropertyRecordsUITests: XCTestCase {
         let version = ProcessInfo.processInfo.operatingSystemVersion
         guard version.majorVersion == 27, version.minorVersion == 2, version.patchVersion == 0,
               UIDevice.current.userInterfaceIdiom == .pad, UIAccessibility.isDarkerSystemColorsEnabled,
-              ["Repair Editor", "Repair"].contains(screen), !app.keyboards.firstMatch.exists else { return nil }
+              ["Repair Editor", "Repair", "Selected repair", "Adaptive Repair"].contains(screen),
+              !app.keyboards.firstMatch.exists else { return nil }
         let editing = screen == "Repair Editor"
         let forms = app.collectionViews.matching(identifier: editing ? "editor.form" : "work.list")
         guard forms.count == 1 else { return nil }
@@ -2452,6 +2578,30 @@ final class PropertyRecordsUITests: XCTestCase {
             form: form.frame, window: app.windows.firstMatch.frame, measurement: measurement, reportIndex: reportIndex)
         guard scope.accepts else { return nil }
         return "The native viewport reported an offscreen reminder caption; its visible instance measured \(measurement.ratio):1."
+    }
+
+    private func nativeCalendarTextExclusion(_ issue: AccessibilityAuditReport, app: XCUIApplication,
+                                             screen: String, reportIndex: Int) -> String? {
+        guard issue.auditType == .elementDetection, issue.element == nil, screen == "Calendar Date Picker",
+              let root = try? app.snapshot() else { return nil }
+        let elements = snapshotDescendants(root)
+        let calendars = elements.filter { $0.elementType == .datePicker && !$0.frame.isEmpty }
+        let controls = elements.filter { $0.identifier == "date.done" && $0.elementType == .button && !$0.frame.isEmpty }
+        guard calendars.count == 1, controls.count == 1, let calendar = calendars.first,
+              let done = controls.first, let window = root.children.first(where: { $0.elementType == .window }) else { return nil }
+        let days = snapshotDescendants(calendar).filter {
+            $0.elementType == .button && $0.label.range(of: #"^[0-9]+月[0-9]+日 .+"#, options: .regularExpression) != nil
+        }
+        let labeled = Set(days.map(\.label)).count == days.count && days.allSatisfy {
+            !$0.frame.isEmpty && calendar.frame.contains($0.frame) && window.frame.contains($0.frame)
+        }
+        let scope = NativeCalendarTextScope(version: ProcessInfo.processInfo.operatingSystemVersion,
+            idiom: UIDevice.current.userInterfaceIdiom, screen: screen, auditType: issue.auditType,
+            compactDescription: issue.compactDescription, detail: issue.detailedDescription, hasElement: false,
+            calendar: calendar.frame, done: done.frame, window: window.frame,
+            dayCount: days.count, allDaysLabeled: labeled, reportIndex: reportIndex)
+        guard scope.accepts else { return nil }
+        return "Unlocated text in a floating system calendar; every date control exposes its date and weekday."
     }
 
     private func nativeSheetTextExclusion(_ issue: AccessibilityAuditReport, app: XCUIApplication, screen: String, reportIndex: Int) -> String? {

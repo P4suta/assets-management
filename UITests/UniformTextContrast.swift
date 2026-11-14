@@ -11,6 +11,7 @@ enum TextContrastBackground {
 struct UniformTextContrast {
     let ratio: Double
     let foregroundPixels: Int
+    let foregroundHeight: Int
 
     init(image: CGImage, background model: TextContrastBackground = .uniform) throws {
         let (count, overflow) = image.width.multipliedReportingOverflow(by: image.height)
@@ -58,6 +59,18 @@ struct UniformTextContrast {
         guard let minimum = ratios.min() else { throw TextContrastError.insufficientColors }
         ratio = minimum
         foregroundPixels = tone.value
+        var firstRow = image.height
+        var lastRow = -1
+        for offset in stride(from: 0, to: pixels.count, by: 4) {
+            let rgb = UInt32(pixels[offset]) << 16 | UInt32(pixels[offset + 1]) << 8 | UInt32(pixels[offset + 2])
+            if rgb == tone.key {
+                let row = offset / 4 / image.width
+                firstRow = min(firstRow, row)
+                lastRow = max(lastRow, row)
+            }
+        }
+        guard lastRow >= firstRow else { throw TextContrastError.insufficientForeground }
+        foregroundHeight = lastRow - firstRow + 1
     }
 
     private static func shadedPalette(_ border: Set<UInt32>) throws -> Set<UInt32> {

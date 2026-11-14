@@ -193,7 +193,7 @@ struct ContractDetailView: View {
                             LabeledContent("事前通知", value: "\(notice.advanceDays)日前の午前9時")
                         }
                     } header: { Text("更新・解約の予告") }
-                      footer: { Text("日付と通知時刻は日本時間が基準です。") }
+                      footer: { Text("日付と通知時刻は日本時間が基準です。").accessibilityIdentifier("contract.time-zone") }
                     ReminderReservationIssue(target: .contract(roomID))
                 }
             } else {
@@ -299,7 +299,9 @@ struct ContactDetailView: View {
                 let buildings = store.records.relatedBuildings(for: contact.id)
                 if !buildings.isEmpty {
                     Section("関連する物件") {
-                        ForEach(buildings) { Text($0.name) }
+                        ForEach(buildings) {
+                            Text($0.name).accessibilityIdentifier("contact.related." + $0.id.uuidString)
+                        }
                     }
                 }
                 Section {

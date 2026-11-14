@@ -57,6 +57,12 @@ At AX5 on iPadOS 27.2, native adaptive tabs can report partial Dynamic Type supp
 An independent SwiftUI TabView reproduces the same report, while Settings' General title reports partial support with a located element.
 The qualifier for native tabs requires the exact runtime, AX5, three native tabs at the top, an unlocated report of partial support, and at most three reports.
 Located issues, full unsupported reports, and unknown contexts remain failures.
+On iOS 27.2 at AX5, a standard List containing ForEach can report partial Dynamic Type support without locating an element.
+The related property section reproduces the report, while the captured text exceeds twice the rendered height of the standard body font.
+Settings' settled General screen also reports partial support for its system title.
+The contact qualifier requires the exact runtime, screen, report, owning list, and one freshly measured related property caption.
+The caption's identity, label, frame, and visibility must still match when the audit runs.
+An unscaled font, absent measurement, full unsupported report, located issue, changed frame, or repeated report fails verification.
 Editor sheets use Apple's [page presentation sizing](https://developer.apple.com/documentation/swiftui/view/presentationsizing(_:)) to keep the available space at AX5.
 The repair journey audits the initial form and the amount field after scrolling.
 Full unsupported Dynamic Type reports remain failures.
@@ -73,6 +79,9 @@ Pixel tests measure rendered date text at widths of 320, 420, and 1,032 points i
 AX5 date text must reach at least twice its standard height.
 A forced standard text size must fail the pixel comparison.
 Calendar journeys check selection, discarded drafts, saving, relaunch, and accessibility.
+The floating system calendar on iPadOS 27.2 can report unlocated text despite exposing a full date and weekday for each date control.
+The qualifier requires the exact text report, calendar screen, floating bounds, 28 to 42 unique labeled day controls, and a reachable Done control.
+Located issues, incomplete labels, unexpected geometry, and repeated reports remain failures.
 Date clipping reports fail verification.
 Complementary Light and Dark AX5 journeys check long property names, visible keyboards, discard, save retry, bounded repair estimates, and contract amounts.
 Rendered label measurements require the complete label inside its scroll viewport.
