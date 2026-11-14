@@ -4,6 +4,16 @@ import UIKit
 
 private enum NativeDateArrangement: CaseIterable, Sendable {
     case explicitCompact, bodyFont, unlabeledIntrinsic, expandedUnlabeled, largeControl
+    case directDynamicType, windowTraits, presentedWithDynamicType
+}
+
+private struct NativeDatePresentationHost: View {
+    let form: NativeDateArrangementForm
+    @State private var presented = false
+
+    var body: some View {
+        Color.clear.onAppear { presented = true }.sheet(isPresented: $presented) { form }
+    }
 }
 
 private struct NativeDateArrangementForm: View {
@@ -24,7 +34,7 @@ private struct NativeDateArrangementForm: View {
 
     @ViewBuilder private func date(_ title: LocalizedStringKey, selection: Binding<Date>) -> some View {
         switch arrangement {
-        case .explicitCompact:
+        case .explicitCompact, .directDynamicType, .windowTraits, .presentedWithDynamicType:
             DatePicker(title, selection: selection, displayedComponents: .date).datePickerStyle(.compact)
         case .bodyFont:
             DatePicker(title, selection: selection, displayedComponents: .date).font(.body)
@@ -51,8 +61,19 @@ extension NativePresentationTests {
         let scene = try #require(UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.first)
         let window = UIWindow(windowScene: scene)
         window.frame = CGRect(x: 0, y: 0, width: CGFloat(width), height: 1376)
-        let controller = UIHostingController(rootView: NativeDateArrangementForm(arrangement: arrangement)
-            .environment(\.locale, Locale(identifier: "ja_JP")))
+        if arrangement == .windowTraits { window.traitOverrides.preferredContentSizeCategory = .accessibilityExtraExtraExtraLarge }
+        let form = NativeDateArrangementForm(arrangement: arrangement).environment(\.locale, Locale(identifier: "ja_JP"))
+        let root: AnyView
+        switch arrangement {
+        case .directDynamicType:
+            root = AnyView(form.environment(\.dynamicTypeSize, .accessibility5))
+        case .presentedWithDynamicType:
+            root = AnyView(NativeDatePresentationHost(form: NativeDateArrangementForm(arrangement: arrangement))
+                .environment(\.locale, Locale(identifier: "ja_JP")).environment(\.dynamicTypeSize, .accessibility5))
+        default:
+            root = AnyView(form)
+        }
+        let controller = UIHostingController(rootView: root)
         controller.traitOverrides.preferredContentSizeCategory = .accessibilityExtraExtraExtraLarge
         window.rootViewController = controller
         window.isHidden = false
@@ -61,14 +82,14 @@ extension NativePresentationTests {
         let deadline = ContinuousClock.now.advanced(by: .seconds(5))
         repeat {
             controller.view.layoutIfNeeded()
-            if descendants(controller.view).compactMap({ $0 as? UIDatePicker }).count == 2 { break }
+            if descendants(window).compactMap({ $0 as? UIDatePicker }).count == 2 { break }
             try await Task.sleep(for: .milliseconds(10))
         } while ContinuousClock.now < deadline
         let image = UIGraphicsImageRenderer(size: window.bounds.size).image { _ in
             #expect(window.drawHierarchy(in: window.bounds, afterScreenUpdates: true))
         }
         Attachment.record(try #require(image.pngData()), named: "\(arrangement)-\(width).png")
-        let labels = descendants(controller.view).compactMap { $0 as? UILabel }.filter {
+        let labels = descendants(window).compactMap { $0 as? UILabel }.filter {
             $0.text?.range(of: "^[0-9]{4}/[0-9]{2}/[0-9]{2}$", options: .regularExpression) != nil
         }
         #expect(labels.count == 2)
