@@ -5,6 +5,24 @@ import XCTest
         continueAfterFailure = false
     }
 
+    func testListViewportUsesVisibleBarsAndRetainsReachableEndRows() throws {
+        let window = CGRect(x: 0, y: 0, width: 1032, height: 1376)
+        let lastRow = CGRect(x: 340, y: 1262, width: 672, height: 74)
+        let viewport = try XCTUnwrap(ListViewport(list: CGRect(x: 0, y: 32, width: 1032, height: 1344),
+            window: window, target: lastRow,
+            bars: [CGRect(x: 0, y: 106, width: 320, height: 108), CGRect(x: 320, y: 106, width: 712, height: 54)]))
+        XCTAssertEqual(viewport.bounds.minY, 160)
+        XCTAssertTrue(viewport.bounds.contains(lastRow))
+        let phone = CGRect(x: 0, y: 0, width: 420, height: 912)
+        let obscured = CGRect(x: 20, y: 820, width: 380, height: 60)
+        let compact = try XCTUnwrap(ListViewport(list: phone, window: phone, target: obscured,
+            bars: [CGRect(x: 0, y: 68, width: 420, height: 54), CGRect(x: 116, y: 819, width: 188, height: 80)]))
+        XCTAssertEqual(compact.bounds, CGRect(x: 0, y: 122, width: 420, height: 697))
+        XCTAssertFalse(compact.bounds.contains(obscured))
+        XCTAssertNil(ListViewport(list: .zero, window: phone, target: obscured, bars: []))
+        XCTAssertNil(ListViewport(list: phone, window: phone, target: obscured, bars: [.infinite]))
+    }
+
     func testStatusRowFitsAdjacentRowsAndPersistsEveryChoice() {
         let app = launch()
         openRepair(app)
@@ -316,24 +334,29 @@ import XCTest
     }
 
     private func revealDetail(_ element: XCUIElement, app: XCUIApplication) {
-        reveal(element, in: app.collectionViews["work.detail"], centered: true, app: app)
+        reveal(element, in: app.collectionViews["work.detail"], app: app)
     }
 
     private func restoredPhotoIdentifiers(_ app: XCUIApplication) -> Set<String> {
         let photos = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "photo."))
         var identifiers: Set<String> = []
-        reveal(app.buttons["photos.add"], in: app.collectionViews["work.detail"], centered: true, app: app) {
+        reveal(app.buttons["photos.add"], in: app.collectionViews["work.detail"], app: app) {
             identifiers.formUnion(photos.allElementsBoundByIndex.map(\.identifier))
         }
         return identifiers
     }
 
-    private func reveal(_ element: XCUIElement, in list: XCUIElement, centered: Bool = false, app: XCUIApplication,
+    private func reveal(_ element: XCUIElement, in list: XCUIElement, app: XCUIApplication,
                         observing: () -> Void = {}) {
         let window = app.windows.firstMatch
         XCTAssertTrue(list.waitForExistence(timeout: 5), app.debugDescription)
         let frame = list.frame
-        let unobscured = centered ? frame.insetBy(dx: 0, dy: frame.height * 0.1) : frame
+        let bars = (app.navigationBars.allElementsBoundByIndex + app.tabBars.allElementsBoundByIndex).map(\.frame)
+        let target = element.exists && !element.frame.isEmpty ? element.frame : frame
+        guard let unobscured = ListViewport(list: frame, window: window.frame, target: target, bars: bars)?.bounds else {
+            XCTFail("The list must provide a viewport outside visible navigation bars.")
+            return
+        }
         func reachable() -> Bool {
             guard element.exists && element.isHittable else { return false }
             if element.frame.height > unobscured.height { return element.frame.intersects(unobscured) }
