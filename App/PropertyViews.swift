@@ -269,7 +269,10 @@ struct ContactDetailView: View {
                 Section("連絡先") {
                     Text(contact.name).font(.title2).bold()
                     LabeledContent("種類", value: contact.category.title)
-                    if contact.isEmergency { Label("緊急連絡先", systemImage: "exclamationmark.circle") }
+                    if contact.isEmergency {
+                        Label("緊急連絡先", systemImage: "exclamationmark.circle")
+                            .contentAlignedRowSeparator()
+                    }
                     if !contact.company.isEmpty { LabeledContent("会社名", value: contact.company) }
                     if !contact.phone.isEmpty {
                         if let url = contact.telephoneURL {

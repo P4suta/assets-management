@@ -97,6 +97,7 @@ struct WorkDetailView: View {
                     }
                     .pickerStyle(.menu)
                     .symbolRenderingMode(.monochrome)
+                    .contentAlignedRowSeparator()
                     .accessibilityValue(item.status.title)
                     .accessibilityIdentifier("work.status")
                     LabeledContent("期限", value: item.dueDate?.formatted(date: .abbreviated, time: .omitted) ?? "未設定")

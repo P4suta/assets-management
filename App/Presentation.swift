@@ -101,6 +101,10 @@ extension Records {
 }
 
 extension View {
+    func contentAlignedRowSeparator() -> some View {
+        alignmentGuide(.listRowSeparatorLeading) { $0[.leading] }
+    }
+
     func recordForeground(_ color: Color, selected: Bool) -> some View {
         foregroundStyle(RecordForegroundStyle(color: color, selected: selected))
     }
