@@ -523,7 +523,9 @@ final class PropertyRecordsUITests: XCTestCase {
         tap("未来ヶ丘団地", app: app)
         tap("101号室", app: app)
         tap("賃貸借契約", app: app)
-        XCTAssertTrue(app.staticTexts["家賃、¥78,000"].waitForExistence(timeout: 5))
+        let rent = app.staticTexts["家賃、¥78,000"]
+        reveal(rent, app: app, in: app.collectionViews["contract.detail"], requireFullVisibility: true)
+        XCTAssertTrue(rent.waitForExistence(timeout: 5))
         XCTAssertFalse(app.buttons["更新契約を確定"].exists)
     }
 
@@ -1226,7 +1228,7 @@ final class PropertyRecordsUITests: XCTestCase {
         let natural = try XCTUnwrap(ScrollCoordinates(bounds: bounds, keyboard: nil))
         XCTAssertEqual(natural.lower.dy, 0.8)
         for keyboard in [CGRect.zero, CGRect(x: 20, y: 900, width: 300, height: 200),
-                         CGRect(x: 20, y: 300, width: 100, height: 200)] {
+                         CGRect(x: 200, y: 300, width: 100, height: 200)] {
             let gesture = try XCTUnwrap(ScrollCoordinates(bounds: bounds, keyboard: keyboard))
             XCTAssertEqual(gesture.lower.dy, natural.lower.dy)
         }
@@ -1243,8 +1245,20 @@ final class PropertyRecordsUITests: XCTestCase {
             for point in [coordinates.lower, coordinates.upper] {
                 let position = CGPoint(x: bounds.minX + bounds.width * point.dx, y: bounds.minY + bounds.height * point.dy)
                 XCTAssertTrue(bounds.contains(position))
-                XCTAssertGreaterThanOrEqual(position.x - bounds.minX, 44)
-                XCTAssertGreaterThanOrEqual(bounds.maxX - position.x, 44)
+                XCTAssertGreaterThanOrEqual(position.x - bounds.minX, 16)
+                XCTAssertGreaterThanOrEqual(bounds.maxX - position.x, 16)
+            }
+        }
+    }
+
+    func testScrollPansAvoidEditableTextAndSelectionGestures() throws {
+        for width in [320.0, 420.0, 1032.0] {
+            let bounds = CGRect(x: 100, y: 150, width: width, height: 600)
+            let editable = bounds.insetBy(dx: 32, dy: 0)
+            let coordinates = try XCTUnwrap(ScrollCoordinates(bounds: bounds, keyboard: nil))
+            for point in [coordinates.lower, coordinates.upper] {
+                let position = CGPoint(x: bounds.minX + bounds.width * point.dx, y: bounds.minY + bounds.height * point.dy)
+                XCTAssertFalse(editable.contains(position), "A scroll pan must begin outside editable text.")
             }
         }
     }
@@ -1799,8 +1813,10 @@ final class PropertyRecordsUITests: XCTestCase {
 
     private func waitForEditorViewport(_ app: XCUIApplication) {
         var previous: [CGRect]?
+        var observed: [CGRect]?
         let settled = NSPredicate { _, _ in
-            guard let root = try? app.snapshot(), let window = root.children.first(where: { $0.elementType == .window })?.frame else { return false }
+            guard let root = try? app.snapshot() else { return false }
+            guard let window = root.children.first(where: { $0.elementType == .window })?.frame else { return false }
             let elements = self.snapshotDescendants(root)
             var frames = [window]
             for identifier in ["editor.form", "editor.save", "editor.cancel"] {
@@ -1808,14 +1824,23 @@ final class PropertyRecordsUITests: XCTestCase {
                 guard matching.count == 1, let frame = matching.first?.frame, window.contains(frame) else { return false }
                 frames.append(frame)
             }
-            if let keyboard = elements.first(where: { $0.elementType == .keyboard && !$0.frame.isEmpty })?.frame {
+            if let keyboard = self.keyboardFrame(app) {
                 guard window.contains(keyboard) else { return false }
                 frames.append(keyboard)
             }
+            observed = frames
             defer { previous = frames }
             return previous == frames
         }
-        XCTAssertEqual(XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: settled, object: app)], timeout: 10), .completed,
+        let result = XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: settled, object: nil)], timeout: 10)
+        if result != .completed {
+            let detail = XCTAttachment(string: "Previous: \(String(describing: previous))\nObserved: \(String(describing: observed))\n\(app.debugDescription)")
+            detail.name = "Unsettled editor viewport"
+            detail.lifetime = .keepAlways
+            add(detail)
+            captureStoreScreen(app, name: "Unsettled editor viewport")
+        }
+        XCTAssertEqual(result, .completed,
                        "The editor viewport must settle before locating virtualized inputs.")
     }
 
@@ -1837,7 +1862,7 @@ final class PropertyRecordsUITests: XCTestCase {
             defer { previous = current }
             return current == previous
         }
-        let expectation = XCTNSPredicateExpectation(predicate: settled, object: input)
+        let expectation = XCTNSPredicateExpectation(predicate: settled, object: nil)
         let result = XCTWaiter.wait(for: [expectation], timeout: 10)
         if result != .completed {
             let detail = XCTAttachment(string: "Previous: \(String(describing: previous))\nObserved: \(String(describing: observed))\n\(app.debugDescription)")
@@ -1863,7 +1888,7 @@ final class PropertyRecordsUITests: XCTestCase {
         guard let window = root.children.first(where: { $0.elementType == .window })?.frame,
               inputs.count == 1, let input = inputs.first?.frame,
               let save = frame("editor.save"), let cancel = frame("editor.cancel") else { return nil }
-        let keyboard = elements.first { $0.elementType == .keyboard && !$0.frame.isEmpty && $0.frame.intersects(window) }?.frame
+        let keyboard = keyboardFrame(app)
         return EditorLayout(window: window, input: input, keyboard: keyboard,
                             save: save, cancel: cancel)
     }
@@ -1993,6 +2018,12 @@ final class PropertyRecordsUITests: XCTestCase {
             let target = element.elementType == .stepper ? element.buttons.element(boundBy: 1) : element
             guard target.exists && target.isHittable else { return false }
             let bounds = target.frame
+            if scope == nil {
+                let identity = target.identifier.isEmpty ? target.label : target.identifier
+                let bar = app.navigationBars.containing(.any, identifier: identity).firstMatch
+                if bar.exists, bar.frame.contains(bounds), window.frame.contains(bounds),
+                   keyboardFrame(app).map({ !$0.intersects(bounds) }) ?? true { return true }
+            }
             guard visible.contains(bounds, requireFullVisibility: requireFullVisibility) else { return false }
             let tabs = app.tabBars.firstMatch
             if tabs.exists && tabs.isHittable && tabs.frame.contains(CGPoint(x: bounds.midX, y: bounds.midY)) { return false }

@@ -184,19 +184,22 @@ import XCTest
     private func chooseLibraryPhoto(_ app: XCUIApplication) {
         let cancel = app.buttons["Cancel"].firstMatch
         XCTAssertTrue(cancel.waitForExistence(timeout: 5))
-        let asset = app.images.matching(identifier: "PXGGridLayout-Info").firstMatch
-        XCTAssertTrue(asset.waitForExistence(timeout: 30), app.debugDescription)
         let onboarding = app.otherElements["PXGSingleViewContainerView_AX"].buttons["閉じる"].firstMatch
+        let library = app.scrollViews["photosView_content_scroll_view"]
+        let asset = library.images.matching(identifier: "PXGGridLayout-Info").firstMatch
+        let loaded = NSPredicate { _, _ in onboarding.exists || asset.exists }
+        XCTAssertEqual(XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: loaded, object: nil)], timeout: 30), .completed)
         if onboarding.exists && onboarding.isHittable { onboarding.tap() }
+        XCTAssertTrue(asset.waitForExistence(timeout: 30), app.debugDescription)
         let window = app.windows.firstMatch
         var previous: CGRect?
         let visible = NSPredicate { _, _ in
-            guard asset.exists && asset.isHittable else { return false }
+            guard asset.exists, library.exists, !onboarding.exists else { return false }
             let frame = asset.frame
             defer { previous = frame }
-            return !frame.isEmpty && window.frame.contains(frame) && frame == previous
+            return !frame.isEmpty && library.frame.intersection(window.frame).contains(frame) && frame == previous
         }
-        let readiness = XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: visible, object: asset)], timeout: 30)
+        let readiness = XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: visible, object: nil)], timeout: 30)
         let picker = XCTAttachment(string: app.debugDescription)
         picker.name = "Native photo library selection"
         picker.lifetime = .keepAlways

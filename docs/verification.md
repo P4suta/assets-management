@@ -12,6 +12,8 @@ Keep physical-device acceptance and the App Review recording separate from simul
 Selected-row tests audit foreground contrast within the visible selection in both appearances.
 Appearance-sensitive journeys use the Simulator profile configured before the run.
 The journeys check the rendered background before measuring selected rows or capturing store images.
+Native editor checks share the visible keyboard geometry used for scrolling.
+Photo journeys close the native privacy introduction before selecting an image within the library's visible bounds.
 Hosted layout tests render the contact, work, building, room, and contract detail screens at widths of 320, 420, 600, and 1,024 points.
 Tests that create UIKit windows share one [serialized suite](https://developer.apple.com/documentation/testing/parallelization).
 The suite keeps scene presentation and text-size changes separate between tests.

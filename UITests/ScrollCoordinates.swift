@@ -33,7 +33,7 @@ struct ScrollCoordinates {
     init?(bounds: CGRect, keyboard: CGRect?) {
         guard !bounds.isEmpty, !bounds.isInfinite,
               [bounds.minX, bounds.minY, bounds.maxX, bounds.maxY].allSatisfy(\.isFinite) else { return nil }
-        let horizontal = 0.85
+        let horizontal = min(24 / bounds.width, 0.5)
         let panX = bounds.minX + bounds.width * horizontal
         var bottom = bounds.maxY
         if let keyboard, !keyboard.isEmpty,
