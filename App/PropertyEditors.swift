@@ -161,6 +161,7 @@ struct ContactEditor: View {
 }
 
 struct ContractEditor: View {
+    @Environment(\.dynamicTypeSize) private var textSize
     @Environment(RecordsStore.self) private var store
     @Environment(AppNotices.self) private var notices
     @Bindable var session: EditorSession<ContractFields>
@@ -180,9 +181,9 @@ struct ContractEditor: View {
         }) {
             Section {
                 DatePicker("契約開始日", selection: $session.value.start, displayedComponents: .date)
-                    .fixedSize()
+                    .id(textSize)
                 DatePicker("契約満了日", selection: $session.value.end, displayedComponents: .date)
-                    .fixedSize()
+                    .id(textSize)
                 AmountField(title: "月額家賃（円）", input: $session.value.rent, identifier: "contract.rent")
             } footer: { Text("締結済みの契約内容を登録してください。") }
             ContractNoticeFields(fields: $session.value)
