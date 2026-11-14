@@ -32,6 +32,10 @@ import UIKit
             try await Task.sleep(for: .milliseconds(10))
         } while ContinuousClock.now < deadline
         #expect(descendants(controller.view).compactMap { $0 as? UIDatePicker }.count >= 2)
+        let image = UIGraphicsImageRenderer(size: window.bounds.size).image { _ in
+            #expect(window.drawHierarchy(in: window.bounds, afterScreenUpdates: true))
+        }
+        Attachment.record(try #require(image.pngData()), named: "Native contract at width \(width).png")
         let labels = descendants(controller.view).compactMap { $0 as? UILabel }
         #expect(!labels.isEmpty)
         let dateLabels = labels.filter {
