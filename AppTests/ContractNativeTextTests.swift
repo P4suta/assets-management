@@ -4,7 +4,7 @@ import Testing
 import UIKit
 @testable import PropertyRecords
 
-@Suite(.serialized) @MainActor struct ContractNativeTextTests {
+extension NativePresentationTests {
     @Test(arguments: [420, 1032])
     func nativeContractLabelsFitAtTheLargestTextSize(width: Int) async throws {
         let directory = URL.temporaryDirectory.appendingPathComponent(UUID().uuidString)

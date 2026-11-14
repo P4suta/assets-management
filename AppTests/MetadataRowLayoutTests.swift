@@ -35,7 +35,7 @@ private struct MetadataLayoutProfile: Sendable {
     }
 }
 
-@Suite(.serialized) @MainActor struct MetadataRowLayoutTests {
+extension NativePresentationTests {
     @Test(arguments: MetadataScreen.allCases, MetadataLayoutProfile.all)
     fileprivate func metadataSeparatorsAlignAcrossWidthsAndTextSizes(screen: MetadataScreen, profile: MetadataLayoutProfile) async throws {
         let (width, dark, largest) = (profile.width, profile.dark, profile.largest)

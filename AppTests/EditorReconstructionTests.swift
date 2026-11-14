@@ -49,7 +49,7 @@ private enum TextEditorCase: CaseIterable, Sendable {
     var destination: EditorDestination?
 }
 
-@Suite(.serialized) @MainActor struct EditorReconstructionTests {
+extension NativePresentationTests {
     @Test(arguments: TextEditorCase.allCases)
     fileprivate func destinationRetainsUnsavedTextWhenEditorViewIsReplaced(scenario: TextEditorCase) async throws {
         let directory = URL.temporaryDirectory.appendingPathComponent(UUID().uuidString)

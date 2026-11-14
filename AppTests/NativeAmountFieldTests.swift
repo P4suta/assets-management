@@ -4,7 +4,7 @@ import Testing
 import UIKit
 @testable import PropertyRecords
 
-@Suite @MainActor struct NativeAmountFieldTests {
+extension NativePresentationTests {
     @MainActor private final class InputBox {
         var input: AmountInput
         init(_ text: String) { input = AmountInput(text) }
