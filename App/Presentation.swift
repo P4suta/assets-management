@@ -166,6 +166,33 @@ struct WorkRow: View {
     }
 }
 
+struct SelectionField<Value: Hashable, Options: View>: View {
+    let title: LocalizedStringKey
+    let value: String
+    @Binding var selection: Value
+    @ViewBuilder let options: () -> Options
+
+    var body: some View {
+        Menu {
+            Picker(title, selection: $selection, content: options)
+                .pickerStyle(.inline)
+        } label: {
+            LabeledContent {
+                Text(value).fixedSize(horizontal: false, vertical: true)
+                    .foregroundStyle(Color.accentColor)
+            } label: {
+                Text(title).foregroundStyle(Color.primary)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.borderless)
+        .menuIndicator(.visible)
+        .accessibilityLabel(Text(title))
+        .accessibilityValue(value)
+    }
+}
+
 struct InputField: View {
     @Environment(\.dynamicTypeSize) private var textSize
     let title: String
@@ -174,7 +201,7 @@ struct InputField: View {
     var multiline = false
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(title).font(.subheadline).foregroundStyle(Color.secondary)
+            Text(LocalizedStringKey(title)).font(.subheadline).foregroundStyle(Color.secondary)
                 .fixedSize(horizontal: false, vertical: true)
                 .accessibilityHidden(true)
             TextField("", text: $text, axis: multiline || textSize.isAccessibilitySize ? .vertical : .horizontal)

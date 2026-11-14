@@ -11,10 +11,12 @@ struct WorkEditor: View {
         EditorSheet(feedback: session.feedback, title: session.value.item.kind.title + (workID == nil ? "を追加" : "を編集"),
                     dirty: session.dirty, canSave: session.value.estimate.isValid, save: save) {
             Section("対象") {
-                Picker("建物", selection: $session.value.item.buildingID) {
+                SelectionField(title: "建物", value: store.records.buildings.first { $0.id == session.value.item.buildingID }?.name ?? "未選択",
+                               selection: $session.value.item.buildingID) {
                     ForEach(store.records.buildings) { Text($0.name).tag($0.id) }
                 }.accessibilityIdentifier("work.building")
-                Picker("部屋", selection: $session.value.item.roomID) {
+                SelectionField(title: "部屋", value: store.records.rooms.first { $0.id == session.value.item.roomID }.map { $0.number + "号室" } ?? "共用部分",
+                               selection: $session.value.item.roomID) {
                     Text("共用部分").tag(UUID?.none).disabled(session.value.item.kind == .renewal)
                     ForEach(store.records.rooms.filter { $0.buildingID == session.value.item.buildingID }) {
                         Text($0.number + "号室").tag(Optional($0.id))
@@ -22,11 +24,11 @@ struct WorkEditor: View {
                 }.accessibilityIdentifier("work.room")
             }
             Section("内容") {
-                Picker("種類", selection: $session.value.item.kind) {
+                SelectionField(title: "種類", value: session.value.item.kind.title, selection: $session.value.item.kind) {
                     ForEach(WorkKind.allCases, id: \.self) { Text($0.title).tag($0) }
                 }
                 InputField(title: "対応内容（必須）", text: $session.value.item.title, identifier: "work.title", multiline: true)
-                Picker("状態", selection: $session.value.item.status) {
+                SelectionField(title: "状態", value: session.value.item.status.title, selection: $session.value.item.status) {
                     ForEach(WorkStatus.allCases, id: \.self) { Text($0.title).tag($0) }
                 }
                 InputField(title: "メモ", text: $session.value.item.notes, identifier: "work.notes", multiline: true)

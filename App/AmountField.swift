@@ -9,7 +9,7 @@ struct AmountField: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(title).font(.subheadline).foregroundStyle(Color.secondary)
+            Text(LocalizedStringKey(title)).font(.subheadline).foregroundStyle(Color.secondary)
                 .fixedSize(horizontal: false, vertical: true)
             HStack {
                 Image(systemName: "yensign").accessibilityHidden(true)

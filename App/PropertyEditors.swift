@@ -13,7 +13,7 @@ struct PropertyEditor: View {
                 InputField(title: "建物名（必須）", text: $session.value.name, identifier: "property.name")
                 InputField(title: "部屋番号（必須）", text: $session.value.roomNumber, identifier: "property.room")
                 InputField(title: "所在地", text: $session.value.address, identifier: "property.address", multiline: true)
-                Picker("管理方法", selection: $session.value.management) {
+                SelectionField(title: "管理方法", value: session.value.management.title, selection: $session.value.management) {
                     ForEach(ManagementMode.allCases, id: \.self) { Text($0.title).tag($0) }
                 }
             } footer: { Text("保存すると建物と部屋を登録します。記録は端末内に保存します。") }
@@ -37,12 +37,13 @@ struct BuildingEditor: View {
             Section {
                 InputField(title: "建物名（必須）", text: $session.value.name, identifier: "property.name")
                 InputField(title: "所在地", text: $session.value.address, identifier: "property.address", multiline: true)
-                Picker("管理方法", selection: $session.value.management) {
+                SelectionField(title: "管理方法", value: session.value.management.title, selection: $session.value.management) {
                     ForEach(ManagementMode.allCases, id: \.self) { Text($0.title).tag($0) }
                 }
                 .accessibilityIdentifier("property.management")
                 if session.value.management == .agency || session.value.agencyContactID != nil {
-                    Picker("管理会社の連絡先", selection: $session.value.agencyContactID) {
+                    SelectionField(title: "管理会社の連絡先", value: store.records.contacts.first { $0.id == session.value.agencyContactID }?.name ?? "未登録",
+                                   selection: $session.value.agencyContactID) {
                         Text("未登録").tag(UUID?.none)
                         ForEach(store.records.contacts) { Text($0.name).tag(Optional($0.id)) }
                     }
@@ -70,7 +71,8 @@ struct RoomEditor: View {
         }) {
             Section {
                 InputField(title: "部屋番号（必須）", text: $session.value.number, identifier: "room.number")
-                Picker("入居者", selection: $session.value.residentID) {
+                SelectionField(title: "入居者", value: store.records.contacts.first { $0.id == session.value.residentID }?.name ?? "未登録",
+                               selection: $session.value.residentID) {
                     Text("未登録").tag(UUID?.none)
                     ForEach(store.records.contacts) { Text($0.name).tag(Optional($0.id)) }
                 }
@@ -99,7 +101,7 @@ struct ContactEditor: View {
                 InputField(title: "メモ", text: $session.value.notes, identifier: "contact.notes", multiline: true)
             }
             Section("分類") {
-                Picker("種類", selection: $session.value.category) {
+                SelectionField(title: "種類", value: session.value.category.title, selection: $session.value.category) {
                     ForEach(ContactCategory.allCases, id: \.self) { Text($0.title).tag($0) }
                 }
                 .accessibilityIdentifier("contact.category")
@@ -205,7 +207,7 @@ private struct ContractNoticeFields: View {
             }))
             .accessibilityIdentifier("contract.notice.record")
             if let notice = fields.notice {
-                Picker("期限の指定方法", selection: Binding(get: {
+                SelectionField(title: "期限の指定方法", value: timingTitle, selection: Binding(get: {
                     if case .monthsBeforeExpiry = notice.timing { return true }
                     return false
                 }, set: {
@@ -232,7 +234,8 @@ private struct ContractNoticeFields: View {
                 Toggle("期限を通知", isOn: Binding(get: { notice.reminderEnabled }, set: { fields.notice?.reminderEnabled = $0 }))
                     .accessibilityIdentifier("contract.notice.notify")
                 if notice.reminderEnabled {
-                    Picker("事前通知", selection: Binding(get: { notice.advanceDays }, set: { fields.notice?.advanceDays = $0 })) {
+                    SelectionField(title: "事前通知", value: notice.advanceDays == 0 ? "なし" : "\(notice.advanceDays)日前",
+                                   selection: Binding(get: { notice.advanceDays }, set: { fields.notice?.advanceDays = $0 })) {
                         Text("なし").tag(0)
                         Text("7日前").tag(7)
                         Text("30日前").tag(30)
@@ -245,6 +248,11 @@ private struct ContractNoticeFields: View {
         } header: { Text("更新・解約の予告") } footer: {
             Text("契約書に記載された予告期限を設定してください。日付と午前9時の通知は日本時間が基準です。")
         }
+    }
+
+    private var timingTitle: String {
+        if let notice = fields.notice, case .monthsBeforeExpiry = notice.timing { return "満了日から計算" }
+        return "日付を指定"
     }
 }
 
