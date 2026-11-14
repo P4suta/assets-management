@@ -135,8 +135,12 @@ final class PropertyRecordsUITests: XCTestCase {
         setToggle(property, enabled: true, app: app)
         app.buttons["editor.save"].tap()
         tap("保険の事故受付", app: app)
-        XCTAssertTrue(app.staticTexts["夜間も受付"].waitForExistence(timeout: 5))
-        XCTAssertTrue(app.staticTexts["未来ヶ丘団地"].exists)
+        let note = app.staticTexts["夜間も受付"]
+        reveal(note, app: app, in: app.collectionViews["contact.detail"])
+        XCTAssertTrue(note.waitForExistence(timeout: 5))
+        let relatedProperty = app.staticTexts["未来ヶ丘団地"]
+        reveal(relatedProperty, app: app, in: app.collectionViews["contact.detail"])
+        XCTAssertTrue(relatedProperty.exists)
         try audit(app, name: "Contact")
         app.terminate()
         app.launch()
@@ -183,13 +187,16 @@ final class PropertyRecordsUITests: XCTestCase {
             XCTAssertTrue(app.buttons["editor.save"].isHittable)
         }
         app.buttons["editor.save"].tap()
-        XCTAssertTrue(app.staticTexts["予告期限、2026年9月30日"].waitForExistence(timeout: 5))
+        let deadline = app.staticTexts["予告期限、2026年9月30日"]
+        reveal(deadline, app: app, in: app.collectionViews["contract.detail"])
+        XCTAssertTrue(deadline.waitForExistence(timeout: 5))
         try audit(app, name: "Contract")
         app.terminate()
         app.launch()
         openSampleRoom(app)
         tap("賃貸借契約", app: app)
-        XCTAssertTrue(app.staticTexts["予告期限、2026年9月30日"].waitForExistence(timeout: 5))
+        reveal(deadline, app: app, in: app.collectionViews["contract.detail"])
+        XCTAssertTrue(deadline.waitForExistence(timeout: 5))
         tapIdentifier("contract.edit", app: app)
         reveal(months, app: app)
         XCTAssertTrue(app.staticTexts["満了日の6か月前"].exists)
@@ -594,6 +601,7 @@ final class PropertyRecordsUITests: XCTestCase {
         let settings = app.buttons["設定を開く"].firstMatch
         reveal(settings, app: app)
         XCTAssertTrue(settings.waitForExistence(timeout: 5))
+        XCTAssertEqual(app.buttons.matching(NSPredicate(format: "label == %@", "設定を開く")).count, 1)
         try audit(app, name: "Repair")
         tapIdentifier("work.edit", app: app)
         let notify = app.switches["期限を通知"]
@@ -1000,7 +1008,9 @@ final class PropertyRecordsUITests: XCTestCase {
         replace("配管修繕の現地確認", in: "work.title", app: app)
         for orientation in [UIDeviceOrientation.landscapeLeft, .portrait, .landscapeRight, .portrait] {
             XCUIDevice.shared.orientation = orientation
+            waitForEditorViewport(app)
             reveal(field("work.title", app: app), app: app, in: app.collectionViews["editor.form"])
+            waitForEditorLayout(field("work.title", app: app), app: app)
             XCTAssertTrue(field("work.title", app: app).waitForExistence(timeout: 5))
             XCTAssertEqual(inputText("work.title", app: app), "配管修繕の現地確認")
             XCTAssertTrue(app.buttons["editor.save"].isHittable)
@@ -1188,6 +1198,20 @@ final class PropertyRecordsUITests: XCTestCase {
         XCTAssertGreaterThan(visible.lower.dy, visible.upper.dy)
     }
 
+    func testScrollCoordinatesKeepPansInsideTheContent() throws {
+        for width in [320.0, 420.0, 1032.0] {
+            let bounds = CGRect(x: 100, y: 150, width: width, height: 600)
+            let coordinates = try XCTUnwrap(ScrollCoordinates(bounds: bounds, keyboard: nil))
+            XCTAssertEqual(coordinates.lower.dx, coordinates.upper.dx)
+            for point in [coordinates.lower, coordinates.upper] {
+                let position = CGPoint(x: bounds.minX + bounds.width * point.dx, y: bounds.minY + bounds.height * point.dy)
+                XCTAssertTrue(bounds.contains(position))
+                XCTAssertGreaterThanOrEqual(position.x - bounds.minX, 44)
+                XCTAssertGreaterThanOrEqual(bounds.maxX - position.x, 44)
+            }
+        }
+    }
+
     func testScrollCoordinatesRejectEmptyOrObscuredViewports() {
         XCTAssertNil(ScrollCoordinates(bounds: .zero, keyboard: nil))
         let bounds = CGRect(x: 20, y: 100, width: 300, height: 600)
@@ -1369,10 +1393,15 @@ final class PropertyRecordsUITests: XCTestCase {
             measurement: InformationTextMeasurement(label: "記録の保存",
                 visibleFrame: CGRect(x: 242, y: 400, width: 548, height: 341.5), ratio: 6))
         XCTAssertTrue(valid.accepts)
+        for identifier in ["app-info.privacy", "app-info.support", "app-info.copyright"] {
+            var measuredCaption = valid
+            measuredCaption.identifier = identifier
+            XCTAssertTrue(measuredCaption.accepts)
+        }
         let rejected: [(inout NativeOffscreenInformationScope) -> Void] = [
             { $0.version.majorVersion = 26 }, { $0.version.majorVersion = 28 }, { $0.version.minorVersion = 3 }, { $0.version.patchVersion = 1 },
             { $0.idiom = .phone }, { $0.screen = "Repair" }, { $0.auditType = .dynamicType },
-            { $0.compactDescription = "Unknown" }, { $0.elementType = .button }, { $0.identifier = "app-info.privacy" },
+            { $0.compactDescription = "Unknown" }, { $0.elementType = .button }, { $0.identifier = "app-info.unknown" },
             { $0.label = "Other" }, { $0.matchingElement = false }, { $0.element.size.height -= 1 },
             { $0.element = .zero }, { $0.element.origin.x = .nan }, { $0.element.origin.y = 400 },
             { $0.list = $0.window }, { $0.window = .zero },
@@ -1683,6 +1712,7 @@ final class PropertyRecordsUITests: XCTestCase {
     }
 
     private func launch(seeded: Bool = false, legacyDocuments: Bool = false, failFirstSave: Bool = false, reminderNotice: Bool = false, pastVisit: Bool = false) -> XCUIApplication {
+        XCUIDevice.shared.orientation = .portrait
         let app = XCUIApplication()
         app.launchEnvironment["UITEST_PAST_VISIT"] = pastVisit ? "1" : "0"
         app.launchArguments = ["--ui-testing", "-AppleLanguages", "(ja)", "-AppleLocale", "ja_JP"]
@@ -1726,6 +1756,32 @@ final class PropertyRecordsUITests: XCTestCase {
         let cancel: CGRect
     }
 
+    private func snapshotDescendants(_ snapshot: any XCUIElementSnapshot) -> [any XCUIElementSnapshot] {
+        [snapshot] + snapshot.children.flatMap(snapshotDescendants)
+    }
+
+    private func waitForEditorViewport(_ app: XCUIApplication) {
+        var previous: [CGRect]?
+        let settled = NSPredicate { _, _ in
+            guard let root = try? app.snapshot(), let window = root.children.first(where: { $0.elementType == .window })?.frame else { return false }
+            let elements = self.snapshotDescendants(root)
+            var frames = [window]
+            for identifier in ["editor.form", "editor.save", "editor.cancel"] {
+                let matching = elements.filter { $0.identifier == identifier && !$0.frame.isEmpty }
+                guard matching.count == 1, let frame = matching.first?.frame, window.contains(frame) else { return false }
+                frames.append(frame)
+            }
+            if let keyboard = elements.first(where: { $0.elementType == .keyboard && !$0.frame.isEmpty })?.frame {
+                guard window.contains(keyboard) else { return false }
+                frames.append(keyboard)
+            }
+            defer { previous = frames }
+            return previous == frames
+        }
+        XCTAssertEqual(XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: settled, object: app)], timeout: 10), .completed,
+                       "The editor viewport must settle before locating virtualized inputs.")
+    }
+
     private func waitForEditorLayout(_ input: XCUIElement, app: XCUIApplication) {
         let identifier = input.identifier
         let label = input.label
@@ -1759,10 +1815,7 @@ final class PropertyRecordsUITests: XCTestCase {
 
     private func editorLayout(identifier: String, label: String, elementType: XCUIElement.ElementType, app: XCUIApplication) -> EditorLayout? {
         guard let root = try? app.snapshot() else { return nil }
-        func descendants(_ snapshot: any XCUIElementSnapshot) -> [any XCUIElementSnapshot] {
-            [snapshot] + snapshot.children.flatMap { descendants($0) }
-        }
-        let elements = descendants(root)
+        let elements = snapshotDescendants(root)
         func frame(_ identifier: String) -> CGRect? {
             let matching = elements.filter { $0.identifier == identifier && !$0.frame.isEmpty }
             return matching.count == 1 ? matching.first?.frame : nil
@@ -1875,10 +1928,6 @@ final class PropertyRecordsUITests: XCTestCase {
     }
 
     private func reveal(_ element: XCUIElement, app: XCUIApplication, in scope: XCUIElement? = nil, requireFullVisibility: Bool = false) {
-        if element.exists, element.elementType == .stepper {
-            reveal(element.buttons.element(boundBy: 1), app: app, in: scope, requireFullVisibility: requireFullVisibility)
-            return
-        }
         let window = app.windows.firstMatch
         let container: XCUIElement
         if let scope {
@@ -1902,8 +1951,10 @@ final class PropertyRecordsUITests: XCTestCase {
             return
         }
         func reachable() -> Bool {
-            guard element.exists && element.isHittable else { return false }
-            let bounds = element.frame
+            guard element.exists else { return false }
+            let target = element.elementType == .stepper ? element.buttons.element(boundBy: 1) : element
+            guard target.exists && target.isHittable else { return false }
+            let bounds = target.frame
             guard viewport.contains(CGPoint(x: bounds.midX, y: bounds.midY)) else { return false }
             if requireFullVisibility && !viewport.contains(bounds) { return false }
             let tabs = app.tabBars.firstMatch
@@ -1938,7 +1989,10 @@ final class PropertyRecordsUITests: XCTestCase {
             }
             if reachable() { return }
         }
-        XCTFail("The requested element must be reachable by scrolling: \(element.identifier), \(element.frame), viewport \(viewport).\n" + app.debugDescription)
+        let description = app.debugDescription
+        let identity = element.exists ? element.identifier : "missing"
+        let unresolvedFrame = element.exists ? element.frame : .zero
+        XCTFail("The requested element must be reachable by scrolling: \(identity), \(unresolvedFrame), viewport \(viewport).\n" + description)
     }
 
     private func keyboardFrame(_ app: XCUIApplication) -> CGRect? {
@@ -2222,9 +2276,9 @@ final class PropertyRecordsUITests: XCTestCase {
               UIAccessibility.isDarkerSystemColorsEnabled else { return [:] }
         let list = app.collectionViews["app-info.list"]
         var measurements: [String: InformationTextMeasurement] = [:]
-        for identifier in ["app-info.records", "app-info.support", "app-info.copyright"] {
+        for identifier in ["app-info.records", "app-info.privacy", "app-info.support", "app-info.copyright"] {
             let container = list.descendants(matching: .any)[identifier].firstMatch
-            let caption = identifier == "app-info.support" ? container.staticTexts.firstMatch : container
+            let caption = ["app-info.privacy", "app-info.support"].contains(identifier) ? container.staticTexts.firstMatch : container
             reveal(caption, app: app, in: list, requireFullVisibility: true)
             let frame = caption.frame
             XCTAssertTrue(caption.isHittable && list.frame.contains(frame))
@@ -2340,31 +2394,40 @@ final class PropertyRecordsUITests: XCTestCase {
         let version = ProcessInfo.processInfo.operatingSystemVersion
         guard version.majorVersion == 27, version.minorVersion == 2, version.patchVersion == 0,
               UIDevice.current.userInterfaceIdiom == .pad, UIAccessibility.isDarkerSystemColorsEnabled,
-              screen == "Repair Editor", !app.keyboards.firstMatch.exists else { return nil }
-        let forms = app.collectionViews.matching(identifier: "editor.form")
+              ["Repair Editor", "Repair"].contains(screen), !app.keyboards.firstMatch.exists else { return nil }
+        let editing = screen == "Repair Editor"
+        let forms = app.collectionViews.matching(identifier: editing ? "editor.form" : "work.list")
         guard forms.count == 1 else { return nil }
         let form = forms.firstMatch
-        let captions = form.switches["期限を通知"].staticTexts.matching(NSPredicate(format: "label == %@", "期限を通知"))
-        let anchor = form.descendants(matching: .any).matching(identifier: "work.title").firstMatch
+        let window = app.windows.firstMatch.frame
+        let captions = editing
+            ? form.switches["期限を通知"].staticTexts.matching(NSPredicate(format: "label == %@", "期限を通知")).allElementsBoundByIndex
+            : form.staticTexts.matching(identifier: "work.caption.deadline").allElementsBoundByIndex.filter {
+                $0.frame.minY < window.maxY && $0.frame.maxY > window.maxY
+            }
+        let anchor = form.descendants(matching: .any).matching(identifier: editing ? "work.title" : "work.row.selected").firstMatch
         guard captions.count == 1, anchor.exists && anchor.isHittable else { return nil }
-        let caption = captions.firstMatch
+        let caption = captions[0]
         let originalForm = form.frame
         let originalCaption = caption.frame
         let originalAnchor = anchor.frame
-        guard !originalForm.intersects(originalCaption), app.windows.firstMatch.frame.contains(originalCaption),
-              originalForm.contains(originalAnchor) else { return nil }
-        reveal(caption, app: app, in: form)
-        XCTAssertTrue(caption.isHittable && form.frame.contains(caption.frame))
+        let knownPosition = editing
+            ? !originalForm.intersects(originalCaption) && window.contains(originalCaption)
+            : originalForm.minX == window.minX && originalForm.width < window.width / 2
+                && originalCaption.minY < window.maxY && originalCaption.maxY > window.maxY
+        guard knownPosition, originalForm.contains(originalAnchor) else { return nil }
+        reveal(caption, app: app, in: form, requireFullVisibility: true)
+        XCTAssertTrue(caption.isHittable && form.frame.contains(caption.frame) && window.contains(caption.frame))
         XCTAssertEqual(form.frame, originalForm)
         let visibleCaption = caption.frame
         let visibleLabel = caption.label
         XCTAssertEqual(visibleCaption.size, originalCaption.size)
         let screenshot = caption.screenshot()
         XCTAssertEqual(caption.frame, visibleCaption)
-        let measurement = try UniformTextContrast(image: XCTUnwrap(screenshot.image.cgImage))
+        let measurement = try UniformTextContrast(image: XCTUnwrap(screenshot.image.cgImage), background: editing ? .uniform : .shaded)
         XCTAssertGreaterThanOrEqual(measurement.ratio, 4.5)
         let capture = XCTAttachment(screenshot: screenshot)
-        capture.name = "Reminder caption verified before the Form audit"
+        capture.name = "Reminder caption verified before the viewport audit"
         capture.lifetime = .keepAlways
         add(capture)
         restoreFormPosition(form, anchor: anchor, to: originalAnchor, app: app)
@@ -2405,10 +2468,12 @@ final class PropertyRecordsUITests: XCTestCase {
     private func verifiedOffscreenReminderContrast(_ issue: XCUIAccessibilityAuditIssue, app: XCUIApplication, screen: String,
                                                    measurement: ReminderCaptionMeasurement?, reportIndex: Int) -> String? {
         guard let element = issue.element, let measurement else { return nil }
-        let forms = app.collectionViews.matching(identifier: "editor.form")
+        let forms = app.collectionViews.matching(identifier: measurement.formIdentity)
         guard forms.count == 1 else { return nil }
         let form = forms.firstMatch
-        let captions = form.switches["期限を通知"].staticTexts.matching(NSPredicate(format: "label == %@", "期限を通知"))
+        let captions = measurement.formIdentity == "editor.form"
+            ? form.switches["期限を通知"].staticTexts.matching(NSPredicate(format: "label == %@", "期限を通知"))
+            : form.staticTexts.matching(NSPredicate(format: "identifier == %@ AND label == %@", "work.caption.deadline", measurement.label))
         let anchor = form.descendants(matching: .any).matching(identifier: measurement.anchorIdentity).firstMatch
         let matching = captions.count == 1 && captions.firstMatch.label == element.label
             && captions.firstMatch.frame == element.frame && anchor.exists && anchor.frame == measurement.restoredAnchor
@@ -2418,7 +2483,7 @@ final class PropertyRecordsUITests: XCTestCase {
             formIdentity: form.identifier, matchingCaptionInForm: matching, element: element.frame,
             form: form.frame, window: app.windows.firstMatch.frame, measurement: measurement, reportIndex: reportIndex)
         guard scope.accepts else { return nil }
-        return "The native Form reported an undrawn reminder caption; its visible instance measured \(measurement.ratio):1."
+        return "The native viewport reported an offscreen reminder caption; its visible instance measured \(measurement.ratio):1."
     }
 
     private func nativeSheetTextExclusion(_ issue: XCUIAccessibilityAuditIssue, app: XCUIApplication, screen: String, reportIndex: Int) -> String? {

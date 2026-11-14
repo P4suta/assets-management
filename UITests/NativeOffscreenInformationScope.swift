@@ -26,7 +26,7 @@ struct NativeOffscreenInformationScope {
         guard version.majorVersion == 27, version.minorVersion == 2, version.patchVersion == 0,
               idiom == .pad, screen == "App information", auditType == .contrast,
               compactDescription == "Contrast failed", elementType == .staticText,
-              ["app-info.records", "app-info.support", "app-info.copyright"].contains(identifier), matchingElement,
+              ["app-info.records", "app-info.privacy", "app-info.support", "app-info.copyright"].contains(identifier), matchingElement,
               label == measurement.label, element.size == measurement.visibleFrame.size,
               measurement.ratio.isFinite, measurement.ratio >= 4.5 else { return false }
         let frames = [element, list, window, measurement.visibleFrame]

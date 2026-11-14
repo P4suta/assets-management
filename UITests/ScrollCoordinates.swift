@@ -27,7 +27,7 @@ struct ScrollCoordinates {
     init?(bounds: CGRect, keyboard: CGRect?) {
         guard !bounds.isEmpty, !bounds.isInfinite,
               [bounds.minX, bounds.minY, bounds.maxX, bounds.maxY].allSatisfy(\.isFinite) else { return nil }
-        let horizontal = 0.97
+        let horizontal = 0.85
         let panX = bounds.minX + bounds.width * horizontal
         var bottom = bounds.maxY
         if let keyboard, !keyboard.isEmpty,
@@ -38,6 +38,6 @@ struct ScrollCoordinates {
         let start = min(0.8, (bottom - bounds.minY - 20) / bounds.height)
         guard start > 0.22 else { return nil }
         lower = CGVector(dx: horizontal, dy: start)
-        upper = CGVector(dx: 0.97, dy: 0.22)
+        upper = CGVector(dx: horizontal, dy: 0.22)
     }
 }

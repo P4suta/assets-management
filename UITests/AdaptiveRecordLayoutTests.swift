@@ -275,6 +275,39 @@ import XCTest
         XCTAssertTrue(reestimated.accepts)
     }
 
+    func testOffscreenSidebarDeadlineRequiresVisibleContrastAndRestoredSelection() {
+        let sidebar = CGRect(x: 0, y: 240, width: 320, height: 1136)
+        let caption = CGRect(x: 36, y: 1278.5, width: 243.5, height: 105)
+        let anchor = CGRect(x: 16, y: 420, width: 288, height: 300)
+        let measurement = ReminderCaptionMeasurement(label: "期限 2026年11月20日", formIdentity: "work.list", form: sidebar,
+            offscreenCaption: caption, visibleCaption: CGRect(x: 36, y: 950, width: 243.5, height: 105),
+            anchorIdentity: "work.row.selected", originalAnchor: anchor, restoredAnchor: anchor, ratio: 12)
+        let verified = NativeOffscreenReminderScope(
+            version: OperatingSystemVersion(majorVersion: 27, minorVersion: 2, patchVersion: 0),
+            idiom: .pad, screen: "Repair", auditType: .contrast, compactDescription: "Contrast failed", elementType: .staticText,
+            label: measurement.label, formIdentity: "work.list", matchingCaptionInForm: true,
+            element: caption, form: sidebar, window: CGRect(x: 0, y: 0, width: 1032, height: 1376), measurement: measurement)
+        XCTAssertTrue(verified.accepts)
+        let rejected: [(inout NativeOffscreenReminderScope) -> Void] = [
+            { $0.screen = "Contract" }, { $0.formIdentity = "contacts.list" },
+            { $0.label = "対応中" }, { $0.matchingCaptionInForm = false },
+            { $0.element.origin.y = 1000 }, { $0.element.origin.y = 1400 },
+            { $0.measurement?.offscreenCaption.origin.y -= 1 },
+            { $0.measurement?.visibleCaption.origin.y = 1278.5 },
+            { $0.measurement?.visibleCaption.size.height -= 1 },
+            { $0.measurement?.anchorIdentity = "work.row" }, { $0.measurement?.restoredAnchor.origin.y += 1 },
+            { $0.measurement?.ratio = 4.49 }, { $0.measurement?.ratio = .nan },
+            { $0.measurement = nil }, { $0.form.size.width = 600 },
+            { $0.auditType = .dynamicType }, { $0.elementType = .button },
+            { $0.version.patchVersion = 1 }, { $0.idiom = .phone }, { $0.reportIndex = 2 }
+        ]
+        for reject in rejected {
+            var scope = verified
+            reject(&scope)
+            XCTAssertFalse(scope.accepts)
+        }
+    }
+
     func testListTitlesRemainAboveSearchAndRecordsAfterRotation() {
         defer { XCUIDevice.shared.orientation = .portrait }
         let app = launch()

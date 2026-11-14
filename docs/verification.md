@@ -10,6 +10,8 @@ Selected-row tests audit foreground contrast within the visible selection in bot
 Appearance-sensitive journeys use the Simulator profile configured before the run.
 The journeys check the rendered background before measuring selected rows or capturing store images.
 Hosted layout tests render the contact, work, building, room, and contract detail screens at widths of 320, 420, 600, and 1,024 points.
+Tests that create UIKit windows share one [serialized suite](https://developer.apple.com/documentation/testing/parallelization).
+The suite keeps scene presentation and text-size changes separate between tests.
 The 80 cases cover Light and Dark appearance with standard and AX5 text.
 The tests measure rendered separator positions and require aligned metadata rows.
 Measurement rejects missing or ambiguous lines.
@@ -28,9 +30,11 @@ Unsupported or ambiguous images fail verification.
 The audit filter requires the affected OS, issue type, label, element type, selection, matching frame, and a fresh measured ratio of at least 4.5:1.
 The filter also verifies work titles and the combined progress headers from current screenshots.
 Contact captions and section headers receive the same checks.
-The information sheet measures its storage text, support label, and copyright text while each caption is fully visible.
+The information sheet measures its storage text, both website link labels, and copyright text while each caption is fully visible.
 Its filter accepts an offscreen contrast report only when the native label and dimensions still match the measured caption.
 Unknown reports remain failures.
+The reminder tests reveal offscreen captions before measuring contrast.
+The audit starts after restoring the original scroll position.
 On iPadOS 26.0 and 27.2, native repair, renewal, and building sheets can report unlocated text behind the sheet.
 The history, room, and contract editors reproduce the report on iPadOS 27.2.
 The schedule editor reproduces it on iPadOS 26.0 with labeled native date and notification controls.
