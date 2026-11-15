@@ -53,6 +53,7 @@
 		91DF8ECE1C3F0F3D3C488FC6 /* PropertyRecordsUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B462DECE5F8A2D2135F5CF8D /* PropertyRecordsUITests.swift */; };
 		922FE66A5B9C26CEFFED62FD /* InformationRecordCaption.png in Resources */ = {isa = PBXBuildFile; fileRef = C1A9394FDF85ABE912A9C2CF /* InformationRecordCaption.png */; };
 		94D68019F1CF81D8CA0B324C /* ScrollCoordinates.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4ED99829799D65BA129FF3DB /* ScrollCoordinates.swift */; };
+		9AC62D3DBE7E34097D8E6E8B /* PropertySectionHeader.png in Resources */ = {isa = PBXBuildFile; fileRef = 2FC5A6529CC672629E5E303E /* PropertySectionHeader.png */; };
 		9AF80082F4C7FB5347CA28DA /* PropertyViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = D31184F9098AC80725C966CC /* PropertyViews.swift */; };
 		9B3C7C2D3C88B90042C215BF /* NativeOffscreenInformationScope.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33F6573675CE64B2EF0B0B18 /* NativeOffscreenInformationScope.swift */; };
 		A3107169EC6F1F73A1A1E42F /* EditorSessionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 961C165E6CDFD0D34E9DD305 /* EditorSessionTests.swift */; };
@@ -108,6 +109,7 @@
 		1B40A7A4FEFA506696FB28ED /* NativeListTypeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeListTypeTests.swift; sourceTree = "<group>"; };
 		1F3DA74426D85FD9F1D173C6 /* EditorReconstructionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorReconstructionTests.swift; sourceTree = "<group>"; };
 		1F8D35D86519064F8AEFE25A /* PropertyCaptionRenderingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PropertyCaptionRenderingTests.swift; sourceTree = "<group>"; };
+		2FC5A6529CC672629E5E303E /* PropertySectionHeader.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = PropertySectionHeader.png; sourceTree = "<group>"; };
 		305FA81F76247D7EED371E3A /* NativeCalendarTextScope.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeCalendarTextScope.swift; sourceTree = "<group>"; };
 		33F6573675CE64B2EF0B0B18 /* NativeOffscreenInformationScope.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeOffscreenInformationScope.swift; sourceTree = "<group>"; };
 		3C07F3B8B0F303E6E46B3DE2 /* NativeSheetTextScope.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeSheetTextScope.swift; sourceTree = "<group>"; };
@@ -253,6 +255,7 @@
 				C1A9394FDF85ABE912A9C2CF /* InformationRecordCaption.png */,
 				805E9D0AED55E3E7076AA8B0 /* ProgressSectionHeader.png */,
 				93BE5EF0AA96387E05965CCE /* ProgressStatus.png */,
+				2FC5A6529CC672629E5E303E /* PropertySectionHeader.png */,
 			);
 			path = Fixtures;
 			sourceTree = "<group>";
@@ -495,6 +498,7 @@
 				922FE66A5B9C26CEFFED62FD /* InformationRecordCaption.png in Resources */,
 				2CAD832E262CBF9DB5BC76E5 /* ProgressSectionHeader.png in Resources */,
 				C30AC67D9D04771CF45D675A /* ProgressStatus.png in Resources */,
+				9AC62D3DBE7E34097D8E6E8B /* PropertySectionHeader.png in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

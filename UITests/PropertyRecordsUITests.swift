@@ -1293,10 +1293,12 @@ final class PropertyRecordsUITests: XCTestCase {
     }
 
     func testTextContrastKeepsNativeBackgroundShadesOutOfTheForeground() throws {
-        let url = try XCTUnwrap(Bundle(for: Self.self).url(forResource: "ProgressStatus", withExtension: "png"))
-        let image = try XCTUnwrap(UIImage(contentsOfFile: url.path)?.cgImage)
-        let measurement = try UniformTextContrast(image: image)
-        XCTAssertGreaterThanOrEqual(measurement.ratio, 4.5)
+        for (name, background) in [("ProgressStatus", TextContrastBackground.uniform), ("PropertySectionHeader", .shaded)] {
+            let url = try XCTUnwrap(Bundle(for: Self.self).url(forResource: name, withExtension: "png"))
+            let image = try XCTUnwrap(UIImage(contentsOfFile: url.path)?.cgImage)
+            let measurement = try UniformTextContrast(image: image, background: background)
+            XCTAssertGreaterThanOrEqual(measurement.ratio, 4.5, name)
+        }
     }
 
     func testTextContrastMeasuresNativeInsetRowBackgrounds() throws {
@@ -2318,9 +2320,9 @@ final class PropertyRecordsUITests: XCTestCase {
             if #available(iOS 26.1, *), ProcessInfo.processInfo.isiOSAppOnVision {
                 if downward { container.swipeDown() } else { container.swipeUp() }
             } else if downward {
-                upper.press(forDuration: 0.05, thenDragTo: upper.withOffset(CGVector(dx: 0, dy: distance)))
+                dragWithoutMomentum(from: upper, to: upper.withOffset(CGVector(dx: 0, dy: distance)))
             } else {
-                lower.press(forDuration: 0.05, thenDragTo: lower.withOffset(CGVector(dx: 0, dy: -distance)))
+                dragWithoutMomentum(from: lower, to: lower.withOffset(CGVector(dx: 0, dy: -distance)))
             }
             if reachable() { return }
         }
@@ -2328,6 +2330,10 @@ final class PropertyRecordsUITests: XCTestCase {
         let identity = element.exists ? element.identifier : "missing"
         let unresolvedFrame = element.exists ? element.frame : .zero
         XCTFail("The requested element must be reachable by scrolling: \(identity), \(unresolvedFrame), viewport \(viewport).\n" + description)
+    }
+
+    private func dragWithoutMomentum(from start: XCUICoordinate, to end: XCUICoordinate) {
+        start.press(forDuration: 0.05, thenDragTo: end, withVelocity: .slow, thenHoldForDuration: 0.15)
     }
 
     private func keyboardFrame(_ app: XCUIApplication) -> CGRect? {
@@ -2511,17 +2517,26 @@ final class PropertyRecordsUITests: XCTestCase {
         guard header.exists, header.isHittable, header.frame == element.frame else { return nil }
         let frame = header.frame
         let image = header.screenshot()
-        guard header.frame == frame, let bitmap = image.image.cgImage,
-              let contrast = try? UniformTextContrast(image: bitmap, background: listIdentity == "work.list" ? .shaded : .uniform) else { return nil }
+        guard header.frame == frame, let bitmap = image.image.cgImage else { return nil }
+        let contrast: UniformTextContrast
+        do { contrast = try UniformTextContrast(image: bitmap, background: .shaded) }
+        catch {
+            let capture = XCTAttachment(screenshot: image)
+            capture.name = "Unsupported sidebar header contrast: \(error)"
+            capture.lifetime = .keepAlways
+            add(capture)
+            return nil
+        }
         let scope = SidebarHeaderContrastScope(version: ProcessInfo.processInfo.operatingSystemVersion,
             idiom: UIDevice.current.userInterfaceIdiom, auditType: issue.auditType,
             elementType: element.elementType, label: element.label, listIdentity: listIdentity, matchingHeader: header.frame == element.frame,
             element: frame, sidebar: sidebar.frame, window: app.windows.firstMatch.frame, ratio: contrast.ratio)
-        guard scope.accepts else { return nil }
+        print("Sidebar header measurement: \(scope)")
         let capture = XCTAttachment(screenshot: image)
-        capture.name = "Verified sidebar header contrast"
+        capture.name = scope.accepts ? "Verified sidebar header contrast" : "Rejected sidebar header contrast"
         capture.lifetime = .keepAlways
         add(capture)
+        guard scope.accepts else { return nil }
         return "Sidebar header contrast verified from its rendered image: \(contrast.ratio):1."
     }
 

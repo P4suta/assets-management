@@ -42,6 +42,7 @@ Label measurements derive the background range from the image's four corners, in
 They reject corner differences greater than 16 on the 8-bit scale and use the lowest contrast across the measured background.
 An actual dark progress label verifies that small background differences can't become the selected text color.
 Section headers use the image border to measure an opaque shaded background.
+An actual property sidebar header checks background variation beyond the corner samples.
 The measurement rejects border channel differences greater than 16 on the 8-bit scale and requires background colors to cover most pixels.
 Gradient fixtures reject weak text, missing foreground, and unsupported background variation.
 Information text and related property rows sample the image border across native rounded corners and separators.
@@ -62,6 +63,7 @@ The information sheet measures its storage text, both website link labels, and c
 Its filter accepts an offscreen contrast report only when the native label and dimensions still match the measured caption.
 Unknown reports remain failures.
 The reminder tests reveal offscreen captions before measuring contrast.
+Scroll gestures that reveal elements finish with a hold to stop momentum before measuring positions in a short landscape viewport.
 The audit starts after restoring the original scroll position.
 On iPadOS 26.0 and 27.2, native repair, renewal, and building sheets can report unlocated text behind the sheet.
 The history, room, and contract editors reproduce the report on iPadOS 27.2.
