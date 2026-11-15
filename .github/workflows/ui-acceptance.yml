@@ -9,7 +9,9 @@ permissions:
   contents: read
 
 concurrency:
-  group: native-acceptance-${{ github.event.pull_request.number || github.ref }}
+  group: >-
+    native-acceptance-${{ github.event_name == 'pull_request' && github.event.label.name != 'release-acceptance' &&
+    format('ignored-{0}', github.run_id) || (github.event.pull_request.number || github.ref) }}
   cancel-in-progress: true
 
 jobs:
