@@ -32,7 +32,7 @@ struct RecordPhotosSection: View {
                     Label("写真を追加", systemImage: "plus")
                         .fixedSize(horizontal: false, vertical: true)
                         .foregroundStyle(.tint)
-                        .frame(minHeight: 44, alignment: .leading)
+                        .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)

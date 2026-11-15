@@ -146,6 +146,8 @@ extension NativePresentationTests {
         #expect(button.bounds.width >= 44 && button.bounds.height >= 44, "Photo menu target: \(button.bounds)")
         let room = roomCell.convert(roomCell.bounds, to: window)
         let photo = photoCell.convert(photoCell.bounds, to: window)
+        let target = button.convert(button.bounds, to: window)
+        #expect(target.contains(CGPoint(x: photo.midX, y: photo.midY)), "Photo menu target must contain the accessible row center: \(target), \(photo)")
         #expect(window.bounds.contains(room) && window.bounds.contains(photo))
         let header = CGRect(x: photo.minX, y: room.maxY, width: photo.width, height: photo.minY - room.maxY)
         #expect(!header.isEmpty)
