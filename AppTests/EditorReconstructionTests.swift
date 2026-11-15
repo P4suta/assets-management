@@ -51,6 +51,33 @@ private enum TextEditorCase: CaseIterable, Sendable {
 
 extension NativePresentationTests {
     @Test(arguments: TextEditorCase.allCases)
+    fileprivate func destinationSheetRetainsSharedRecordContext(scenario: TextEditorCase) async throws {
+        let directory = URL.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let repository = FileRecordsRepository(directory: directory)
+        let records = try SampleRecords.make()
+        try await repository.save(records)
+        let store = RecordsStore(repository: repository)
+        await store.load()
+        let notices = AppNotices()
+        let presentation = HostedEditorPresentation()
+        presentation.destination = scenario.destination(in: records)
+        let scene = try #require(await waitForWindowScene())
+        let window = UIWindow(windowScene: scene)
+        let controller = UIHostingController(rootView: Text("Editor host")
+            .editorPresentation(Binding(get: { presentation.destination }, set: { presentation.destination = $0 }))
+            .environment(store).environment(notices).environment(\.locale, Locale(identifier: "ja_JP")))
+        window.rootViewController = controller
+        window.isHidden = false
+        defer { window.isHidden = true; window.rootViewController = nil }
+        let input = try #require(await waitForPresentedInput(in: controller))
+        #expect(text(in: input) == scenario.initialText(in: records))
+        presentation.destination = nil
+        #expect(await waitForEditorDismissal(in: controller))
+        #expect(store.records == records)
+    }
+
+    @Test(arguments: TextEditorCase.allCases)
     fileprivate func destinationRetainsUnsavedTextWhenEditorViewIsReplaced(scenario: TextEditorCase) async throws {
         let directory = URL.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         defer { try? FileManager.default.removeItem(at: directory) }
@@ -148,6 +175,15 @@ extension NativePresentationTests {
             try? await Task.sleep(for: .milliseconds(10))
         } while ContinuousClock.now < deadline
         return nil
+    }
+
+    private func waitForEditorDismissal(in controller: UIViewController) async -> Bool {
+        let deadline = ContinuousClock.now.advanced(by: .seconds(5))
+        repeat {
+            if controller.presentedViewController == nil { return true }
+            try? await Task.sleep(for: .milliseconds(10))
+        } while ContinuousClock.now < deadline
+        return false
     }
 
     private func waitForOpenedReminder(in notices: AppNotices) async -> OpenedReminder? {

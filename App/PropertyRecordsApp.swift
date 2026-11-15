@@ -80,6 +80,8 @@ private struct RootView: View {
                 .sheet(item: Binding(get: { notices.openedReminder }, set: { notices.openedReminder = $0 }),
                        onDismiss: { notices.reminderClosed() }) { reminder in
                     ReminderDestinationView(target: reminder.target)
+                        .environment(store)
+                        .environment(notices)
                 }
             }
         }
