@@ -1920,9 +1920,9 @@ final class PropertyRecordsUITests: XCTestCase {
         var candidates: [String: [CGRect]] = [:]
         let settled = NSPredicate { _, _ in
             guard let root = try? app.snapshot() else { return false }
-            snapshotWindow = root.children.first(where: { $0.elementType == .window })?.frame
-            guard let window = snapshotWindow else { return false }
             let elements = self.snapshotDescendants(root)
+            snapshotWindow = elements.first(where: { $0.elementType == .window })?.frame
+            guard let window = snapshotWindow else { return false }
             var frames = [window]
             for identifier in ["editor.form", "editor.save", "editor.cancel"] {
                 let matching = elements.filter { $0.identifier == identifier && !$0.frame.isEmpty }
@@ -1993,7 +1993,7 @@ final class PropertyRecordsUITests: XCTestCase {
         let inputs = elements.filter {
             !$0.frame.isEmpty && (identifier.isEmpty ? $0.elementType == elementType && $0.label == label : $0.identifier == identifier)
         }
-        guard let window = root.children.first(where: { $0.elementType == .window })?.frame,
+        guard let window = elements.first(where: { $0.elementType == .window })?.frame,
               inputs.count == 1, let input = inputs.first?.frame,
               let save = frame("editor.save"), let cancel = frame("editor.cancel") else { return nil }
         let keyboard = keyboardFrame(app)
@@ -2872,7 +2872,7 @@ final class PropertyRecordsUITests: XCTestCase {
         let calendars = elements.filter { $0.elementType == .datePicker && !$0.frame.isEmpty }
         let controls = elements.filter { $0.identifier == "date.done" && $0.elementType == .button && !$0.frame.isEmpty }
         guard calendars.count == 1, controls.count == 1, let calendar = calendars.first,
-              let done = controls.first, let window = root.children.first(where: { $0.elementType == .window }) else { return nil }
+              let done = controls.first, let window = elements.first(where: { $0.elementType == .window }) else { return nil }
         let days = snapshotDescendants(calendar).filter {
             $0.elementType == .button && $0.label.range(of: #"^[0-9]+月[0-9]+日 .+"#, options: .regularExpression) != nil
         }
