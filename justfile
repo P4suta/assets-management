@@ -83,6 +83,7 @@ archive-resources archive_path:
     xcrun assetutil --info '{{ archive_path }}/Products/Applications/PropertyRecords.app/Assets.car' | jaq --exit-status --slurp 'length == 1 and (.[0] | type == "array" and length > 0 and all(.[]; .Name? != "FixturePhoto"))'
 
 store-assets:
+    jaq --exit-status '.keywords as $text | if ($text | length) <= 100 and ($text | utf8bytelength) <= 100 and ($text | split(",") | all(.[]; length > 2)) then true else error("Keywords require at most 100 characters and 100 UTF-8 bytes, with each term longer than two characters.") end' AppStore/Metadata/version/*/*.json
     asc metadata validate --dir AppStore/Metadata
     asc screenshots validate --path AppStore/Screenshots/ja/APP_IPHONE_69 --device-type APP_IPHONE_69
     asc screenshots validate --path AppStore/Screenshots/ja/APP_IPHONE_61 --device-type APP_IPHONE_61
