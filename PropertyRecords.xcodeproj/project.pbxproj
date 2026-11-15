@@ -12,8 +12,10 @@
 		06C77636F49C30A6D4A45CC4 /* CompatibleRecordJourneys.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F6188AC1BB6E9664F5BDCE6 /* CompatibleRecordJourneys.swift */; };
 		077195BCDB72A21EFB8C4E50 /* ExternalNavigation.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE9F8987BE9B450FF22C1CEA /* ExternalNavigation.swift */; };
 		080E827FB79166039C43047B /* PropertyEditors.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AB5151CBEA8C56316E02676 /* PropertyEditors.swift */; };
+		153B6143DD204414AB2553B5 /* RecordCaption.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4941BBE6A17AD009D8FCD72C /* RecordCaption.swift */; };
 		15F3DF1FD5163B746C880A81 /* ContactViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 80E28D765E8C56142D875402 /* ContactViews.swift */; };
 		1688F8464EF3269C8D65F04A /* NativeCalendarTextScope.swift in Sources */ = {isa = PBXBuildFile; fileRef = 305FA81F76247D7EED371E3A /* NativeCalendarTextScope.swift */; };
+		17CAA11A59F8C0AAE5D174C4 /* SelectedDeadlineLabel.png in Resources */ = {isa = PBXBuildFile; fileRef = 5E64B8C2D896139388A8C12D /* SelectedDeadlineLabel.png */; };
 		1826CC39F1BDBB2D71B4CAE1 /* MetadataRowLayoutTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A68FD6E9CB81C12F0F80036 /* MetadataRowLayoutTests.swift */; };
 		1938EA77FF138327090B75DD /* DocumentPreviewScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = EC15DC5AA0EFDE6AA5E5B4DC /* DocumentPreviewScreen.swift */; };
 		19AE1E04AE31489C2BDC5ADB /* WorkViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6D58247B1FA2BB73A89D54F6 /* WorkViews.swift */; };
@@ -22,9 +24,12 @@
 		2CAD832E262CBF9DB5BC76E5 /* ProgressSectionHeader.png in Resources */ = {isa = PBXBuildFile; fileRef = 805E9D0AED55E3E7076AA8B0 /* ProgressSectionHeader.png */; };
 		3612FD545D8CA5E398FB9203 /* CameraCapture.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1DA53588064230DAF5ABB2F /* CameraCapture.swift */; };
 		370121383558F056F86CC12A /* NativeSheetTextScope.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C07F3B8B0F303E6E46B3DE2 /* NativeSheetTextScope.swift */; };
+		38779DD38C04C92DEE2690C3 /* RecordCaptionRole.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C8D9FF32808A78ADD60C0BB /* RecordCaptionRole.swift */; };
 		3904C16083A98A0B650760AB /* EditorPresentation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 624DB6EBF103B62F05070224 /* EditorPresentation.swift */; };
 		3B1C555B896C10CD58C3C833 /* CalendarDateRenderingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0800CA87C55918A04581555C /* CalendarDateRenderingTests.swift */; };
 		3CBA96EFEFC8E118FDFEA708 /* AppIcon.icon in Resources */ = {isa = PBXBuildFile; fileRef = A0DB349A190EF0877A6F506F /* AppIcon.icon */; };
+		3E997F2F94360E804B77C4F5 /* RecordCaptionRole.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C8D9FF32808A78ADD60C0BB /* RecordCaptionRole.swift */; };
+		4159CBA337B98EF21076F328 /* SelectedStatusLabel.png in Resources */ = {isa = PBXBuildFile; fileRef = D3099075EF0F6D0A4D688A1C /* SelectedStatusLabel.png */; };
 		4930F07B621FDC0A6B8FF6F7 /* RenderedTextValidationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9832BA96563687A0CAB229B5 /* RenderedTextValidationTests.swift */; };
 		4B5292EEE7C0582AEE232333 /* PropertyCaptionRecognition.swift in Sources */ = {isa = PBXBuildFile; fileRef = 63E010F32401E317C6EB61D4 /* PropertyCaptionRecognition.swift */; };
 		4BD6678CF23744B35928B34B /* Presentation.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA6B45BC36F360755C53BFB1 /* Presentation.swift */; };
@@ -115,11 +120,14 @@
 		3C07F3B8B0F303E6E46B3DE2 /* NativeSheetTextScope.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeSheetTextScope.swift; sourceTree = "<group>"; };
 		4052DA43BB90B4D80BBA10B6 /* NativePhotoLibrary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativePhotoLibrary.swift; sourceTree = "<group>"; };
 		442DDA855467511683DD845A /* AdaptiveRecordLayoutTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdaptiveRecordLayoutTests.swift; sourceTree = "<group>"; };
+		4941BBE6A17AD009D8FCD72C /* RecordCaption.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordCaption.swift; sourceTree = "<group>"; };
 		4E6016DA22015EFF40E5A6CF /* CalendarDateField.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarDateField.swift; sourceTree = "<group>"; };
 		4EC90FD1E07B1C0F6907C896 /* ReminderService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReminderService.swift; sourceTree = "<group>"; };
 		4ED99829799D65BA129FF3DB /* ScrollCoordinates.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScrollCoordinates.swift; sourceTree = "<group>"; };
 		512CC4C9DC0FD93EAA6CECC5 /* RecordPhotosSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordPhotosSection.swift; sourceTree = "<group>"; };
 		5C4C31B2638BDF8110B1033B /* RecordPhotoPresentation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordPhotoPresentation.swift; sourceTree = "<group>"; };
+		5C8D9FF32808A78ADD60C0BB /* RecordCaptionRole.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordCaptionRole.swift; sourceTree = "<group>"; };
+		5E64B8C2D896139388A8C12D /* SelectedDeadlineLabel.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = SelectedDeadlineLabel.png; sourceTree = "<group>"; };
 		5FE544CE2B5686A8C19000DA /* ReleaseConfigurationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReleaseConfigurationTests.swift; sourceTree = "<group>"; };
 		624DB6EBF103B62F05070224 /* EditorPresentation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorPresentation.swift; sourceTree = "<group>"; };
 		63E010F32401E317C6EB61D4 /* PropertyCaptionRecognition.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PropertyCaptionRecognition.swift; sourceTree = "<group>"; };
@@ -157,6 +165,7 @@
 		C23230E758B509493A97A543 /* ContactRelatedCaption.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = ContactRelatedCaption.png; sourceTree = "<group>"; };
 		CA0A48CF92416B98AEA619FC /* Navigation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Navigation.swift; sourceTree = "<group>"; };
 		CB04BEC00CAF21101156D518 /* SamplePDF.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SamplePDF.swift; sourceTree = "<group>"; };
+		D3099075EF0F6D0A4D688A1C /* SelectedStatusLabel.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = SelectedStatusLabel.png; sourceTree = "<group>"; };
 		D31184F9098AC80725C966CC /* PropertyViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PropertyViews.swift; sourceTree = "<group>"; };
 		D6FF32AEBFA2B176D67B2523 /* EditorSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorSession.swift; sourceTree = "<group>"; };
 		DB53F1935933ABBCE2974BF1 /* PhotoProcessorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoProcessorTests.swift; sourceTree = "<group>"; };
@@ -256,6 +265,8 @@
 				805E9D0AED55E3E7076AA8B0 /* ProgressSectionHeader.png */,
 				93BE5EF0AA96387E05965CCE /* ProgressStatus.png */,
 				2FC5A6529CC672629E5E303E /* PropertySectionHeader.png */,
+				5E64B8C2D896139388A8C12D /* SelectedDeadlineLabel.png */,
+				D3099075EF0F6D0A4D688A1C /* SelectedStatusLabel.png */,
 			);
 			path = Fixtures;
 			sourceTree = "<group>";
@@ -297,6 +308,8 @@
 				0AB5151CBEA8C56316E02676 /* PropertyEditors.swift */,
 				04919A5B49AB50183EB2F94C /* PropertyRecordsApp.swift */,
 				D31184F9098AC80725C966CC /* PropertyViews.swift */,
+				4941BBE6A17AD009D8FCD72C /* RecordCaption.swift */,
+				5C8D9FF32808A78ADD60C0BB /* RecordCaptionRole.swift */,
 				5C4C31B2638BDF8110B1033B /* RecordPhotoPresentation.swift */,
 				512CC4C9DC0FD93EAA6CECC5 /* RecordPhotosSection.swift */,
 				4EC90FD1E07B1C0F6907C896 /* ReminderService.swift */,
@@ -499,6 +512,8 @@
 				2CAD832E262CBF9DB5BC76E5 /* ProgressSectionHeader.png in Resources */,
 				C30AC67D9D04771CF45D675A /* ProgressStatus.png in Resources */,
 				9AC62D3DBE7E34097D8E6E8B /* PropertySectionHeader.png in Resources */,
+				17CAA11A59F8C0AAE5D174C4 /* SelectedDeadlineLabel.png in Resources */,
+				4159CBA337B98EF21076F328 /* SelectedStatusLabel.png in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -537,6 +552,8 @@
 				080E827FB79166039C43047B /* PropertyEditors.swift in Sources */,
 				AF877EDD80A922D59F7C1E16 /* PropertyRecordsApp.swift in Sources */,
 				9AF80082F4C7FB5347CA28DA /* PropertyViews.swift in Sources */,
+				153B6143DD204414AB2553B5 /* RecordCaption.swift in Sources */,
+				3E997F2F94360E804B77C4F5 /* RecordCaptionRole.swift in Sources */,
 				7755FFD95593675E070558FB /* RecordPhotoPresentation.swift in Sources */,
 				56BB5355C045DF4F1BEC8314 /* RecordPhotosSection.swift in Sources */,
 				77319AD5EF5729A83E90799A /* ReminderService.swift in Sources */,
@@ -594,6 +611,7 @@
 				8115B56F2400929B315D4489 /* NativePhotoLibrary.swift in Sources */,
 				370121383558F056F86CC12A /* NativeSheetTextScope.swift in Sources */,
 				91DF8ECE1C3F0F3D3C488FC6 /* PropertyRecordsUITests.swift in Sources */,
+				38779DD38C04C92DEE2690C3 /* RecordCaptionRole.swift in Sources */,
 				94D68019F1CF81D8CA0B324C /* ScrollCoordinates.swift in Sources */,
 				5EB662B99E8F861F9C63873C /* UniformTextContrast.swift in Sources */,
 			);

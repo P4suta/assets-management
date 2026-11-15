@@ -1,4 +1,5 @@
-import UIKit
+import CoreGraphics
+import Foundation
 
 enum TextContrastError: Error {
     case unsupportedImage, transparentPixels, insufficientColors, insufficientForeground, ambiguousColors, changedFrame
@@ -8,12 +9,25 @@ enum TextContrastBackground {
     case uniform, shaded, sampledBorder
 }
 
+enum TextContrastForeground {
+    case sampledPaints, recordCaption(RecordCaptionRole, text: String)
+
+    var usesSinglePaint: Bool {
+        guard case .recordCaption(_, let text) = self else { return false }
+        return text.unicodeScalars.allSatisfy {
+            ($0.isASCII || !$0.properties.isEmoji) && $0.value != 0xFE0F && $0.value != 0x20E3
+        }
+    }
+}
+
 struct UniformTextContrast {
     let ratio: Double
+    let dominantRatio: Double
     let foregroundPixels: Int
     let foregroundHeight: Int
 
-    init(image: CGImage, background model: TextContrastBackground = .uniform) throws {
+    init(image: CGImage, background model: TextContrastBackground = .uniform,
+         foreground foregroundModel: TextContrastForeground = .sampledPaints) throws {
         let (count, overflow) = image.width.multipliedReportingOverflow(by: image.height)
         guard !overflow, count > 0, count <= 1_000_000,
               let space = CGColorSpace(name: CGColorSpace.sRGB) else { throw TextContrastError.unsupportedImage }
@@ -60,16 +74,15 @@ struct UniformTextContrast {
         guard let tone = foreground.first else { throw TextContrastError.insufficientColors }
         guard tone.value >= 8 else { throw TextContrastError.insufficientForeground }
         guard foreground.dropFirst().first?.value != tone.value else { throw TextContrastError.ambiguousColors }
-        let ink = try Self.inkPaints(pixels, width: image.width, height: image.height, background: backgroundKeys, ink: tone.key)
+        let ink: Set<UInt32> = try foregroundModel.usesSinglePaint ? [tone.key]
+            : Self.inkPaints(pixels, width: image.width, height: image.height, background: backgroundKeys, ink: tone.key)
         let ratios = ink.flatMap { foreground in
-            let luminance = Self.luminance(foreground)
-            return background.map { sample in
-                let value = Self.luminance(sample.key)
-                return (max(value, luminance) + 0.05) / (min(value, luminance) + 0.05)
-            }
+            background.map { Self.contrast(foreground, $0.key) }
         }
-        guard let minimum = ratios.min() else { throw TextContrastError.insufficientColors }
+        guard let minimum = ratios.min(), let dominant = background.map({ Self.contrast(tone.key, $0.key) }).min()
+        else { throw TextContrastError.insufficientColors }
         ratio = minimum
+        dominantRatio = dominant
         foregroundPixels = tone.value
         var firstRow = image.height
         var lastRow = -1
@@ -100,42 +113,59 @@ struct UniformTextContrast {
                         Self.similar(colors[row * width + column], color, tolerance: 1)
                     }
                 }
-                guard solid else { continue }
-                paints.insert(color)
+                let narrow = [(2, 3), (3, 2)].contains { columns, rows in
+                    guard x + columns <= width, y + rows <= height else { return false }
+                    return (y..<(y + rows)).allSatisfy { row in
+                        (x..<(x + columns)).allSatisfy { column in colors[row * width + column] == color }
+                    }
+                }
+                if solid || narrow { paints.insert(color) }
             }
         }
-        return paints.union(componentPaints(colors, width: width, height: height, background: background, ink: ink))
+        for _ in 0..<16 {
+            let additional = componentPaints(colors, width: width, height: height, background: background, known: paints).subtracting(paints)
+            if additional.isEmpty { return paints }
+            paints.formUnion(additional)
+        }
+        throw TextContrastError.ambiguousColors
     }
 
     private static func componentPaints(_ colors: [UInt32], width: Int, height: Int,
-                                        background: Set<UInt32>, ink: UInt32) -> Set<UInt32> {
+                                        background: Set<UInt32>, known: Set<UInt32>) -> Set<UInt32> {
+        let interior = colors.map { known.contains($0) }
+        let unexplained = colors.indices.map { index in
+            guard !background.contains(colors[index]), !interior[index] else { return false }
+            let x = index % width
+            let y = index / width
+            return (max(0, y - 2)...min(height - 1, y + 2)).allSatisfy { row in
+                (max(0, x - 2)...min(width - 1, x + 2)).allSatisfy { column in !interior[row * width + column] }
+            }
+        }
         var visited = [Bool](repeating: false, count: colors.count)
         var paints: Set<UInt32> = []
-        for seed in colors.indices where !visited[seed] && !background.contains(colors[seed]) {
+        for seed in colors.indices where !visited[seed] && unexplained[seed] {
             var component = [seed]
             visited[seed] = true
             var counts: [UInt32: Int] = [:]
-            var containsInk = false
             var cursor = 0
             while cursor < component.count {
                 let index = component[cursor]
                 cursor += 1
                 let color = colors[index]
                 counts[color, default: 0] += 1
-                containsInk = containsInk || similar(color, ink, tolerance: 16)
                 let x = index % width
                 let y = index / width
                 for row in max(0, y - 1)...min(height - 1, y + 1) {
                     for column in max(0, x - 1)...min(width - 1, x + 1) {
                         let neighbor = row * width + column
-                        if !visited[neighbor] && !background.contains(colors[neighbor]) {
+                        if !visited[neighbor] && unexplained[neighbor] {
                             visited[neighbor] = true
                             component.append(neighbor)
                         }
                     }
                 }
             }
-            guard component.count >= 8, !containsInk, let maximum = counts.values.max() else { continue }
+            guard let maximum = counts.values.max(), maximum >= 8 else { continue }
             paints.formUnion(counts.filter { $0.value == maximum }.keys)
         }
         return paints
@@ -182,6 +212,12 @@ struct UniformTextContrast {
             }
         }
         return palette
+    }
+
+    private static func contrast(_ foreground: UInt32, _ background: UInt32) -> Double {
+        let ink = luminance(foreground)
+        let field = luminance(background)
+        return (max(ink, field) + 0.05) / (min(ink, field) + 0.05)
     }
 
     private static func luminance(_ rgb: UInt32) -> Double {

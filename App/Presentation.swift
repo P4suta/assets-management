@@ -129,10 +129,7 @@ struct StatusLabel: View {
     let status: WorkStatus
     var selected = false
     var body: some View {
-        Label(status.title, systemImage: status.symbol)
-            .recordForeground(Color.accentColor, selected: selected)
-            .symbolRenderingMode(.monochrome)
-            .accessibilityIdentifier("work.caption.status")
+        RecordCaption(role: .workStatus, text: status.title, symbol: status.symbol, selected: selected)
     }
 }
 
@@ -142,9 +139,8 @@ struct WorkRow: View {
     var selected = false
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(item.title).recordForeground(Color.primary, selected: selected)
-            Text(store.records.locationText(item)).font(.subheadline).recordForeground(Color.secondary, selected: selected)
-                .accessibilityIdentifier("work.caption.location")
+            RecordCaption(role: .workTitle, text: item.title, selected: selected)
+            RecordCaption(role: .workLocation, text: store.records.locationText(item), selected: selected).font(.subheadline)
             ViewThatFits(in: .horizontal) {
                 HStack { status; deadline }
                 VStack(alignment: .leading, spacing: 8) { status; deadline }
@@ -158,10 +154,8 @@ struct WorkRow: View {
     private var status: some View { StatusLabel(status: item.status, selected: selected) }
     @ViewBuilder private var deadline: some View {
         if let dueDate = item.dueDate {
-            Text("期限 " + dueDate.formatted(date: .abbreviated, time: .omitted))
+            RecordCaption(role: .workDeadline, text: "期限 " + dueDate.formatted(date: .abbreviated, time: .omitted), selected: selected)
                 .fixedSize(horizontal: false, vertical: true)
-                .recordForeground(Color.secondary, selected: selected)
-                .accessibilityIdentifier("work.caption.deadline")
         }
     }
 }

@@ -58,11 +58,10 @@ struct ContactListView: View {
                 ForEach(contacts) { contact in
                     NavigationLink(value: contact.id) {
                         VStack(alignment: .leading, spacing: 8) {
-                            Text(contact.name).recordForeground(Color.primary, selected: selection == contact.id)
-                                .accessibilityIdentifier("contact.caption.name")
-                            Text(contact.category.title + (contact.company.isEmpty ? "" : " · " + contact.company))
-                                .font(.subheadline).recordForeground(Color.secondary, selected: selection == contact.id)
-                                .accessibilityIdentifier("contact.caption.category")
+                            RecordCaption(role: .contactName, text: contact.name, selected: selection == contact.id)
+                            RecordCaption(role: .contactCategory,
+                                          text: contact.category.title + (contact.company.isEmpty ? "" : " · " + contact.company),
+                                          selected: selection == contact.id).font(.subheadline)
                         }
                         .padding(.vertical, 4)
                         .accessibilityElement(children: .combine)

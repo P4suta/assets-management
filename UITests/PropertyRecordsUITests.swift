@@ -1222,7 +1222,8 @@ final class PropertyRecordsUITests: XCTestCase {
         let background = UIColor(red: 198 / 255, green: 197 / 255, blue: 208 / 255, alpha: 1)
         let dither = UIColor(red: 198 / 255, green: 197 / 255, blue: 207 / 255, alpha: 1)
         let quantized = try UniformTextContrast(image: image(foreground: .black, background: background, dither: dither, text: true))
-        XCTAssertGreaterThan(quantized.ratio, 12)
+        XCTAssertGreaterThan(quantized.dominantRatio, 12)
+        XCTAssertGreaterThanOrEqual(quantized.ratio, 4.5)
         XCTAssertThrowsError(try UniformTextContrast(image: image(foreground: nil, background: .white)))
         let header = try XCTUnwrap(UIImage(named: "ProgressSectionHeader", in: Bundle(for: Self.self), compatibleWith: nil)?.cgImage)
         XCTAssertGreaterThanOrEqual(try UniformTextContrast(image: header, background: .shaded).ratio, 4.5)
@@ -1272,6 +1273,37 @@ final class PropertyRecordsUITests: XCTestCase {
             if secondary == .blue { XCTAssertEqual(ratio, 8.592, accuracy: 0.001) }
             else { XCTAssertLessThan(ratio, 4.5) }
         }
+        let narrowRegions = [CGRect(x: 30, y: 10, width: 2, height: 20), CGRect(x: 10, y: 30, width: 20, height: 2),
+                             CGRect(x: 30, y: 10, width: 20, height: 1), CGRect(x: 10, y: 30, width: 1, height: 20)]
+        let paintPairs = [(UIColor.black, weak), (.black, .blue),
+                          (UIColor(white: 0.45, alpha: 1), UIColor(white: 0.51, alpha: 1))]
+        for (primary, secondary) in paintPairs {
+            for rectangle in narrowRegions {
+                let format = UIGraphicsImageRendererFormat()
+                format.scale = 1
+                format.opaque = true
+                let image = UIGraphicsImageRenderer(size: CGSize(width: 100, height: 60), format: format).image { context in
+                    UIColor.white.setFill()
+                    context.fill(CGRect(x: 0, y: 0, width: 100, height: 60))
+                    primary.setFill()
+                    context.fill(CGRect(x: 10, y: 10, width: 20, height: 20))
+                    secondary.setFill()
+                    context.fill(rectangle)
+                }
+                let measurement = try UniformTextContrast(image: XCTUnwrap(image.cgImage))
+                let ratio = measurement.ratio
+                if primary == .black { XCTAssertEqual(measurement.dominantRatio, 21, accuracy: 0.01) }
+                if secondary == .blue { XCTAssertEqual(ratio, 8.592, accuracy: 0.001) }
+                else { XCTAssertLessThan(ratio, 4.5, "\(rectangle)") }
+                if secondary == weak {
+                    for text in ["🏠未来ヶ丘", "1️⃣", "1\u{20E3}", "©"] {
+                        let caption = try UniformTextContrast(image: XCTUnwrap(image.cgImage),
+                                                              foreground: .recordCaption(.workTitle, text: text))
+                        XCTAssertLessThan(caption.ratio, 4.5, text)
+                    }
+                }
+            }
+        }
         for size in [CGFloat(13), 17, 53] {
             for dark in [false, true] {
                 let format = UIGraphicsImageRendererFormat()
@@ -1293,7 +1325,8 @@ final class PropertyRecordsUITests: XCTestCase {
     }
 
     func testTextContrastKeepsNativeBackgroundShadesOutOfTheForeground() throws {
-        for (name, background) in [("ProgressStatus", TextContrastBackground.uniform), ("PropertySectionHeader", .shaded)] {
+        for (name, background) in [("ProgressStatus", TextContrastBackground.uniform),
+                                   ("SelectedStatusLabel", .uniform), ("PropertySectionHeader", .shaded)] {
             let url = try XCTUnwrap(Bundle(for: Self.self).url(forResource: name, withExtension: "png"))
             let image = try XCTUnwrap(UIImage(contentsOfFile: url.path)?.cgImage)
             let measurement = try UniformTextContrast(image: image, background: background)
@@ -1306,6 +1339,19 @@ final class PropertyRecordsUITests: XCTestCase {
             let url = try XCTUnwrap(Bundle(for: Self.self).url(forResource: name, withExtension: "png"))
             let image = try XCTUnwrap(UIImage(contentsOfFile: url.path)?.cgImage)
             XCTAssertGreaterThanOrEqual(try UniformTextContrast(image: image, background: .sampledBorder).ratio, 4.5)
+        }
+    }
+
+    func testCaptionContrastUsesTheSharedPlainTextRenderingContract() throws {
+        for (name, role) in [("SelectedStatusLabel", RecordCaptionRole.workStatus), ("SelectedDeadlineLabel", .workDeadline)] {
+            let url = try XCTUnwrap(Bundle(for: Self.self).url(forResource: name, withExtension: "png"))
+            let image = try XCTUnwrap(UIImage(contentsOfFile: url.path)?.cgImage)
+            let text = role == .workStatus ? "未着手" : "期限 2026年11月17日"
+            let measurement = try UniformTextContrast(image: image, foreground: .recordCaption(role, text: text))
+            XCTAssertEqual(measurement.ratio, 5.037, accuracy: 0.001)
+            if role == .workDeadline {
+                XCTAssertLessThan(try UniformTextContrast(image: image).ratio, 4.5)
+            }
         }
     }
 
@@ -2393,6 +2439,7 @@ final class PropertyRecordsUITests: XCTestCase {
     }
 
     private func measureCaption(_ caption: XCUIElement, selected: XCUIElement, app: XCUIApplication, requireSelection: Bool = true) throws -> UniformTextContrast {
+        let role = try XCTUnwrap(RecordCaptionRole(rawValue: caption.identifier))
         let frame = caption.frame
         let rowFrame = selected.frame
         guard (!requireSelection || selected.isSelected), selected.isHittable, caption.isHittable, !frame.isEmpty,
@@ -2404,7 +2451,13 @@ final class PropertyRecordsUITests: XCTestCase {
         let scaleX = Double(image.width) / frame.width
         let scaleY = Double(image.height) / frame.height
         guard abs(scaleX - scaleY) <= 1 / min(frame.width, frame.height) else { throw TextContrastError.changedFrame }
-        return try UniformTextContrast(image: image)
+        let measurement = try UniformTextContrast(image: image, foreground: .recordCaption(role, text: caption.label))
+        let attachment = XCTAttachment(screenshot: capture)
+        attachment.name = "Record caption: " + caption.identifier
+        attachment.lifetime = .keepAlways
+        add(attachment)
+        print("Record caption: \(caption.identifier), minimum \(measurement.ratio), dominant \(measurement.dominantRatio)")
+        return measurement
     }
 
     private func verifiedCaptionContrast(_ issue: AccessibilityAuditReport, app: XCUIApplication) -> String? {
@@ -2414,9 +2467,8 @@ final class PropertyRecordsUITests: XCTestCase {
         let rows = app.buttons.matching(NSPredicate(format: "identifier IN %@", ["work.row", "work.row.selected", "contact.row", "contact.row.selected"]))
         guard let selected = rows.allElementsBoundByIndex.first(where: { $0.isHittable && $0.frame.containsWithRoundingTolerance(element.frame) }),
               selected.isSelected == selected.identifier.hasSuffix(".selected") else { return nil }
-        let identifiers = ["work.caption.location", "work.caption.status", "work.caption.deadline", "contact.caption.name", "contact.caption.category"]
+        let identifiers = RecordCaptionRole.allCases.map(\.rawValue)
         let captions = selected.staticTexts.matching(NSPredicate(format: "identifier IN %@", identifiers)).allElementsBoundByIndex
-            + [selected.staticTexts.firstMatch]
         guard let caption = captions.first(where: { $0.label == element.label && $0.frame == element.frame }),
               let contrast = try? measureCaption(caption, selected: selected, app: app, requireSelection: selected.isSelected), contrast.ratio >= 4.5 else { return nil }
         return "Record caption contrast verified from its rendered image: \(contrast.ratio):1."

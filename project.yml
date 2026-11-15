@@ -168,6 +168,7 @@ targets:
     type: bundle.ui-testing
     platform: iOS
     sources:
+      - path: App/RecordCaptionRole.swift
       - path: UITests
         excludes: [MacCompatibility]
     dependencies:

@@ -36,7 +36,13 @@ Selected rows use the primary system label for text and status symbols.
 The style adjusts for its [highlighted background](https://developer.apple.com/documentation/swiftui/environmentvalues/backgroundprominence).
 The iPadOS 27.2 audit reports insufficient contrast for a selected deadline whose captured black text has a measured ratio of 12.298:1.
 The test also measures the current status and deadline screenshots using the sRGB luminance and contrast formula from the [Web Content Accessibility Guidelines (WCAG)](https://www.w3.org/TR/WCAG22/#dfn-relative-luminance).
-The measurement covers captions drawn with a single foreground color on an opaque background.
+Identified record captions use a shared plain text component.
+The component accepts a String and a typed role.
+One foreground style covers the text and optional monochrome symbol.
+The interface tests share the role inventory and require a matching role before measuring a record caption.
+Caption measurements compare the dominant ink with every measured background.
+Emoji and emoji presentation sequences use generic paint sampling because their colors can differ from the text style.
+Other opaque images use the lowest ratio among sampled paints.
 Status symbols use [monochrome rendering](https://developer.apple.com/design/human-interface-guidelines/sf-symbols#Rendering-modes).
 Label measurements derive the background range from the image's four corners, including one 8-bit step per channel for rounding.
 They reject corner differences greater than 16 on the 8-bit scale and use the lowest contrast across the measured background.
@@ -51,10 +57,19 @@ Actual AX5 storage and related property captions check the rounded rows, while g
 Unsupported or ambiguous images fail verification.
 The measurement samples flat foreground paint from `3×3` neighborhoods.
 Each neighboring pixel differs by at most 1 channel step from the sample.
-Separate foreground components with at least 8 pixels contribute their modal colors when they lack the dominant ink.
+Exact `2×3` and `3×2` blocks also expose thin solid paint.
+Measurements treat the two-pixel neighborhood of sampled paint as its antialiasing fringe.
+Connected regions contribute modal colors supported by at least 8 unexplained pixels of the same color.
+The reader refines the palette until it stops changing and rejects ambiguous images after 16 passes.
 Every sampled paint contributes its lowest ratio across the backgrounds.
+Audit filters require the ratio from the applicable rendering contract.
+The dominant paint ratio checks background quantization.
+Quantization controls require the dominant paint ratio to exceed 12:1 and the lowest sampled ratio to meet 4.5:1.
 Connected and separate two-color fixtures check unequal areas, weak gray text, and legible blue text.
+Thin horizontal and vertical regions check connected paint and colors close to the contrast threshold.
 Mixed Japanese text at 13, 17, and 53 points checks faint text in Light and Dark appearance.
+The selected status fixture covers Japanese character edges on the selection background.
+The selected deadline fixture distinguishes its single paint from blended edges that fail generic paint sampling.
 The [WCAG contrast explanation](https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum.html) distinguishes authored text colors from blended edges.
 The audit filter requires the affected OS, issue type, label, element type, selection, matching frame, and a fresh measured ratio of at least 4.5:1.
 The filter also verifies work titles and the combined progress headers from current screenshots.
