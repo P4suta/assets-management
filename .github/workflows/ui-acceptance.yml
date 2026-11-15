@@ -21,7 +21,7 @@ jobs:
        (github.event.label.name == 'release-acceptance' &&
         github.event.pull_request.head.repo.id == github.event.pull_request.base.repo.id))
     runs-on: ${{ matrix.runner }}
-    timeout-minutes: 110
+    timeout-minutes: 140
     strategy:
       fail-fast: false
       max-parallel: 2
@@ -90,7 +90,7 @@ jobs:
           mkdir -p .results
           xcrun simctl io "$SIMULATOR_UDID" screenshot .results/native-bootstrap.png
       - id: tests
-        timeout-minutes: 80
+        timeout-minutes: 110
         run: mise x xcodegen just -- just ui-test
       - name: Preserve native test results and captures
         if: >-
@@ -102,6 +102,15 @@ jobs:
           path: |
             .derivedData/Logs/Test/*.xcresult
             .results/native-bootstrap.png
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 7
+      - name: Preserve compiled Simulator tests for failure reproduction
+        if: ${{ failure() && steps.tests.outcome == 'failure' }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: native-products-${{ matrix.device }}-${{ matrix.profile }}-${{ github.event.pull_request.head.sha || github.sha }}-${{ github.run_attempt }}
+          path: .derivedData/Build/Products
           include-hidden-files: true
           if-no-files-found: error
           retention-days: 7

@@ -4,6 +4,9 @@ The fast gate runs semantic lint, secret scanning, Swift 6 type checking, determ
 Xcode builds turn off compilation caching to reduce temporary disk use during checks.
 The interface suite exercises saved records through native controls and audits accessibility.
 Native test schemes use Japanese and Japan to match the app's typography.
+Forms with native amount inputs give Dynamic Type and clipped-text checks their own audit calls.
+The same repair form can produce unlocated reports when font checks run in one batch.
+Every selected audit category remains required.
 An English test process can measure Japanese fallback fonts differently from the Japanese app.
 The caption fixtures and rendered measurement test reject that mismatch.
 Run the rotation checks on iPad and iPhone Duo simulators with `mise x -- just adaptive-ui-test`.
@@ -13,6 +16,11 @@ Selected-row tests audit foreground contrast within the visible selection in bot
 Appearance-sensitive journeys use the Simulator profile configured before the run.
 The journeys check the rendered background before measuring selected rows or capturing store images.
 Native editor checks share the visible keyboard geometry used for scrolling.
+Frame containment permits arithmetic rounding within eight units in the last place of the largest absolute coordinate.
+Geometry fixtures reject a one-pixel overflow and values beyond that numeric tolerance.
+Scroll pans begin inside the current inset row and outside editable text.
+Caption inspections require complete visible bounds.
+Interactive controls also require native hit testing.
 Photo journeys close the native privacy introduction before selecting an image within the library's visible bounds.
 Hosted layout tests render the contact, work, building, room, and contract detail screens at widths of 320, 420, 600, and 1,024 points.
 Tests that create UIKit windows share one [serialized suite](https://developer.apple.com/documentation/testing/parallelization).
@@ -62,7 +70,8 @@ At AX5 on iPadOS 27.2, native adaptive tabs can report partial Dynamic Type supp
 An independent SwiftUI TabView reproduces the same report, while Settings' General title reports partial support with a located element.
 The qualifier for native tabs requires the exact runtime, AX5, three native tabs at the top, an unlocated report of partial support, and at most three reports.
 Located issues, full unsupported reports, and unknown contexts remain failures.
-On iOS 27.2 at AX5, a standard List containing ForEach can report partial Dynamic Type support without locating an element.
+On iOS 26.5 and 27.2 at AX5, a standard List can report partial Dynamic Type support without locating an element.
+On iOS 26.5, comparisons with direct Text rows and ForEach reproduce the report with and without native tabs.
 The related property section reproduces the report, while the captured text exceeds twice the rendered height of the standard body font.
 Settings' settled General screen also reports partial support for its system title.
 The contact qualifier requires the exact runtime, screen, report, owning list, and one freshly measured related property caption.
@@ -71,11 +80,14 @@ An unscaled font, absent measurement, full unsupported report, located issue, ch
 Editor sheets use Apple's [page presentation sizing](https://developer.apple.com/documentation/swiftui/view/presentationsizing(_:)) to keep the available space at AX5.
 The repair journey audits the initial form and the amount field after scrolling.
 Full unsupported Dynamic Type reports remain failures.
-On iOS 27.2, a Japanese development region reproduces clipped-text predictions for complete captions in an independent SwiftUI form.
+On iOS 26.5 and 27.2, a Japanese development region reproduces clipped-text predictions for complete captions in an independent SwiftUI form.
 The caption qualifier requires the exact runtime, report, screen, label, text style, and largest text size.
 It checks a unique matching native element, an unobscured viewport, fresh rendered foreground pixels, and the complete text's bounds using the system font.
 Its tolerance is one display pixel.
 Rejecting fixtures cover other runtimes and reports, unknown captions, insufficient width and height, invalid geometry, overlapping bars, missing pixels, and duplicate elements.
+The contact audit measures the complete emergency caption before scrolling to the related property.
+A later scroll-edge clipping report requires the same native caption, dimensions, window, and navigation bounds.
+Clipping reports for fully visible captions still require a fresh complete-text measurement.
 Date inputs show their complete values in [labeled content](https://developer.apple.com/documentation/swiftui/labeledcontent).
 The field opens Apple's [graphical calendar](https://developer.apple.com/documentation/swiftui/graphicaldatepickerstyle) in a [popover](https://developer.apple.com/documentation/swiftui/view/popover(ispresented:attachmentanchor:arrowedge:content:)), which adapts to a sheet on iPhone.
 Hosted tests recognize both contract dates at standard and AX5 text sizes with language correction turned off.
@@ -100,9 +112,10 @@ Start a same-repository pull request's run by adding the label: `release-accepta
 Remove and reapply the label to check a later head.
 The workflow also supports dispatching a selected candidate after the workflow reaches the default branch.
 Ordinary commits don't launch the heavy workflow.
-At most two jobs run concurrently, and each job stops after 110 minutes.
-The interface step stops after 80 minutes, leaving time to preserve results before the job limit.
+At most two jobs run concurrently, and each job stops after 140 minutes.
+The interface step stops after 110 minutes, leaving time to preserve results before the job limit.
 The native test results and captures remain available for seven days.
+Failed interface jobs also keep the compiled Simulator app, test runners, and test run configuration for reproduction.
 An interrupted or timed-out run supplies no passing result.
 When the Settings app lacks notification controls in Simulator, combine native denial and foreground journeys with hosted tests of the app's foreground handler using a controlled notification port.
 The hosted tests also construct Apple's calendar trigger to check the absolute date across time zones.
