@@ -165,6 +165,12 @@ import XCTest
         XCTAssertEqual(previousPhotos.count, 1)
         let previous = try XCTUnwrap(previousPhotos.first)
         openPhotoLibrary(app)
+        let library = NativePhotoLibrary(app: app)
+        XCTAssertTrue(library.waitForPresentation(dismissIntroduction: false), app.debugDescription)
+        if library.content.exists, library.introduction.exists {
+            library.content.swipeUp(velocity: .slow)
+            capture(app, name: "Scrolled native photo introduction")
+        }
         chooseLibraryPhoto(app)
         let failure = app.alerts["写真を追加できませんでした"]
         XCTAssertTrue(failure.waitForExistence(timeout: 15), app.debugDescription)
@@ -196,7 +202,7 @@ import XCTest
         let nativeLibrary = NativePhotoLibrary(app: app)
         XCTAssertTrue(nativeLibrary.waitForPresentation(), app.debugDescription)
         let onboarding = nativeLibrary.introduction
-        let library = app.scrollViews["photosView_content_scroll_view"]
+        let library = nativeLibrary.content
         let assets = library.images.matching(identifier: "PXGGridLayout-Info")
         XCTAssertTrue(assets.firstMatch.waitForExistence(timeout: 30), app.debugDescription)
         let window = app.windows.firstMatch
