@@ -80,8 +80,16 @@ The caption's identity, label, frame, and visibility must still match when the a
 An unscaled font, absent measurement, full unsupported report, changed frame, or repeated report fails verification.
 Located reports remain failures except for the photo section header reproduced on iOS 26.5 in an independent standard list.
 The header qualifier requires the exact report, screen, native element, owning list, current frame, and freshly measured text at least twice its standard height.
-Hosted image tests recognize the complete photo header and Add Room caption at widths of 320, 420, and 1,032 points in Light and Dark appearance.
-Both captions must reach twice their standard rendered character height at AX5.
+Hosted image tests recognize the complete photo header, Add Room caption, and Add Photo caption at widths of 320, 420, and 1,032 points in Light and Dark appearance.
+Each caption must reach twice its standard rendered character height at AX5.
+Each addition caption declares a leading plus icon.
+Recognition permits observed representations of the declared symbol only before its exact text.
+Unrecognized captures preserve region bounds and recognized fragments for diagnosis.
+Photo addition uses a standard [Menu](https://developer.apple.com/documentation/swiftui/menu) with Apple's [plain button style](https://developer.apple.com/documentation/swiftui/plainbuttonstyle) and [ideal vertical sizing](https://developer.apple.com/documentation/swiftui/view/fixedsize(horizontal:vertical:)).
+Its label follows the app's [tint](https://developer.apple.com/documentation/swiftui/tintshapestyle).
+The capture requires the native menu button to measure at least 44 points in each dimension.
+Measurements of text enlargement exclude native border colors and read foreground pixels independently of [Vision's approximate text rectangles](https://developer.apple.com/documentation/vision/vnrecognizedtext/boundingbox(for:)).
+Pixel fixtures cover rounded row backgrounds and reject missing foreground.
 Rejecting fixtures cover a forced standard font, missing characters, duplicate captions, and separated text fragments.
 Editor sheets use Apple's [page presentation sizing](https://developer.apple.com/documentation/swiftui/view/presentationsizing(_:)) to keep the available space at AX5.
 The repair journey audits the initial form and the amount field after scrolling.

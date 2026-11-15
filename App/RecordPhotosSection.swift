@@ -30,9 +30,12 @@ struct RecordPhotosSection: View {
                         .accessibilityIdentifier("photos.camera")
                 } label: {
                     Label("写真を追加", systemImage: "plus")
-                        .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .foregroundStyle(.tint)
+                        .frame(minHeight: 44, alignment: .leading)
                         .contentShape(Rectangle())
                 }
+                .buttonStyle(.plain)
                 .disabled(actions.importing)
                 .accessibilityIdentifier("photos.add")
             }
