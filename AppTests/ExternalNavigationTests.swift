@@ -35,11 +35,29 @@ import Testing
 
     @Test func telephoneLinksUseTheSystemConfirmation() throws {
         let url = try #require(URL(string: "tel:+12025550142"))
-        let navigation = ExternalNavigation()
+        let navigation = ExternalNavigation(telephoneConfirmation: .system)
         #expect(navigation.request(url) == .system)
         #expect(navigation.destination == nil)
         #expect(!navigation.isPresented)
         #expect(navigation.confirm() == nil)
+    }
+
+    @Test func telephoneLinksWaitForApplicationConfirmationWhenTheSystemHasNoDocumentedPrompt() throws {
+        let url = try #require(URL(string: "tel:+12025550142"))
+        let navigation = ExternalNavigation(telephoneConfirmation: .application)
+        var opened: [URL] = []
+        let action = OpenURLAction { opened.append($0); return .handled }
+        try #require(navigation.request(url) == .confirmation)
+        #expect(navigation.destination == url)
+        #expect(navigation.isPresented)
+        navigation.cancel()
+        navigation.openConfirmed(using: action)
+        #expect(opened.isEmpty)
+        #expect(navigation.request(url) == .confirmation)
+        navigation.openConfirmed(using: action)
+        #expect(opened == [url])
+        #expect(navigation.destination == nil)
+        #expect(!navigation.isPresented)
     }
 
     @Test func settingsHaveAReadableDestinationAndRetryClearsFailure() throws {

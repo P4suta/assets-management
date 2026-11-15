@@ -7,31 +7,31 @@ status: proposed
 
 ## Context
 
-The requested interaction policy confirms destinations before leaving the app.
+Confirm destinations before leaving the app.
 Apple recommends [sparse alerts](https://developer.apple.com/design/human-interface-guidelines/alerts).
-Confirm external navigation.
 
 ## Decision
 
 Route hyperlinks through SwiftUI's [open URL environment action](https://developer.apple.com/documentation/swiftui/openurlaction).
-Show the destination with Open and Cancel actions before forwarding it to the system.
+Show the destination with Open and Cancel before forwarding it.
 Route Settings and document-preview links through the same boundary.
-Use the [system telephone confirmation](https://developer.apple.com/library/archive/featuredarticles/iPhoneURLScheme_Reference/PhoneLinks/PhoneLinks.html) for calls.
-Normalize recognized telephone formatting and [encode mailbox characters](https://www.rfc-editor.org/rfc/rfc6068.html#section-2) before handing off a destination.
-Keep unrecognized contact text readable and selectable without creating an external action.
+Use the documented [iOS telephone confirmation](https://developer.apple.com/library/archive/featuredarticles/iPhoneURLScheme_Reference/PhoneLinks/PhoneLinks.html) on iPhone and iPad.
+Compatible Mac and Apple Vision Pro apps confirm calls before the system handoff.
+Normalize telephone formatting and [encode mailbox characters](https://www.rfc-editor.org/rfc/rfc6068.html#section-2).
+Keep unrecognized contact text selectable without an external action.
 Confirm the support site's email handoff with the browser's [native confirmation dialog](https://html.spec.whatwg.org/multipage/timers-and-user-prompts.html#dom-confirm-dev).
 
 ## Alternatives
 
-Default links require fewer interruptions but omit the requested confirmation for websites and email.
-Separate handlers at every link duplicate presentation and cancellation rules.
+Default links omit confirmation for websites and email.
+Separate handlers duplicate presentation and cancellation rules.
 
 ## Consequences
 
 Each presentation owns its destination.
 Cancellation keeps the screen open.
 Nested presentations inherit the original system action to avoid confirming twice.
-The requested confirmation adds an interruption before external navigation.
+Confirmation adds an interruption.
 Reconsider with internal routes or an embedded browser.
 
 ## Confirmation

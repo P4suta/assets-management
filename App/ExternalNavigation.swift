@@ -5,14 +5,29 @@ enum ExternalNavigationHandling: Equatable {
     case confirmation, system, ignored
 }
 
+enum TelephoneConfirmation: Equatable {
+    case application, system
+
+    static var currentPlatform: Self {
+        if ProcessInfo.processInfo.isiOSAppOnMac { return .application }
+        if #available(iOS 26.1, *), ProcessInfo.processInfo.isiOSAppOnVision { return .application }
+        return .system
+    }
+}
+
 @MainActor @Observable final class ExternalNavigation {
+    let telephoneConfirmation: TelephoneConfirmation
     private(set) var destination: URL?
     var isPresented = false
     var failure: URL?
 
+    init(telephoneConfirmation: TelephoneConfirmation = .currentPlatform) {
+        self.telephoneConfirmation = telephoneConfirmation
+    }
+
     func request(_ url: URL) -> ExternalNavigationHandling {
         guard destination == nil else { return .ignored }
-        if url.scheme?.lowercased() == "tel" { return .system }
+        if url.scheme?.lowercased() == "tel", telephoneConfirmation == .system { return .system }
         failure = nil
         destination = url
         isPresented = true
