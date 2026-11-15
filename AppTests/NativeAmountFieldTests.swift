@@ -122,7 +122,8 @@ extension NativePresentationTests {
         let initialSize = try #require(initial.font).pointSize
         controller.traitOverrides.preferredContentSizeCategory = .accessibilityExtraExtraExtraLarge
         let enlarged = try #require(await amountField(in: controller.view, category: .accessibilityExtraExtraExtraLarge))
-        #expect(try #require(enlarged.font).pointSize >= initialSize * 2)
+        #expect(try #require(enlarged.font).pointSize >= initialSize * requiredTextEnlargement(),
+                "Body font sizes: \(initialSize), \(String(describing: enlarged.font)).")
         #expect(enlarged.text == "85000")
         #expect(box.input.text == "85000")
         controller.traitOverrides.preferredContentSizeCategory = .large

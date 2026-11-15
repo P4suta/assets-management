@@ -2,7 +2,6 @@ import PropertyCore
 import SwiftUI
 import Testing
 import UIKit
-import Vision
 @testable import PropertyRecords
 
 extension NativePresentationTests {
@@ -38,30 +37,33 @@ extension NativePresentationTests {
                 #expect(window.drawHierarchy(in: window.bounds, afterScreenUpdates: true))
             }
             Attachment.record(try #require(image.pngData()), named: "Contract dates \(width)-\(category.rawValue).png")
-            let recognized = try recognizedDateStrings(in: #require(image.cgImage))
-            for value in ["2025/04/01", "2027/03/31"] {
-                #expect(recognized.contains(where: { $0.contains(value) }), "Missing complete rendered date \(value): \(recognized)")
-            }
+            try verifyText(in: #require(image.cgImage), languages: ["en-US"],
+                           expectation: .dates(["2025/04/01", "2027/03/31"], present: true))
         }
     }
 
     @Test(arguments: [320, 420, 1032], [false, true])
-    func calendarDateValueGlyphsDoubleWithAccessibilityText(width: Int, dark: Bool) async throws {
+    func calendarDateValueGlyphsRespectNativeTextMetrics(width: Int, dark: Bool) async throws {
         let standard = try await dateCard(width: width, dark: dark, category: .large)
         let largest = try await dateCard(width: width, dark: dark, category: .accessibilityExtraExtraExtraLarge)
-        let standardHeight = try dateGlyphHeight(in: #require(standard.cgImage), dark: dark)
-        let largestHeight = try dateGlyphHeight(in: #require(largest.cgImage), dark: dark)
         Attachment.record(try #require(standard.pngData()), named: "Date value standard-\(width)-\(dark).png")
         Attachment.record(try #require(largest.pngData()), named: "Date value largest-\(width)-\(dark).png")
-        #expect(largestHeight >= standardHeight * 2, "Rendered glyph heights: \(standardHeight), \(largestHeight)")
+        let standardHeight = try dateGlyphHeight(in: #require(standard.cgImage))
+        let largestHeight = try dateGlyphHeight(in: #require(largest.cgImage))
+        #expect(try CGFloat(largestHeight) >= CGFloat(standardHeight) * requiredTextEnlargement(),
+                "Rendered glyph heights: \(standardHeight), \(largestHeight)")
     }
 
-    @Test func dateGlyphMeasurementRejectsAStandardSizeOverride() async throws {
+    @Test func dateGlyphMeasurementTracksAStandardSizeOverride() async throws {
         let standard = try await dateCard(width: 420, dark: false, category: .large)
         let frozen = try await dateCard(width: 420, dark: false, category: .accessibilityExtraExtraExtraLarge, forcedStandardText: true)
-        let standardHeight = try dateGlyphHeight(in: #require(standard.cgImage), dark: false)
-        let frozenHeight = try dateGlyphHeight(in: #require(frozen.cgImage), dark: false)
-        #expect(frozenHeight < standardHeight * 2)
+        let standardHeight = try dateGlyphHeight(in: #require(standard.cgImage))
+        let frozenHeight = try dateGlyphHeight(in: #require(frozen.cgImage))
+        if ProcessInfo.processInfo.isiOSAppOnMac {
+            #expect(frozenHeight == standardHeight)
+        } else {
+            #expect(frozenHeight < standardHeight * 2)
+        }
     }
 
     @Test func dateGlyphMeasurementExcludesConnectedBorderPixels() throws {
@@ -79,19 +81,46 @@ extension NativePresentationTests {
                         withAttributes: [.font: UIFont.systemFont(ofSize: size), .foregroundColor: UIColor.black])
                 }
             }
-            let plain = try dateGlyphHeight(in: #require(capture(rounded: false).cgImage), dark: false)
-            let rounded = try dateGlyphHeight(in: #require(capture(rounded: true).cgImage), dark: false)
+            let plain = try dateGlyphHeight(in: #require(capture(rounded: false).cgImage))
+            let rounded = try dateGlyphHeight(in: #require(capture(rounded: true).cgImage))
             #expect(plain == rounded)
             #expect(plain > 0)
         }
     }
 
+    @Test(arguments: [false, true])
+    func dateGlyphMeasurementRequiresVisibleNeutralInk(dark: Bool) throws {
+        let base = dark ? UIColor.white : .black
+        func capture(_ color: UIColor?) throws -> CGImage {
+            let size = CGSize(width: 400, height: 160)
+            let image = UIGraphicsImageRenderer(size: size).image { context in
+                (dark ? UIColor.black : .white).setFill()
+                context.fill(CGRect(origin: .zero, size: size))
+                if let color {
+                    ("2025/04/01" as NSString).draw(at: CGPoint(x: 40, y: 40),
+                        withAttributes: [.font: UIFont.systemFont(ofSize: 32), .foregroundColor: color])
+                }
+            }
+            return try #require(image.cgImage)
+        }
+        let opaque = try dateGlyphHeight(in: capture(base))
+        for alpha in [CGFloat(0.55), CGFloat(0.85)] {
+            #expect(try dateGlyphHeight(in: capture(base.withAlphaComponent(alpha))) == opaque)
+        }
+        #expect(throws: DateGlyphFailure.missingForeground) { try dateGlyphHeight(in: capture(nil)) }
+        #expect(throws: DateGlyphFailure.missingForeground) { try dateGlyphHeight(in: capture(.systemIndigo)) }
+    }
+
     @Test func dateRecognitionRejectsNativeEllipsis() throws {
-        for width in [CGFloat(197), CGFloat(320)] {
+        let value = "2025/04/01"
+        let font = UIFont.preferredFont(forTextStyle: .body,
+            compatibleWith: UITraitCollection(preferredContentSizeCategory: .accessibilityExtraExtraExtraLarge))
+        let completeWidth = (value as NSString).size(withAttributes: [.font: font]).width
+        for factor in [CGFloat(0.55), CGFloat(1.25)] {
+            let width = ceil(completeWidth * factor)
             let label = UILabel(frame: CGRect(x: 0, y: 0, width: width, height: 80))
-            label.text = "2025/04/01"
-            label.font = .preferredFont(forTextStyle: .body,
-                compatibleWith: UITraitCollection(preferredContentSizeCategory: .accessibilityExtraExtraExtraLarge))
+            label.text = value
+            label.font = font
             label.textColor = .black
             label.adjustsFontSizeToFitWidth = true
             label.minimumScaleFactor = 0.8
@@ -101,8 +130,8 @@ extension NativePresentationTests {
                 context.fill(label.bounds)
                 label.drawText(in: label.bounds)
             }
-            let values = try recognizedDateStrings(in: #require(image.cgImage))
-            #expect(values.contains(where: { $0.contains("2025/04/01") }) == (width == 320), "Recognized: \(values)")
+            try verifyText(in: #require(image.cgImage), languages: ["en-US"],
+                           expectation: .dates([value], present: factor > 1))
         }
     }
 
@@ -140,16 +169,9 @@ extension NativePresentationTests {
 
     private func dateDescendants(_ view: UIView) -> [UIView] { [view] + view.subviews.flatMap(dateDescendants) }
 
-    private func recognizedDateStrings(in image: CGImage) throws -> [String] {
-        let request = VNRecognizeTextRequest()
-        request.recognitionLevel = .accurate
-        request.recognitionLanguages = ["en-US"]
-        request.usesLanguageCorrection = false
-        try VNImageRequestHandler(cgImage: image).perform([request])
-        return (request.results ?? []).compactMap { $0.topCandidates(1).first?.string.filter { !$0.isWhitespace } }
-    }
+    private enum DateGlyphFailure: Error { case missingForeground, ambiguousForeground }
 
-    private func dateGlyphHeight(in image: CGImage, dark: Bool) throws -> Int {
+    private func dateGlyphHeight(in image: CGImage) throws -> Int {
         let space = try #require(CGColorSpace(name: CGColorSpace.sRGB))
         var pixels = [UInt8](repeating: 0, count: image.width * image.height * 4)
         try pixels.withUnsafeMutableBytes { buffer in
@@ -158,10 +180,32 @@ extension NativePresentationTests {
                 bitmapInfo: CGBitmapInfo.byteOrder32Big.rawValue | CGImageAlphaInfo.premultipliedLast.rawValue))
             context.draw(image, in: CGRect(x: 0, y: 0, width: image.width, height: image.height))
         }
-        let target = dark ? 255 : 0
+        var tones: [UInt32: Int] = [:]
+        for pixel in 0..<(image.width * image.height) {
+            let offset = pixel * 4
+            try #require(pixels[offset + 3] == 255)
+            let rgb = UInt32(pixels[offset]) << 16 | UInt32(pixels[offset + 1]) << 8 | UInt32(pixels[offset + 2])
+            tones[rgb, default: 0] += 1
+        }
+        let background = try #require(tones.max { $0.value < $1.value }?.key)
+        func luminance(_ rgb: UInt32) -> Double {
+            func linear(_ shift: Int) -> Double {
+                let value = Double((rgb >> shift) & 255) / 255
+                return value <= 0.04045 ? value / 12.92 : pow((value + 0.055) / 1.055, 2.4)
+            }
+            return 0.2126 * linear(16) + 0.7152 * linear(8) + 0.0722 * linear(0)
+        }
+        let backgroundLight = luminance(background)
+        let candidates = Set(tones.keys.filter { rgb in
+            let channels = [16, 8, 0].map { Int((rgb >> $0) & 255) }
+            let light = luminance(rgb)
+            let contrast = (max(light, backgroundLight) + 0.05) / (min(light, backgroundLight) + 0.05)
+            return (channels.max() ?? 0) - (channels.min() ?? 0) <= 1 && contrast >= 4.5
+        })
         var foreground = (0..<(image.width * image.height)).map { pixel in
             let offset = pixel * 4
-            return pixels[offset + 3] == 255 && (0..<3).allSatisfy { abs(Int(pixels[offset + $0]) - target) <= 1 }
+            let rgb = UInt32(pixels[offset]) << 16 | UInt32(pixels[offset + 1]) << 8 | UInt32(pixels[offset + 2])
+            return candidates.contains(rgb)
         }
         var border: [Int] = []
         func remove(_ pixel: Int) {
@@ -185,11 +229,27 @@ extension NativePresentationTests {
             if pixel >= image.width { remove(pixel - image.width) }
             if pixel + image.width < foreground.count { remove(pixel + image.width) }
         }
+        var ink: [UInt32: Int] = [:]
+        for pixel in foreground.indices where foreground[pixel] {
+            let offset = pixel * 4
+            let rgb = UInt32(pixels[offset]) << 16 | UInt32(pixels[offset + 1]) << 8 | UInt32(pixels[offset + 2])
+            ink[rgb, default: 0] += 1
+        }
+        let modes = ink.sorted { $0.value == $1.value ? $0.key < $1.key : $0.value > $1.value }
+        guard let tone = modes.first else { throw DateGlyphFailure.missingForeground }
+        guard modes.dropFirst().first?.value != tone.value else { throw DateGlyphFailure.ambiguousForeground }
+        for pixel in foreground.indices where foreground[pixel] {
+            let offset = pixel * 4
+            foreground[pixel] = [16, 8, 0].enumerated().allSatisfy { channel, shift in
+                abs(Int(pixels[offset + channel]) - Int((tone.key >> shift) & 255)) <= 1
+            }
+        }
         var rows: [Int] = []
         for row in 0..<image.height {
             let count = foreground[(row * image.width)..<((row + 1) * image.width)].filter { $0 }.count
             if count >= 2 { rows.append(row) }
         }
-        return try #require(rows.last) - #require(rows.first) + 1
+        guard let first = rows.first, let last = rows.last else { throw DateGlyphFailure.missingForeground }
+        return last - first + 1
     }
 }

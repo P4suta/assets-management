@@ -5,7 +5,7 @@ enum TextContrastError: Error {
 }
 
 enum TextContrastBackground {
-    case uniform, shaded
+    case uniform, shaded, sampledBorder
 }
 
 struct UniformTextContrast {
@@ -50,6 +50,9 @@ struct UniformTextContrast {
         case .shaded:
             let palette = try Self.shadedPalette(border)
             background = modes.filter { palette.contains($0.key) }
+        case .sampledBorder:
+            let palette = try Self.borderPalette(border)
+            background = modes.filter { palette.contains($0.key) }
         }
         guard background.reduce(0, { $0 + $1.value }) > count / 2 else { throw TextContrastError.insufficientColors }
         let backgroundKeys = Set(background.map(\.key))
@@ -91,13 +94,17 @@ struct UniformTextContrast {
     }
 
     private static func shadedPalette(_ border: Set<UInt32>) throws -> Set<UInt32> {
-        guard !border.isEmpty, border.count <= 256 else { throw TextContrastError.ambiguousColors }
         for shift in [0, 8, 16] {
             let channels = border.map { Int(($0 >> shift) & 255) }
             guard let low = channels.min(), let high = channels.max(), high - low <= 16 else {
                 throw TextContrastError.ambiguousColors
             }
         }
+        return try borderPalette(border)
+    }
+
+    private static func borderPalette(_ border: Set<UInt32>) throws -> Set<UInt32> {
+        guard !border.isEmpty, border.count <= 256 else { throw TextContrastError.ambiguousColors }
         var palette: Set<UInt32> = []
         for color in border {
             let red = Int((color >> 16) & 255)

@@ -243,6 +243,28 @@ final class PropertyRecordsUITests: XCTestCase {
         XCTAssertTrue(app.buttons["contact.edit"].wait(for: \.isHittable, toEqual: true, timeout: 5))
     }
 
+    func testCompatibleVisionCallsRequireConfirmationBeforeHandoff() throws {
+        guard ProcessInfo.processInfo.environment["VISION_COMPATIBILITY_CHECKS"] == "1" else {
+            throw XCTSkip("Compatible Vision call confirmation runs in the dedicated Vision interface scheme.")
+        }
+        guard #available(iOS 26.1, *) else { XCTFail("The Vision interface scheme requires its supported runtime."); return }
+        XCTAssertTrue(ProcessInfo.processInfo.isiOSAppOnVision)
+        let app = launch(seeded: true)
+        selectTab("連絡先", app: app)
+        tapIdentifier("contacts.add", app: app)
+        enter("設備の相談窓口", into: "contact.name", app: app)
+        enter("+12025550142", into: "contact.phone", app: app)
+        app.buttons["editor.save"].tap()
+        tap("設備の相談窓口", app: app)
+        tapIdentifier("contact.phone.open", app: app)
+        let confirmation = app.alerts["外部リンクを開く"]
+        XCTAssertTrue(confirmation.waitForExistence(timeout: 5))
+        XCTAssertTrue(confirmation.staticTexts["tel:+12025550142"].exists)
+        confirmation.buttons["キャンセル"].tap()
+        XCTAssertTrue(confirmation.waitForNonExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["contact.edit"].wait(for: \.isHittable, toEqual: true, timeout: 5))
+    }
+
     func testContractAmountRejectsValuesAboveTheStoredLimit() {
         let app = launch(seeded: true)
         openSampleRoom(app)
@@ -1205,6 +1227,10 @@ final class PropertyRecordsUITests: XCTestCase {
         XCTAssertThrowsError(try UniformTextContrast(image: shaded(nil), background: .shaded))
         XCTAssertThrowsError(try UniformTextContrast(image: shaded(.white, end: .black), background: .shaded))
         XCTAssertThrowsError(try UniformTextContrast(image: shaded(.white, end: .black)))
+        XCTAssertGreaterThan(try UniformTextContrast(image: shaded(.black), background: .sampledBorder).ratio, 12)
+        XCTAssertLessThan(try UniformTextContrast(image: shaded(.lightGray), background: .sampledBorder).ratio, 4.5)
+        XCTAssertThrowsError(try UniformTextContrast(image: shaded(nil), background: .sampledBorder))
+        XCTAssertLessThan(try UniformTextContrast(image: shaded(.white, end: .black), background: .sampledBorder).ratio, 4.5)
     }
 
     func testTextContrastKeepsNativeBackgroundShadesOutOfTheForeground() throws {
@@ -1212,6 +1238,14 @@ final class PropertyRecordsUITests: XCTestCase {
         let image = try XCTUnwrap(UIImage(contentsOfFile: url.path)?.cgImage)
         let measurement = try UniformTextContrast(image: image)
         XCTAssertGreaterThanOrEqual(measurement.ratio, 4.5)
+    }
+
+    func testTextContrastMeasuresNativeInsetRowBackgrounds() throws {
+        for name in ["InformationRecordCaption", "ContactRelatedCaption"] {
+            let url = try XCTUnwrap(Bundle(for: Self.self).url(forResource: name, withExtension: "png"))
+            let image = try XCTUnwrap(UIImage(contentsOfFile: url.path)?.cgImage)
+            XCTAssertGreaterThanOrEqual(try UniformTextContrast(image: image, background: .sampledBorder).ratio, 4.5)
+        }
     }
 
     func testProgressSectionHeadingsRemainReadableTogether() throws {
@@ -2036,9 +2070,9 @@ final class PropertyRecordsUITests: XCTestCase {
             element.press(forDuration: 1.1)
             let selectAll = app.descendants(matching: .any).matching(NSPredicate(format: "label IN %@ AND elementType IN %@",
                 ["すべてを選択", "Select All"], [XCUIElement.ElementType.menuItem.rawValue, XCUIElement.ElementType.button.rawValue])).firstMatch
-            if !selectAll.exists && app.menuItems["選択"].exists {
+            if !selectAll.waitForExistence(timeout: 2) && app.menuItems["選択"].exists {
                 let selected = app.menuItems["選択"].frame
-                let next = app.buttons.matching(NSPredicate(format: "label == %@", "進む")).allElementsBoundByIndex.filter {
+                let next = app.buttons.matching(NSPredicate(format: "label IN %@", ["進む", "次のページ", "Next", "Next Page"])).allElementsBoundByIndex.filter {
                     $0.isHittable && $0.frame.midX > selected.maxX && abs($0.frame.midY - selected.midY) < selected.height / 2
                 }
                 guard next.count == 1 else {
@@ -2208,7 +2242,9 @@ final class PropertyRecordsUITests: XCTestCase {
             let bounds = element.exists ? element.frame : .zero
             let downward = bounds.isEmpty ? attempt >= 24 : bounds.midY < middle
             let distance = bounds.isEmpty ? span : min(max(20, abs(bounds.midY - middle)), span)
-            if downward {
+            if #available(iOS 26.1, *), ProcessInfo.processInfo.isiOSAppOnVision {
+                if downward { container.swipeDown() } else { container.swipeUp() }
+            } else if downward {
                 upper.press(forDuration: 0.05, thenDragTo: upper.withOffset(CGVector(dx: 0, dy: distance)))
             } else {
                 lower.press(forDuration: 0.05, thenDragTo: lower.withOffset(CGVector(dx: 0, dy: -distance)))
@@ -2579,9 +2615,13 @@ final class PropertyRecordsUITests: XCTestCase {
             let frame = caption.frame
             XCTAssertTrue(app.windows.firstMatch.frame.containsWithRoundingTolerance(frame))
             let actual = caption.screenshot()
+            let capture = XCTAttachment(screenshot: actual)
+            capture.name = "Measured list text " + identity
+            capture.lifetime = .keepAlways
+            add(capture)
             XCTAssertEqual(caption.frame, frame)
             let bitmap = try XCTUnwrap(actual.image.cgImage)
-            let rendered = try UniformTextContrast(image: bitmap)
+            let rendered = try UniformTextContrast(image: bitmap, background: screen == "Contact" ? .sampledBorder : .uniform)
             XCTAssertGreaterThanOrEqual(rendered.ratio, 2)
             let required = (caption.label as NSString).boundingRect(with: CGSize(width: frame.width, height: CGFloat.greatestFiniteMagnitude),
                 options: .usesLineFragmentOrigin, attributes: [.font: minimum], context: nil)
@@ -2599,10 +2639,6 @@ final class PropertyRecordsUITests: XCTestCase {
             details.name = "Native list text size"
             details.lifetime = .keepAlways
             add(details)
-            let capture = XCTAttachment(screenshot: actual)
-            capture.name = "Measured list text " + identity
-            capture.lifetime = .keepAlways
-            add(capture)
             XCTAssertGreaterThanOrEqual(rendered.foregroundHeight, expected.foregroundHeight)
             measurements[identity] = NativeListTextMeasurement(label: caption.label, frame: frame,
                 renderedHeight: rendered.foregroundHeight, minimumHeight: expected.foregroundHeight)
@@ -2651,7 +2687,12 @@ final class PropertyRecordsUITests: XCTestCase {
             XCTAssertTrue(caption.isHittable && list.frame.containsWithRoundingTolerance(frame))
             let screenshot = caption.screenshot()
             XCTAssertEqual(caption.frame, frame)
-            let measurement = try UniformTextContrast(image: XCTUnwrap(screenshot.image.cgImage))
+            let input = XCTAttachment(screenshot: screenshot)
+            input.name = "Information contrast input \(identifier)"
+            input.lifetime = .keepAlways
+            add(input)
+            let background: TextContrastBackground = ["app-info.records", "app-info.copyright"].contains(identifier) ? .sampledBorder : .uniform
+            let measurement = try UniformTextContrast(image: XCTUnwrap(screenshot.image.cgImage), background: background)
             XCTAssertGreaterThanOrEqual(measurement.ratio, 4.5)
             measurements[identifier] = InformationTextMeasurement(label: caption.label, visibleFrame: frame, ratio: measurement.ratio)
             let capture = XCTAttachment(screenshot: screenshot)

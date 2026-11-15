@@ -44,6 +44,9 @@ An actual dark progress label verifies that small background differences can't b
 Section headers use the image border to measure an opaque shaded background.
 The measurement rejects border channel differences greater than 16 on the 8-bit scale and requires background colors to cover most pixels.
 Gradient fixtures reject weak text, missing foreground, and unsupported background variation.
+Information text and related property rows sample the image border across native rounded corners and separators.
+The palette must cover most pixels, and every sampled background color participates in the lowest contrast calculation.
+Actual AX5 storage and related property captions check the rounded rows, while gradient fixtures reject weak and missing text.
 Unsupported or ambiguous images fail verification.
 The audit filter requires the affected OS, issue type, label, element type, selection, matching frame, and a fresh measured ratio of at least 4.5:1.
 The filter also verifies work titles and the combined progress headers from current screenshots.
@@ -85,7 +88,7 @@ An unscaled font, absent measurement, full unsupported report, changed frame, or
 Located reports remain failures except for the photo section header reproduced on iOS 26.5 in an independent standard list.
 The header qualifier requires the exact report, screen, native element, owning list, current frame, and freshly measured text at least twice its standard height.
 Hosted image tests recognize the complete photo header, Add Room caption, and Add Photo caption at widths of 320, 420, and 1,032 points in Light and Dark appearance.
-Each caption must reach twice its standard rendered character height at AX5.
+On iPhone, iPad, and Apple Vision Pro, each caption must reach twice its standard rendered character height at AX5.
 Each addition caption declares a leading plus icon.
 Recognition permits observed representations of the declared symbol only before its exact text.
 Unrecognized captures preserve region bounds and recognized fragments for diagnosis.
@@ -115,6 +118,42 @@ A truncated native label is a rejecting fixture.
 Pixel tests measure rendered date text at widths of 320, 420, and 1,032 points in Light and Dark appearance.
 AX5 date text must reach at least twice its standard height.
 A forced standard text size must fail the pixel comparison.
+Compatible Mac tests compare enlargement with the running system's preferred body-font metrics.
+On macOS 27.2.1, the native API returns 17 points for both standard and AX5 categories.
+Those tests still check complete captions, native input fonts, geometry, and the unchanged standard-size control.
+Date measurements locate neutral foreground pixels and remove connected border pixels.
+They require a unique dominant foreground tone instead of assuming pure black or white.
+Foreground candidates require 4.5:1 contrast with the dominant background.
+Native fixtures reject blank and tinted images and verify the rendered height of opaque and translucent neutral text.
+Mac caption measurements exclude leading symbols using recognized horizontal bounds, while foreground pixels determine height.
+
+Run `just vision-test /absolute/path/result.xcresult` with an Apple Vision Pro Simulator destination for compatible rendering.
+The capture phase runs the hosted suite on the target and records every recognition input.
+The macOS validation phase uses accurate recognition on the exported images.
+It requires all 50 inputs across five methods, including exact dates, blank images, Japanese captions, and native truncation controls.
+Missing images, duplicate identifiers, extra inputs, incorrect text, and incomplete inventories fail the command.
+Caption recognition uses the rendered foreground's bounds with 12 pixels of surrounding background.
+The complete screen capture remains available beside the recognition inputs.
+The [native host recognition decision](adr/validate-compatible-rendering-with-native-host-recognition.md) records the runtime boundary and its reconsideration condition.
+Run `just vision-ui-test /absolute/path/result.xcresult` for native compatible Vision journeys.
+The six journeys cover editors, registration and relaunch, inline photographs, memos, email cancellation, and telephone confirmation.
+The dedicated scheme enables the Vision call check and rejects a different runtime.
+The command requires six passes with no failures or skips.
+
+Run `just mac-app-test /absolute/path/result.xcresult` for the signed compatible Mac hosted suite.
+Run `just mac-ui-test /absolute/path/PropertyRecords.app /absolute/path/result.xcresult` in a normal Mac login session.
+Supply the installed development app launched through Xcode's `My Mac` destination, with its debugger detached.
+Supply the registered outer app bundle containing `WrappedBundle`.
+The command checks the bundle identifier and development entitlement before native automation starts.
+The native runner checks the registered app URL and uses an isolated record store.
+The journey registers a property, records a six-month contract notice, adds a contact, and saves repair memos and progress.
+It checks telephone and email cancellation, calendar presentation, native window zoom with an unsaved editor, and persistence after relaunch.
+Native input transitions wait for the system's temporary input-source indicator to disappear.
+Native confirmation buttons and menu items use their exposed titles.
+Failure attachments preserve the current screen and accessibility hierarchy before terminating the test app.
+Compatible Vision journeys use `XCUIElement.swipeUp()` and `swipeDown()` to scroll spatial windows.
+Text replacement waits for the native selection menu and recognizes its observed pagination labels.
+
 Calendar journeys check selection, discarded drafts, saving, relaunch, and accessibility.
 The floating system calendar on iPadOS 27.2 can report unlocated text despite exposing a full date and weekday for each date control.
 The qualifier requires the exact text report, calendar screen, floating bounds, 28 to 42 unique labeled day controls, and a reachable Done control.
@@ -134,6 +173,8 @@ Each target also runs with the largest text size, Dark appearance, and Increase 
 The layout group runs the adaptive class, screen tour, selected-row contrast, selected-work rotation, related record editing, and shared contact journeys.
 The workflow group runs the remaining interface tests.
 The groups distribute the longer native journeys without repeating tests or increasing job concurrency.
+Set `PROPERTY_RECORDS_DERIVED_DATA` to a separate directory for each concurrent local campaign.
+The default remains `.derivedData` for hosted artifact collection.
 The fast gate rejects missing or overlapping group selectors.
 Use GitHub's [documented standard runners](https://docs.github.com/en/actions/reference/runners/github-hosted-runners) with the installed [Xcode 26](https://github.com/actions/runner-images/blob/main/images/macos/macos-26-Readme.md) and [Xcode 27](https://github.com/actions/runner-images/blob/main/images/macos/xcode-27-arm64-Readme.md) environments.
 Start a same-repository pull request's run by adding the label: `release-acceptance`.

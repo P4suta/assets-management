@@ -9,6 +9,11 @@ The Apple Developer team is `XMBQLW82L9`.
 The initial version is `1.0.0`.
 The current build number is `6`.
 
+Mac and Apple Vision Pro use the compatible iOS build.
+App Store Connect [calculates macOS compatibility](https://developer.apple.com/help/app-store-connect/manage-your-apps-availability/manage-availability-of-iphone-and-ipad-apps-on-macs-with-apple-silicon) from the iOS deployment target and explicit OS selections.
+The project uses Apple's automatic setting.
+Native Mac test targets verify compatible rendering and interactions.
+
 Run the fast gate, hosted app tests, interface journeys on iOS 26 and a later runtime, Thread Sanitizer, and the full mutation campaign before archiving.
 The verification scope and mutation acceptance criteria are in [verification.md](verification.md).
 Use a clean committed source state for the distribution candidate.
@@ -34,8 +39,8 @@ App Store privacy answers must describe the shipped binary and its dependencies.
 The app stores records and attachments on the device and has no collection service.
 The support email is `hi@sakashita.email`.
 
-The Japanese description addresses rental property managers who need to find earlier repairs and keep scattered notes and photographs together.
-Its examples describe short memos, inline photographs, progress search, deadline reminders, contracts, equipment, and common-area work.
+The Japanese description addresses people managing rental properties and the work of keeping scattered records together.
+Its examples describe repair progress, memos and photographs, room contracts, equipment, shared contacts, and deadline reminders.
 The promotional text describes the notes, photographs, and progress users can keep.
 The keyword gate checks the limits of 100 characters in Apple's [product page guidance](https://developer.apple.com/app-store/product-page/) and 100 bytes in its [field reference](https://developer.apple.com/help/app-store-connect/reference/app-information/platform-version-information/).
 Each keyword contains more than two characters, as the field reference specifies.

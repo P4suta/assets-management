@@ -17,6 +17,48 @@ settings:
     ENABLE_USER_SCRIPT_SANDBOXING: YES
     TARGETED_DEVICE_FAMILY: "1,2"
 schemes:
+  PropertyRecordsMacInterface:
+    build:
+      targets:
+        PropertyRecordsMacUITests: [test]
+    test:
+      language: ja
+      region: JP
+      targets: [PropertyRecordsMacUITests]
+      debugEnabled: false
+      environmentVariables:
+        MAC_COMPATIBLE_APP_PATH: $(MAC_COMPATIBLE_APP_PATH)
+  NativeTextValidation:
+    build:
+      targets:
+        NativeTextValidationTests: [test]
+    test:
+      targets: [NativeTextValidationTests]
+      debugEnabled: false
+      environmentVariables:
+        NATIVE_TEXT_CAPTURE_PATH: $(NATIVE_TEXT_CAPTURE_PATH)
+  PropertyRecordsVisionCapture:
+    build:
+      targets:
+        PropertyRecords: [test]
+    test:
+      language: ja
+      region: JP
+      targets: [PropertyRecordsAppTests]
+      debugEnabled: false
+      environmentVariables:
+        NATIVE_TEXT_CAPTURE: "1"
+  PropertyRecordsVisionInterface:
+    build:
+      targets:
+        PropertyRecords: [test]
+    test:
+      language: ja
+      region: JP
+      targets: [PropertyRecordsUITests]
+      debugEnabled: false
+      environmentVariables:
+        VISION_COMPATIBILITY_CHECKS: "1"
   PropertyRecords:
     build:
       targets:
@@ -62,6 +104,26 @@ schemes:
       preferredScreenCaptureFormat: screenRecording
       deleteScreenshotsWhenEachTestSucceeds: false
 targets:
+  PropertyRecordsMacUITests:
+    type: bundle.ui-testing
+    platform: macOS
+    deploymentTarget: "26.0"
+    sources: [UITests/MacCompatibility]
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        PRODUCT_BUNDLE_IDENTIFIER: com.p4suta.PropertyRecordsMacUITests
+        CODE_SIGNING_ALLOWED: NO
+  NativeTextValidationTests:
+    type: bundle.unit-test
+    platform: macOS
+    deploymentTarget: "26.0"
+    sources: [NativeTextValidation, TestSupport]
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        PRODUCT_BUNDLE_IDENTIFIER: com.p4suta.PropertyRecordsNativeTextValidation
+        CODE_SIGNING_ALLOWED: NO
   PropertyRecords:
     type: application
     platform: iOS
@@ -93,7 +155,7 @@ targets:
   PropertyRecordsAppTests:
     type: bundle.unit-test
     platform: iOS
-    sources: [AppTests]
+    sources: [AppTests, TestSupport, NativeTextValidation/RenderedTextValidationTests.swift]
     dependencies:
       - target: PropertyRecords
       - package: PropertyRecordsCore
@@ -105,7 +167,9 @@ targets:
   PropertyRecordsUITests:
     type: bundle.ui-testing
     platform: iOS
-    sources: [UITests]
+    sources:
+      - path: UITests
+        excludes: [MacCompatibility]
     dependencies:
       - target: PropertyRecords
     settings:

@@ -2,12 +2,11 @@ import PropertyCore
 import SwiftUI
 import Testing
 import UIKit
-import Vision
 @testable import PropertyRecords
 
 extension NativePresentationTests {
     @Test(arguments: [320, 420, 1032], [false, true])
-    func propertyCaptionGlyphsDoubleWithAccessibilityText(width: Int, dark: Bool) async throws {
+    func propertyCaptionGlyphsRespectNativeTextMetrics(width: Int, dark: Bool) async throws {
         let standard = try await propertyCaptionImage(width: width, dark: dark, category: .large)
         let largest = try await propertyCaptionImage(width: width, dark: dark, category: .accessibilityExtraExtraExtraLarge)
         Attachment.record(try #require(standard.image.pngData()), named: "Property captions standard-\(width)-\(dark).png")
@@ -17,17 +16,23 @@ extension NativePresentationTests {
         for label in ["部屋を追加", "写真", "写真を追加"] {
             let initial = try #require(normal[label])
             let scaled = try #require(enlarged[label])
-            #expect(scaled >= initial * 2, "\(label) glyph heights: \(initial), \(scaled)")
+            #expect(try CGFloat(scaled) >= CGFloat(initial) * requiredTextEnlargement(), "\(label) glyph heights: \(initial), \(scaled)")
         }
     }
 
-    @Test func propertyCaptionMeasurementRejectsAStandardSizeOverride() async throws {
+    @Test func propertyCaptionMeasurementTracksAStandardSizeOverride() async throws {
         let standard = try await propertyCaptionImage(width: 420, dark: false, category: .large)
         let frozen = try await propertyCaptionImage(width: 420, dark: false, category: .accessibilityExtraExtraExtraLarge, forcedStandardText: true)
+        Attachment.record(try #require(standard.image.pngData()), named: "Property captions comparison standard.png")
+        Attachment.record(try #require(frozen.image.pngData()), named: "Property captions comparison frozen.png")
         let normal = try propertyCaptionHeights(in: standard)
         let unchanged = try propertyCaptionHeights(in: frozen)
         for label in ["部屋を追加", "写真", "写真を追加"] {
-            #expect(try #require(unchanged[label]) < #require(normal[label]) * 2)
+            if ProcessInfo.processInfo.isiOSAppOnMac {
+                #expect(unchanged[label] == normal[label])
+            } else {
+                #expect(try #require(unchanged[label]) < #require(normal[label]) * 2)
+            }
         }
     }
 
@@ -176,34 +181,39 @@ extension NativePresentationTests {
             let region = try #require(capture.regions[label])
             let raster = CGRect(x: region.minX, y: CGFloat(image.height) - region.maxY, width: region.width, height: region.height).integral
             let crop = try #require(image.cropping(to: raster))
-            let request = VNRecognizeTextRequest()
-            request.recognitionLevel = .accurate
-            request.recognitionLanguages = ["ja-JP", "en-US"]
-            request.usesLanguageCorrection = false
-            try VNImageRequestHandler(cgImage: crop).perform([request])
-            let fragments: [(String, CGRect)] = (request.results ?? []).compactMap { observation in
-                guard let value = observation.topCandidates(1).first?.string else { return nil }
-                return (value, CGRect(x: observation.boundingBox.minX * CGFloat(crop.width),
-                    y: observation.boundingBox.minY * CGFloat(crop.height), width: observation.boundingBox.width * CGFloat(crop.width),
-                    height: observation.boundingBox.height * CGFloat(crop.height)))
-            }
+            let ink = try PropertyCaptionPixels.bounds(in: crop)
+            let recognitionRegion = ink.insetBy(dx: -12, dy: -12)
+                .intersection(CGRect(x: 0, y: 0, width: crop.width, height: crop.height))
+            let recognitionImage = try #require(crop.cropping(to: recognitionRegion))
             do {
-                _ = try PropertyCaptionRecognition.bounds(label: label,
-                    leadingSymbol: label == "写真" ? nil : .plus, observations: fragments)
+                let fragments = try verifyText(in: recognitionImage, languages: ["ja-JP", "en-US"],
+                                               expectation: .caption(label, leadingPlus: label != "写真"))
+                if ProcessInfo.processInfo.isiOSAppOnMac {
+                    let bounds = try PropertyCaptionRecognition.bounds(label: label,
+                        leadingSymbol: label == "写真" ? nil : .plus,
+                        observations: try #require(fragments).map { ($0.text, $0.bounds) })
+                    let left = max(0, floor(bounds.minX) - 2)
+                    let right = min(CGFloat(recognitionImage.width), ceil(bounds.maxX) + 2)
+                    let text = try #require(recognitionImage.cropping(to: CGRect(x: left, y: 0, width: right - left, height: CGFloat(recognitionImage.height))))
+                    return (label, try PropertyCaptionPixels.height(in: text))
+                }
                 return (label, try PropertyCaptionPixels.height(in: crop))
             } catch {
-                let details = "\(label) region: \(region)\n\(fragments)"
+                let details = "\(label) region: \(region)\n\(error)"
                 Attachment.record(Data(details.utf8), named: "Unrecognized property caption.txt")
                 throw error
             }
         })
     }
 }
-
 private enum PropertyCaptionPixels {
     enum Failure: Error { case unsupportedImage, missingForeground, ambiguousForeground }
 
     static func height(in image: CGImage) throws -> Int {
+        Int(try bounds(in: image).height)
+    }
+
+    static func bounds(in image: CGImage) throws -> CGRect {
         let (count, overflow) = image.width.multipliedReportingOverflow(by: image.height)
         guard !overflow, count > 0, count <= 1_000_000,
               let space = CGColorSpace(name: CGColorSpace.sRGB) else { throw Failure.unsupportedImage }
@@ -234,63 +244,23 @@ private enum PropertyCaptionPixels {
         guard foreground.dropFirst().first?.value != tone.value else { throw Failure.ambiguousForeground }
         var firstRow = image.height
         var lastRow = -1
+        var firstColumn = image.width
+        var lastColumn = -1
         for pixel in 0..<count {
             let offset = pixel * 4
             let rgb = UInt32(pixels[offset]) << 16 | UInt32(pixels[offset + 1]) << 8 | UInt32(pixels[offset + 2])
             if neighbors(rgb, tone.key) {
                 firstRow = min(firstRow, pixel / image.width)
                 lastRow = max(lastRow, pixel / image.width)
+                firstColumn = min(firstColumn, pixel % image.width)
+                lastColumn = max(lastColumn, pixel % image.width)
             }
         }
         guard lastRow >= firstRow else { throw Failure.missingForeground }
-        return lastRow - firstRow + 1
+        return CGRect(x: firstColumn, y: firstRow, width: lastColumn - firstColumn + 1, height: lastRow - firstRow + 1)
     }
 
     private static func neighbors(_ first: UInt32, _ second: UInt32) -> Bool {
         [0, 8, 16].allSatisfy { abs(Int((first >> $0) & 255) - Int((second >> $0) & 255)) <= 1 }
-    }
-}
-
-private enum PropertyCaptionRecognition {
-    enum Failure: Error, Equatable { case missing, ambiguous, invalidGeometry }
-    enum Symbol {
-        case plus
-
-        var recognizedCharacters: Set<Character> { ["+", "＋", "十", "→"] }
-    }
-
-    static func bounds(label: String, leadingSymbol: Symbol? = nil, observations: [(String, CGRect)]) throws -> CGRect {
-        guard observations.allSatisfy({
-            !$0.1.isEmpty && !$0.1.isInfinite && [$0.1.minX, $0.1.minY, $0.1.maxX, $0.1.maxY].allSatisfy(\.isFinite)
-        }) else { throw Failure.invalidGeometry }
-        let ordered = observations.sorted { $0.1.midY > $1.1.midY }
-        var matches: [CGRect] = []
-        for index in ordered.indices {
-            var text = ""
-            var frame = CGRect.null
-            var previous: CGRect?
-            var consumedSymbol = false
-            for (fragment, bounds) in ordered[index...].prefix(3) {
-                var value = fragment.filter { !$0.isWhitespace }
-                if text.isEmpty, !consumedSymbol, let first = value.first, leadingSymbol?.recognizedCharacters.contains(first) == true {
-                    value.removeFirst()
-                    consumedSymbol = true
-                }
-                guard !value.isEmpty else { break }
-                if let previous {
-                    let gap = previous.minY - bounds.maxY
-                    guard gap >= -1, gap <= max(previous.height, bounds.height) * 1.5,
-                          bounds.minX < previous.maxX, bounds.maxX > previous.minX else { break }
-                }
-                text += value
-                guard label.hasPrefix(text) else { break }
-                frame = frame.union(bounds)
-                if text == label { matches.append(frame); break }
-                previous = bounds
-            }
-        }
-        guard !matches.isEmpty else { throw Failure.missing }
-        guard matches.count == 1 else { throw Failure.ambiguous }
-        return matches[0]
     }
 }
