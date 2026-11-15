@@ -4,7 +4,9 @@ The fast gate runs semantic lint, secret scanning, Swift 6 type checking, determ
 Xcode builds turn off compilation caching to reduce temporary disk use during checks.
 The interface suite exercises saved records through native controls and audits accessibility.
 Native test schemes use Japanese and Japan to match the app's typography.
-Dynamic Type and clipped-text checks use separate audit calls on every screen.
+Each selected [audit category](https://developer.apple.com/documentation/accessibility/performing-accessibility-audits-for-your-app) uses its own native call on every screen.
+Each call logs its category before and after execution so a timeout identifies the unfinished check.
+Grouping fixtures cover all 128 selections of the seven iOS categories and preserve unknown requested bits.
 The same repair form can produce unlocated reports when font checks run in one batch.
 An offscreen amount input can be absent from the native hierarchy.
 Every selected audit category remains required.
@@ -88,6 +90,7 @@ Unrecognized captures preserve region bounds and recognized fragments for diagno
 Photo addition uses a standard [Menu](https://developer.apple.com/documentation/swiftui/menu) with Apple's [plain button style](https://developer.apple.com/documentation/swiftui/plainbuttonstyle) and [ideal vertical sizing](https://developer.apple.com/documentation/swiftui/view/fixedsize(horizontal:vertical:)).
 Its label follows the app's [tint](https://developer.apple.com/documentation/swiftui/tintshapestyle).
 The capture requires the native menu button to measure at least 44 points in each dimension.
+The native button must also contain the center of its row in the accessibility hierarchy, so a center tap opens the menu.
 Measurements of text enlargement exclude native border colors and read foreground pixels independently of [Vision's approximate text rectangles](https://developer.apple.com/documentation/vision/vnrecognizedtext/boundingbox(for:)).
 Pixel fixtures cover rounded row backgrounds and reject missing foreground.
 Rejecting fixtures cover a forced standard font, missing characters, duplicate captions, and separated text fragments.

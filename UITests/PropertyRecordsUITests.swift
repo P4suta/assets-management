@@ -2408,9 +2408,10 @@ final class PropertyRecordsUITests: XCTestCase {
         return "Sidebar header contrast verified from its rendered image: \(contrast.ratio):1."
     }
 
-    func testFontAuditGroupingPreservesAllRequestedChecks() {
+    func testAuditGroupingPreservesEveryRequestedCategory() {
         let categories: [XCUIAccessibilityAuditType] = [.elementDetection, .hitRegion, .sufficientElementDescription,
                                                        .trait, .contrast, .dynamicType, .textClipped]
+        let unknown = XCUIAccessibilityAuditType(rawValue: (1 << 63) | (1 << 62))
         for mask in 0..<(1 << categories.count) {
             let selected = categories.enumerated().filter { mask & (1 << $0.offset) != 0 }
                 .reduce(into: XCUIAccessibilityAuditType()) { $0.formUnion($1.element) }
@@ -2420,15 +2421,19 @@ final class PropertyRecordsUITests: XCTestCase {
             for (index, group) in groups.enumerated() {
                 XCTAssertTrue(groups.dropFirst(index + 1).allSatisfy { $0.intersection(group).isEmpty })
             }
-            for font: XCUIAccessibilityAuditType in [.dynamicType, .textClipped] where selected.contains(font) {
-                XCTAssertTrue(groups.contains(font), "Each font check must have its own native audit pass.")
+            for category in categories where selected.contains(category) {
+                XCTAssertTrue(groups.contains(category), "Each check must have its own native audit pass.")
             }
+            XCTAssertEqual(auditGroups(selected.union(unknown)), groups + [unknown])
         }
     }
 
     private func auditGroups(_ types: XCUIAccessibilityAuditType) -> [XCUIAccessibilityAuditType] {
-        [types.subtracting([.dynamicType, .textClipped]), types.intersection(.dynamicType), types.intersection(.textClipped)]
-            .filter { !$0.isEmpty }
+        let categories: [XCUIAccessibilityAuditType] = [.elementDetection, .hitRegion, .sufficientElementDescription,
+                                                       .trait, .contrast, .dynamicType, .textClipped]
+        let known = categories.reduce(into: XCUIAccessibilityAuditType()) { $0.formUnion($1) }
+        let remaining = types.subtracting(known)
+        return categories.filter { types.contains($0) } + (remaining.isEmpty ? [] : [remaining])
     }
 
     private func audit(_ app: XCUIApplication, name: String) throws {
@@ -2462,6 +2467,7 @@ final class PropertyRecordsUITests: XCTestCase {
         continueAfterFailure = true
         defer { continueAfterFailure = previousFailurePolicy }
         for group in auditGroups(types) {
+            print("Starting accessibility audit: \(name): category \(group.rawValue)")
             try app.performAccessibilityAudit(for: group) { nativeIssue in
                 let issue = AccessibilityAuditReport(nativeIssue)
                 print("Accessibility audit: \(name): \(issue.detailedDescription): \(issue.element?.debugDescription ?? "no element")")
@@ -2526,6 +2532,7 @@ final class PropertyRecordsUITests: XCTestCase {
                 }
                 return false
             }
+            print("Completed accessibility audit: \(name): category \(group.rawValue)")
         }
     }
 
