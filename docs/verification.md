@@ -131,8 +131,13 @@ Remove and reapply the label to check a later head.
 The workflow also supports dispatching a selected candidate after the workflow reaches the default branch.
 Ordinary commits don't launch the heavy workflow.
 At most two jobs run concurrently, and each job stops after 140 minutes.
-The interface step stops after 110 minutes, leaving time to preserve results before the job limit.
+The host initialization step stops after 25 minutes.
+The limit covers tool activation and native startup.
+The workflow deletes unavailable Simulator records before creating its isolated destination.
+The interface step stops after 110 minutes.
 The native test results and captures remain available for seven days.
+Both native commands save their console logs.
+The upload excludes mutable result staging files and keeps completed bundles.
 Failed interface jobs also keep the compiled Simulator app, test runners, and test run configuration for reproduction.
 An interrupted or timed-out run supplies no passing result.
 When the Settings app lacks notification controls in Simulator, combine native denial and foreground journeys with hosted tests of the app's foreground handler using a controlled notification port.

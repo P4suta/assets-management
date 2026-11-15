@@ -69,6 +69,7 @@ jobs:
           SIMULATOR_DEVICE_TYPE: ${{ matrix.device-type }}
           SIMULATOR_RUNTIME: ${{ matrix.runtime }}
         run: |
+          xcrun simctl delete unavailable
           acceptance_device="$(xcrun simctl create 'Property Records native acceptance' "$SIMULATOR_DEVICE_TYPE" "$SIMULATOR_RUNTIME")"
           printf 'SIMULATOR_UDID=%s\n' "$acceptance_device" >> "$GITHUB_ENV"
           printf 'SIMULATOR_DESTINATION=platform=iOS Simulator,id=%s\n' "$acceptance_device" >> "$GITHUB_ENV"
@@ -76,8 +77,11 @@ jobs:
           xcrun simctl bootstatus "$acceptance_device" -b
       - name: Initialize and check the native test host
         id: host-tests
-        timeout-minutes: 15
-        run: mise x xcodegen just -- just app-test
+        timeout-minutes: 25
+        run: |
+          set -o pipefail
+          mkdir -p .results
+          mise x xcodegen just -- just app-test 2>&1 | tee .results/native-host.log
       - name: Configure the accessibility profile
         timeout-minutes: 1
         env:
@@ -98,7 +102,10 @@ jobs:
         timeout-minutes: 110
         env:
           NATIVE_TEST_RECIPE: ${{ matrix.recipe }}
-        run: mise x xcodegen just -- just "$NATIVE_TEST_RECIPE"
+        run: |
+          set -o pipefail
+          mkdir -p .results
+          mise x xcodegen just -- just "$NATIVE_TEST_RECIPE" 2>&1 | tee .results/native-interface.log
       - name: Preserve native test results and captures
         if: >-
           ${{ !cancelled() &&
@@ -108,6 +115,9 @@ jobs:
           name: native-results-${{ matrix.device }}-${{ matrix.profile }}-${{ matrix.journey }}-${{ github.event.pull_request.head.sha || github.sha }}-${{ github.run_attempt }}
           path: |
             .derivedData/Logs/Test/*.xcresult
+            !.derivedData/Logs/Test/*.xcresult/Staging/**
+            .results/native-host.log
+            .results/native-interface.log
             .results/native-bootstrap.png
           include-hidden-files: true
           if-no-files-found: error
