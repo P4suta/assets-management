@@ -7,6 +7,73 @@ import UniformTypeIdentifiers
 @testable import PropertyRecords
 
 @Suite @MainActor struct PhotoProcessorTests {
+    @Test(.timeLimit(.minutes(1))) func cameraEncodingRunsOffTheMainActorAndDeliversOnTheMainActor() async throws {
+        let image = try #require(UIImage(data: fixture(size: CGSize(width: 32, height: 18))))
+        let data = await withCheckedContinuation { continuation in
+            let coordinator = CameraCapture.Coordinator(completion: { data in
+                MainActor.preconditionIsolated()
+                continuation.resume(returning: data)
+            }, encode: { image in
+                #expect(!Thread.isMainThread)
+                return image.jpegData(compressionQuality: 0.85)
+            })
+            coordinator.imagePickerController(UIImagePickerController(), didFinishPickingMediaWithInfo: [.originalImage: image])
+        }
+        let encoded = try #require(data)
+        let source = try #require(CGImageSourceCreateWithData(encoded as CFData, nil))
+        let decoded = try #require(CGImageSourceCreateImageAtIndex(source, 0, nil))
+        #expect(decoded.width == 32 && decoded.height == 18)
+    }
+
+    @Test(.timeLimit(.minutes(1))) func cameraCancellationDiscardsPendingEncodingAndCompletesOnce() async throws {
+        let image = try #require(UIImage(data: fixture(size: CGSize(width: 32, height: 18))))
+        for waitForEncoding in [false, true] {
+            let gate = DispatchSemaphore(value: 0)
+            let started = AsyncStream<Void>.makeStream()
+            defer { gate.signal(); started.continuation.finish() }
+            var completions = 0
+            let coordinator = CameraCapture.Coordinator(completion: { data in
+                #expect(data == nil)
+                completions += 1
+            }, encode: { _ in
+                started.continuation.yield(())
+                #expect(gate.wait(timeout: .now() + 5) == .success)
+                return Data([1])
+            })
+            let picker = UIImagePickerController()
+            coordinator.imagePickerController(picker, didFinishPickingMediaWithInfo: [.originalImage: image])
+            let task = try #require(coordinator.encodingTask)
+            if waitForEncoding {
+                var iterator = started.stream.makeAsyncIterator()
+                #expect(await iterator.next() != nil)
+            }
+            coordinator.imagePickerControllerDidCancel(picker)
+            gate.signal()
+            await task.value
+            #expect(completions == 1)
+            #expect(coordinator.encodingTask == nil)
+        }
+    }
+
+    @Test func missingAndCancelledCameraImagesDeliverNilWithoutEncoding() {
+        var results = 0
+        let coordinator = CameraCapture.Coordinator(completion: { data in
+            MainActor.preconditionIsolated()
+            #expect(data == nil)
+            results += 1
+        }, encode: { _ in Issue.record("Missing camera images must not reach the encoder."); return Data() })
+        let picker = UIImagePickerController()
+        coordinator.imagePickerController(picker, didFinishPickingMediaWithInfo: [:])
+        coordinator.imagePickerControllerDidCancel(picker)
+        let cancelled = CameraCapture.Coordinator(completion: { data in
+            #expect(data == nil)
+            results += 1
+        }, encode: { _ in Issue.record("Cancelled camera images must not reach the encoder."); return Data() })
+        cancelled.imagePickerControllerDidCancel(picker)
+        cancelled.imagePickerController(picker, didFinishPickingMediaWithInfo: [:])
+        #expect(results == 2)
+    }
+
     @Test func largeImagesShrinkAndSmallImagesKeepTheirDimensions() throws {
         for size in [CGSize(width: 9_000, height: 30), CGSize(width: 32, height: 18)] {
             let data = try PhotoProcessor.prepare(data: fixture(size: size))
