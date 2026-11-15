@@ -10,7 +10,10 @@ extension NativePresentationTests {
         let directory = URL.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         defer { try? FileManager.default.removeItem(at: directory) }
         let repository = FileRecordsRepository(directory: directory)
-        let records = try SampleRecords.make()
+        var records = try SampleRecords.make()
+        let start = try #require(ContractDates.calendar.date(from: DateComponents(year: 2025, month: 4, day: 1)))
+        let end = try #require(ContractDates.calendar.date(from: DateComponents(year: 2027, month: 3, day: 31)))
+        records.rooms[0].contract = Contract(start: start, end: end, monthlyRent: 82_000)
         try await repository.save(records)
         let store = RecordsStore(repository: repository)
         await store.load()

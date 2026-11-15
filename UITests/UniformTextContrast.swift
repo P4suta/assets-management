@@ -60,10 +60,13 @@ struct UniformTextContrast {
         guard let tone = foreground.first else { throw TextContrastError.insufficientColors }
         guard tone.value >= 8 else { throw TextContrastError.insufficientForeground }
         guard foreground.dropFirst().first?.value != tone.value else { throw TextContrastError.ambiguousColors }
-        let luminance = Self.luminance(tone.key)
-        let ratios = background.map { sample in
-            let value = Self.luminance(sample.key)
-            return (max(value, luminance) + 0.05) / (min(value, luminance) + 0.05)
+        let ink = try Self.inkPaints(pixels, width: image.width, height: image.height, background: backgroundKeys, ink: tone.key)
+        let ratios = ink.flatMap { foreground in
+            let luminance = Self.luminance(foreground)
+            return background.map { sample in
+                let value = Self.luminance(sample.key)
+                return (max(value, luminance) + 0.05) / (min(value, luminance) + 0.05)
+            }
         }
         guard let minimum = ratios.min() else { throw TextContrastError.insufficientColors }
         ratio = minimum
@@ -80,6 +83,66 @@ struct UniformTextContrast {
         }
         guard lastRow >= firstRow else { throw TextContrastError.insufficientForeground }
         foregroundHeight = lastRow - firstRow + 1
+    }
+
+    private static func inkPaints(_ pixels: [UInt8], width: Int, height: Int, background: Set<UInt32>, ink: UInt32) throws -> Set<UInt32> {
+        let colors = stride(from: 0, to: pixels.count, by: 4).map {
+            UInt32(pixels[$0]) << 16 | UInt32(pixels[$0 + 1]) << 8 | UInt32(pixels[$0 + 2])
+        }
+        var paints: Set<UInt32> = [ink]
+        guard width >= 3, height >= 3 else { return paints }
+        for y in 1..<(height - 1) {
+            for x in 1..<(width - 1) {
+                let color = colors[y * width + x]
+                guard !background.contains(color) else { continue }
+                let solid = ((y - 1)...(y + 1)).allSatisfy { row in
+                    ((x - 1)...(x + 1)).allSatisfy { column in
+                        Self.similar(colors[row * width + column], color, tolerance: 1)
+                    }
+                }
+                guard solid else { continue }
+                paints.insert(color)
+            }
+        }
+        return paints.union(componentPaints(colors, width: width, height: height, background: background, ink: ink))
+    }
+
+    private static func componentPaints(_ colors: [UInt32], width: Int, height: Int,
+                                        background: Set<UInt32>, ink: UInt32) -> Set<UInt32> {
+        var visited = [Bool](repeating: false, count: colors.count)
+        var paints: Set<UInt32> = []
+        for seed in colors.indices where !visited[seed] && !background.contains(colors[seed]) {
+            var component = [seed]
+            visited[seed] = true
+            var counts: [UInt32: Int] = [:]
+            var containsInk = false
+            var cursor = 0
+            while cursor < component.count {
+                let index = component[cursor]
+                cursor += 1
+                let color = colors[index]
+                counts[color, default: 0] += 1
+                containsInk = containsInk || similar(color, ink, tolerance: 16)
+                let x = index % width
+                let y = index / width
+                for row in max(0, y - 1)...min(height - 1, y + 1) {
+                    for column in max(0, x - 1)...min(width - 1, x + 1) {
+                        let neighbor = row * width + column
+                        if !visited[neighbor] && !background.contains(colors[neighbor]) {
+                            visited[neighbor] = true
+                            component.append(neighbor)
+                        }
+                    }
+                }
+            }
+            guard component.count >= 8, !containsInk, let maximum = counts.values.max() else { continue }
+            paints.formUnion(counts.filter { $0.value == maximum }.keys)
+        }
+        return paints
+    }
+
+    private static func similar(_ first: UInt32, _ second: UInt32, tolerance: Int) -> Bool {
+        [0, 8, 16].allSatisfy { abs(Int((first >> $0) & 255) - Int((second >> $0) & 255)) <= tolerance }
     }
 
     private static func cornerChannels(_ pixels: [UInt8], width: Int, height: Int) throws -> [ClosedRange<Int>] {

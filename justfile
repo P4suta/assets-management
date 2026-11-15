@@ -43,6 +43,10 @@ website-ui-test:
 app-test: generate
     xcodebuild -project PropertyRecords.xcodeproj -scheme PropertyRecords -destination '{{ destination }}' -derivedDataPath '{{ derived_data }}' CODE_SIGNING_ALLOWED=NO -parallel-testing-enabled NO -only-testing:PropertyRecordsAppTests test -quiet
 
+camera-sanitize result_path: generate
+    xcodebuild -project PropertyRecords.xcodeproj -scheme PropertyRecords -destination '{{ destination }}' -derivedDataPath .results/camera-encoding-sanitizer-derivedData -jobs 2 CODE_SIGNING_ALLOWED=NO -enableThreadSanitizer YES -parallel-testing-enabled NO -only-testing:PropertyRecordsAppTests/PhotoProcessorTests -resultBundlePath '{{ result_path }}' test -quiet
+    xcrun xcresulttool get test-results summary --path '{{ result_path }}' | jaq --exit-status '.result == "Passed" and .totalTestCount == 7 and .passedTests == 7 and .failedTests == 0 and .skippedTests == 0'
+
 vision-test result_path: generate
     xcodebuild -project PropertyRecords.xcodeproj -scheme PropertyRecordsVisionCapture -destination '{{ destination }}' -derivedDataPath .results/vision-compatible-derivedData CODE_SIGNING_ALLOWED=NO -parallel-testing-enabled NO -resultBundlePath '{{ result_path }}' test
     just native-text-test '{{ result_path }}'

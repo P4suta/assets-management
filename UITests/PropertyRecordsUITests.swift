@@ -853,6 +853,27 @@ final class PropertyRecordsUITests: XCTestCase {
         }
     }
 
+    func testNativeCalendarRequiresEveryDayOfTheDisplayedMonth() throws {
+        for (heading, month, count) in [("2025年4月", 4, 30), ("2025年1月", 1, 31),
+                                      ("2024年2月", 2, 29), ("2025年2月", 2, 28)] {
+            let calendar = try XCTUnwrap(NativeCalendarMonth(heading: heading))
+            let labels = (1...count).map { "\(month)月\($0)日 曜日" }
+            XCTAssertTrue(calendar.containsEveryDay(labels))
+            for missing in labels.indices {
+                var partial = labels
+                partial.remove(at: missing)
+                XCTAssertFalse(calendar.containsEveryDay(partial))
+            }
+            XCTAssertFalse(calendar.containsEveryDay(labels + [labels[0]]))
+            XCTAssertFalse(calendar.containsEveryDay(labels + ["\(month)月32日 曜日"]))
+            XCTAssertFalse(calendar.containsEveryDay(labels + ["日付不明"]))
+            XCTAssertFalse(calendar.containsEveryDay([]))
+        }
+        for heading in ["", "2025年13月", "0000年1月", "4月", "2025/04"] {
+            XCTAssertNil(NativeCalendarMonth(heading: heading))
+        }
+    }
+
     func testCalendarDateChangesStayInTheDraftUntilSaving() throws {
         let app = launch(seeded: true)
         openSampleRoom(app)
@@ -1233,6 +1254,44 @@ final class PropertyRecordsUITests: XCTestCase {
         XCTAssertLessThan(try UniformTextContrast(image: shaded(.white, end: .black), background: .sampledBorder).ratio, 4.5)
     }
 
+    func testTextContrastMeasuresEveryOpaqueForegroundPaint() throws {
+        let weak = UIColor(white: 0.8, alpha: 1)
+        for (connected, secondary) in [(false, weak), (true, weak), (false, .blue), (true, .blue)] {
+            let format = UIGraphicsImageRendererFormat()
+            format.scale = 1
+            format.opaque = true
+            let image = UIGraphicsImageRenderer(size: CGSize(width: 100, height: 40), format: format).image { context in
+                UIColor.white.setFill()
+                context.fill(CGRect(x: 0, y: 0, width: 100, height: 40))
+                UIColor.black.setFill()
+                context.fill(CGRect(x: 10, y: 10, width: 20, height: 20))
+                secondary.setFill()
+                context.fill(CGRect(x: connected ? 30 : 50, y: 10, width: 10, height: 20))
+            }
+            let ratio = try UniformTextContrast(image: XCTUnwrap(image.cgImage)).ratio
+            if secondary == .blue { XCTAssertEqual(ratio, 8.592, accuracy: 0.001) }
+            else { XCTAssertLessThan(ratio, 4.5) }
+        }
+        for size in [CGFloat(13), 17, 53] {
+            for dark in [false, true] {
+                let format = UIGraphicsImageRendererFormat()
+                format.scale = 2
+                format.opaque = true
+                let image = UIGraphicsImageRenderer(size: CGSize(width: 600, height: 160), format: format).image { context in
+                    (dark ? UIColor.black : .white).setFill()
+                    context.fill(CGRect(x: 0, y: 0, width: 600, height: 160))
+                    ("対応状況を確認" as NSString).draw(at: CGPoint(x: 8, y: 8), withAttributes: [
+                        .font: UIFont.systemFont(ofSize: size), .foregroundColor: dark ? UIColor.white : .black
+                    ])
+                    ("未了" as NSString).draw(at: CGPoint(x: 8, y: size + 20), withAttributes: [
+                        .font: UIFont.systemFont(ofSize: size), .foregroundColor: UIColor(white: dark ? 0.2 : 0.8, alpha: 1)
+                    ])
+                }
+                XCTAssertLessThan(try UniformTextContrast(image: XCTUnwrap(image.cgImage)).ratio, 4.5)
+            }
+        }
+    }
+
     func testTextContrastKeepsNativeBackgroundShadesOutOfTheForeground() throws {
         let url = try XCTUnwrap(Bundle(for: Self.self).url(forResource: "ProgressStatus", withExtension: "png"))
         let image = try XCTUnwrap(UIImage(contentsOfFile: url.path)?.cgImage)
@@ -1359,6 +1418,20 @@ final class PropertyRecordsUITests: XCTestCase {
         let visible = try XCTUnwrap(ScrollCoordinates(bounds: bounds, keyboard: CGRect(x: 0, y: 500, width: 500, height: 300)))
         XCTAssertEqual(visible.lower.dy, 380.0 / 600, accuracy: 0.001)
         XCTAssertGreaterThan(visible.lower.dy, visible.upper.dy)
+    }
+
+    func testScrollRestorationFollowsTheMeasuredDirectionAndClampsEachDrag() throws {
+        let bounds = CGRect(x: 20, y: 100, width: 300, height: 600)
+        let coordinates = try XCTUnwrap(ScrollCoordinates(bounds: bounds, keyboard: nil))
+        let span = bounds.height * (coordinates.lower.dy - coordinates.upper.dy)
+        XCTAssertEqual(coordinates.restorationOffset(from: 100, to: 100, in: bounds), 0)
+        XCTAssertEqual(coordinates.restorationOffset(from: 120, to: 100, in: bounds), -20)
+        XCTAssertEqual(coordinates.restorationOffset(from: 80, to: 100, in: bounds), 20)
+        XCTAssertEqual(coordinates.restorationOffset(from: -1000, to: 1000, in: bounds), span)
+        XCTAssertEqual(coordinates.restorationOffset(from: 1000, to: -1000, in: bounds), -span)
+        XCTAssertNil(coordinates.restorationOffset(from: .nan, to: 100, in: bounds))
+        XCTAssertNil(coordinates.restorationOffset(from: 100, to: .infinity, in: bounds))
+        XCTAssertNil(coordinates.restorationOffset(from: 0, to: 100, in: .zero))
     }
 
     func testScrollCoordinatesKeepPansInsideTheContent() throws {
@@ -2881,7 +2954,15 @@ final class PropertyRecordsUITests: XCTestCase {
                                               dy: frame.minY - window.frame.minY + frame.height * coordinates.upper.dy))
         for _ in 0..<6 {
             if anchor.frame == anchorFrame { break }
-            upper.press(forDuration: 0.05, thenDragTo: lower)
+            guard let offset = coordinates.restorationOffset(from: anchor.frame.midY, to: anchorFrame.midY, in: frame) else {
+                XCTFail("The anchor must provide a finite restoration offset.")
+                return
+            }
+            if offset > 0 {
+                upper.press(forDuration: 0.05, thenDragTo: upper.withOffset(CGVector(dx: 0, dy: offset)))
+            } else {
+                lower.press(forDuration: 0.05, thenDragTo: lower.withOffset(CGVector(dx: 0, dy: offset)))
+            }
         }
         let detail = XCTAttachment(string: "Expected anchor: \(anchorFrame)\nRestored anchor: \(anchor.frame)\nForm: \(form.frame)")
         detail.name = "Form restoration frames"
@@ -2925,7 +3006,11 @@ final class PropertyRecordsUITests: XCTestCase {
         let days = snapshotDescendants(calendar).filter {
             $0.elementType == .button && $0.label.range(of: #"^[0-9]+月[0-9]+日 .+"#, options: .regularExpression) != nil
         }
-        let labeled = Set(days.map(\.label)).count == days.count && days.allSatisfy {
+        let headings = Set(snapshotDescendants(calendar).map(\.label).filter {
+            NativeCalendarMonth(heading: $0) != nil
+        })
+        guard headings.count == 1, let heading = headings.first, let month = NativeCalendarMonth(heading: heading) else { return nil }
+        let labeled = month.containsEveryDay(days.map(\.label)) && days.allSatisfy {
             !$0.frame.isEmpty && calendar.frame.containsWithRoundingTolerance($0.frame) && window.frame.containsWithRoundingTolerance($0.frame)
         }
         let scope = NativeCalendarTextScope(version: ProcessInfo.processInfo.operatingSystemVersion,

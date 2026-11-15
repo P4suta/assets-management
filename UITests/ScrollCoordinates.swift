@@ -41,6 +41,14 @@ struct ScrollCoordinates {
     let lower: CGVector
     let upper: CGVector
 
+    func restorationOffset(from current: CGFloat, to original: CGFloat, in bounds: CGRect) -> CGFloat? {
+        let span = bounds.height * (lower.dy - upper.dy)
+        guard current.isFinite, original.isFinite, span.isFinite, span > 0 else { return nil }
+        let offset = original - current
+        guard offset.isFinite else { return nil }
+        return min(max(offset, -span), span)
+    }
+
     init?(bounds: CGRect, keyboard: CGRect?, rowLeading: CGFloat? = nil) {
         guard !bounds.isEmpty, !bounds.isInfinite,
               [bounds.minX, bounds.minY, bounds.maxX, bounds.maxY].allSatisfy(\.isFinite) else { return nil }
