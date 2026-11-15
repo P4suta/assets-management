@@ -1,0 +1,5 @@
+# GitHub's hosted xcode-27 label is absent from actionlint's bundled catalog.
+# https://docs.github.com/en/actions/reference/runners/github-hosted-runners
+self-hosted-runner:
+  labels:
+    - xcode-27

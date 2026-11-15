@@ -1,12 +1,18 @@
 # Prepare distribution
 
-The app targets iPhone with iOS 26 or later.
+The app targets iPhone and iPad with iOS 26 or later.
+Its native layout supports resizable windows and iPhone Duo.
 The App Store name is `物件管理くん`.
 The price is free, with no accounts, advertising, tracking, or purchases.
 The bundle identifier is `com.p4suta.PropertyRecords`.
 The Apple Developer team is `XMBQLW82L9`.
 The initial version is `1.0.0`.
-The current build number is `2`.
+The current build number is `6`.
+
+Mac and Apple Vision Pro use the compatible iOS build.
+App Store Connect [calculates macOS compatibility](https://developer.apple.com/help/app-store-connect/manage-your-apps-availability/manage-availability-of-iphone-and-ipad-apps-on-macs-with-apple-silicon) from the iOS deployment target and explicit OS selections.
+The project uses Apple's automatic setting.
+Native Mac test targets verify compatible rendering and interactions.
 
 Run the fast gate, hosted app tests, interface journeys on iOS 26 and a later runtime, Thread Sanitizer, and the full mutation campaign before archiving.
 The verification scope and mutation acceptance criteria are in [verification.md](verification.md).
@@ -33,8 +39,16 @@ App Store privacy answers must describe the shipped binary and its dependencies.
 The app stores records and attachments on the device and has no collection service.
 The support email is `hi@sakashita.email`.
 
-The Japanese description explains repair and renewal records without a tab walkthrough.
-The promotional text describes the history users can keep.
+The Japanese description addresses people managing rental properties and the work of keeping scattered records together.
+Its examples describe repair progress, memos and photographs, room contracts, equipment, shared contacts, and deadline reminders.
+The promotional text describes the notes, photographs, and progress users can keep.
+The keyword gate checks the limits of 100 characters in Apple's [product page guidance](https://developer.apple.com/app-store/product-page/) and 100 bytes in its [field reference](https://developer.apple.com/help/app-store-connect/reference/app-information/platform-version-information/).
+Each keyword contains more than two characters, as the field reference specifies.
+The screenshot sets include a large iPhone display, a medium iPhone display, and a 13-inch iPad under Apple's [screenshot specifications](https://developer.apple.com/help/app-store-connect/reference/app-information/screenshot-specifications).
+Dedicated iPhone Duo screenshots become required in April 2027 for submissions built with the iOS 27.1 SDK or later.
+The marketing URL points to the app-specific landing page at its subdomain root.
+The page meets Apple's [marketing URL definition](https://developer.apple.com/help/app-store-connect/reference/app-information/platform-version-information/).
+The CLI reports its general root-path heuristic for the dedicated marketing page: `legal.url.site_root`.
 The [header artwork](../AppStore/CreativeAssets/ja/header.svg) and [search results artwork](../AppStore/CreativeAssets/ja/search-results.svg) contain the Japanese heading on a white background.
 The header uses 3840 by 1646 pixels, and the search artwork uses 3840 by 2560 pixels under Apple's [creative asset specifications](https://developer.apple.com/help/app-store-connect/reference/app-information/creative-assets-specifications).
 Each heading stays inside its template's safe area.
@@ -53,9 +67,9 @@ Assign the header to `PRODUCT_PAGE_HEADER_ASSET`.
 Assign the search artwork to `APP_STORE_SEARCH_RESULTS_ASSET`.
 For the initial version, add the app version to a draft after assigning its creative images.
 Check the image's review state before adding a separate asset item.
-Leave the draft ready for the final submission button when the owner requests that handoff.
+Leave the draft ready when the user requests a manual submission.
 
 Prepare the Japanese metadata, screenshots, free price, age rating, export compliance, privacy answers, and review notes under [Apple's version requirements](https://developer.apple.com/help/app-store-connect/reference/app-information/platform-version-information).
-Select [automatic release after approval](https://developer.apple.com/help/app-store-connect/manage-your-apps-availability/select-an-app-store-version-release-option) when the owner authorizes publication.
+Select [automatic release after approval](https://developer.apple.com/help/app-store-connect/manage-your-apps-availability/select-an-app-store-version-release-option) after the user authorizes publication.
 Upload and build processing are preparation steps.
-Submitting for App Review and releasing the app require the owner's instruction.
+Submitting for App Review and releasing the app require explicit authorization.

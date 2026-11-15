@@ -20,6 +20,10 @@ public enum AttachmentKind: String, Codable, Sendable {
     case document, photo
 }
 
+public enum ContactCategory: String, Codable, CaseIterable, Sendable {
+    case resident, maintenance, management, insurance, fireSafety, other
+}
+
 public enum Field: String, Sendable {
     case buildingName, roomNumber, workTitle, contactName, historyText, equipmentName
 }
@@ -27,7 +31,7 @@ public enum Field: String, Sendable {
 public enum DomainError: Error, Equatable, Sendable {
     case required(Field)
     case duplicateRoom, invalidReference, invalidDates, invalidAmount, unsupportedFormat
-    case duplicateIdentifier, invalidAttachment, missingRenewal
+    case duplicateIdentifier, invalidAttachment, missingRenewal, invalidNotice
 }
 
 public struct Building: Identifiable, Codable, Equatable, Sendable {
@@ -53,11 +57,13 @@ public struct Contract: Codable, Equatable, Sendable {
     public var start: Date
     public var end: Date
     public var monthlyRent: Int?
+    public var notice: ContractNotice?
 
-    public init(start: Date, end: Date, monthlyRent: Int? = nil) {
+    public init(start: Date, end: Date, monthlyRent: Int? = nil, notice: ContractNotice? = nil) {
         self.start = start
         self.end = end
         self.monthlyRent = monthlyRent
+        self.notice = notice
     }
 }
 
@@ -105,15 +111,39 @@ public struct Contact: Identifiable, Codable, Equatable, Sendable {
     public var phone: String
     public var email: String
     public var notes: String
+    public var category: ContactCategory
+    public var isEmergency: Bool
+    public var buildingIDs: [UUID]
 
     public init(id: UUID = UUID(), name: String, company: String = "", phone: String = "",
-                email: String = "", notes: String = "") {
+                email: String = "", notes: String = "", category: ContactCategory = .other,
+                isEmergency: Bool = false, buildingIDs: [UUID] = []) {
         self.id = id
         self.name = name
         self.company = company
         self.phone = phone
         self.email = email
         self.notes = notes
+        self.category = category
+        self.isEmergency = isEmergency
+        self.buildingIDs = buildingIDs
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case id, name, company, phone, email, notes, category, isEmergency, buildingIDs
+    }
+
+    public init(from decoder: any Decoder) throws {
+        let values = try decoder.container(keyedBy: CodingKeys.self)
+        id = try values.decode(UUID.self, forKey: .id)
+        name = try values.decode(String.self, forKey: .name)
+        company = try values.decode(String.self, forKey: .company)
+        phone = try values.decode(String.self, forKey: .phone)
+        email = try values.decode(String.self, forKey: .email)
+        notes = try values.decode(String.self, forKey: .notes)
+        category = try values.decodeIfPresent(ContactCategory.self, forKey: .category) ?? .other
+        isEmergency = try values.decodeIfPresent(Bool.self, forKey: .isEmergency) ?? false
+        buildingIDs = try values.decodeIfPresent([UUID].self, forKey: .buildingIDs) ?? []
     }
 }
 

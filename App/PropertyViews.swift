@@ -2,7 +2,7 @@ import PropertyCore
 import SwiftUI
 
 struct BuildingListView: View {
-    @Environment(\.dynamicTypeSize) private var textSize
+    @Binding var selection: UUID?
     @Environment(RecordsStore.self) private var store
     @State private var query = ""
     @State private var editor: EditorDestination?
@@ -17,7 +17,7 @@ struct BuildingListView: View {
     }
 
     var body: some View {
-        List {
+        List(selection: $selection) {
             if buildings.isEmpty {
                 ContentUnavailableView {
                     Label(query.isEmpty ? "物件を登録しましょう" : "物件が見つかりません", systemImage: "building.2")
@@ -29,23 +29,20 @@ struct BuildingListView: View {
             } else {
                 Section("建物") {
                     ForEach(buildings) { building in
-                        NavigationLink { BuildingDetailView(buildingID: building.id) } label: {
+                        NavigationLink(value: building.id) {
+                            let selected = selection == building.id
                             VStack(alignment: .leading, spacing: 8) {
-                                Text(building.name).foregroundStyle(Color.primary)
+                                Text(building.name).recordForeground(Color.primary, selected: selected)
                                 Text(building.management.title + " · \(store.records.rooms.filter { $0.buildingID == building.id }.count)部屋")
-                                    .font(.subheadline).foregroundStyle(Color.secondary)
-                                let count = store.records.work.filter { $0.buildingID == building.id && $0.status != .completed }.count
-                                Text("未完了の対応 \(count)件").font(.footnote).foregroundStyle(Color.secondary)
+                                    .font(.subheadline).recordForeground(Color.secondary, selected: selected)
                             }.padding(.vertical, 4).accessibilityElement(children: .combine)
                         }
-                        .contextMenu { Button("編集") { editor = .building(building.id) } }
-                        .swipeActions { Button("編集") { editor = .building(building.id) } }
                     }
                 }
             }
         }
         .navigationTitle("物件")
-        .navigationBarTitleDisplayMode(textSize.isAccessibilitySize ? .inline : .large)
+        .navigationBarTitleDisplayMode(.inline)
         .searchable(text: $query, placement: .navigationBarDrawer(displayMode: .always), prompt: "検索")
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {
@@ -57,7 +54,7 @@ struct BuildingListView: View {
                     .accessibilityIdentifier("property.add")
             }
         }
-        .sheet(item: $editor) { EditorDestinationView(destination: $0) }
+        .editorPresentation($editor)
         .sheet(isPresented: $appInformation) { AppInformationView() }
     }
 }
@@ -86,33 +83,36 @@ struct BuildingDetailView: View {
                                     .font(.subheadline).foregroundStyle(Color.secondary)
                             }.padding(.vertical, 4)
                         }
-                        .contextMenu { Button("編集") { editor = .room(buildingID, room.id) } }
-                        .swipeActions { Button("編集") { editor = .room(buildingID, room.id) } }
                     }
                     Button("部屋を追加", systemImage: "plus") { editor = .room(buildingID, nil) }
                 }
-                Section("建物の情報") {
-                    NavigationLink("書類") { DocumentsView(location: RecordLocation(buildingID: buildingID)) }
-                    if let id = building.agencyContactID {
-                        NavigationLink("管理会社の連絡先") { ContactDetailView(contactID: id) }
-                    } else if building.management == .agency {
-                        Button("管理会社の連絡先を登録") { editor = .contact(nil, .agency(buildingID)) }
+                if building.management == .agency || building.agencyContactID != nil {
+                    Section("管理会社") {
+                        if let id = building.agencyContactID {
+                            NavigationLink("管理会社の連絡先") { ContactDetailView(contactID: id) }
+                                .accessibilityIdentifier("property.agency.detail")
+                        } else {
+                            Button("管理会社の連絡先を登録") { editor = .contact(nil, .agency(buildingID)) }
+                                .accessibilityIdentifier("property.agency.add")
+                        }
                     }
-                    Button("建物を編集", systemImage: "square.and.pencil") { editor = .building(buildingID) }
                 }
-                Section("共用部分の対応") {
-                    let common = store.records.work.filter { $0.buildingID == buildingID && $0.roomID == nil }
-                    if common.isEmpty { Text("対応の記録はありません").foregroundStyle(Color.secondary) }
-                    ForEach(common) { item in
-                        NavigationLink { WorkDetailView(workID: item.id) } label: { WorkRow(item: item) }
-                    }
-                    Button("共用部分の対応を追加", systemImage: "plus") { editor = .work(buildingID, nil, nil, .repair) }
+                RecordPhotosSection(location: RecordLocation(buildingID: buildingID))
+            }
+        }
+        .accessibilityIdentifier("property.detail")
+        .recordPhotosPresentation(at: RecordLocation(buildingID: buildingID))
+        .navigationTitle("建物")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            if building != nil {
+                ToolbarItem(placement: .primaryAction) {
+                    Button("建物を編集", systemImage: "square.and.pencil") { editor = .building(buildingID) }
+                        .accessibilityIdentifier("property.edit")
                 }
             }
         }
-        .navigationTitle("建物")
-        .navigationBarTitleDisplayMode(.inline)
-        .sheet(item: $editor) { EditorDestinationView(destination: $0) }
+        .editorPresentation($editor)
     }
 }
 
@@ -137,34 +137,29 @@ struct RoomDetailView: View {
                     }
                     NavigationLink {
                         ContractDetailView(roomID: roomID)
-                    } label: { Text(room.contract == nil ? "契約を登録" : "賃貸借契約") }
+                    } label: { Text("賃貸借契約") }
                     LabeledContent("家賃", value: yen(room.contract?.monthlyRent))
                 }
                 Section("部屋の情報") {
                     NavigationLink("設備") { EquipmentListView(roomID: roomID) }
-                    NavigationLink("書類") {
-                        DocumentsView(location: RecordLocation(buildingID: room.buildingID, roomID: roomID))
-                    }
                     if !room.notes.isEmpty { Text(room.notes) }
                 }
-                Section("過去と進行中の対応") {
-                    ForEach(store.records.work.filter { $0.roomID == roomID }.sorted { $0.receivedAt > $1.receivedAt }) { item in
-                        NavigationLink { WorkDetailView(workID: item.id) } label: { WorkRow(item: item) }
-                    }
-                    Button("対応を追加", systemImage: "plus") { editor = .work(room.buildingID, roomID, nil, .repair) }
-                }
+                RecordPhotosSection(location: RecordLocation(buildingID: room.buildingID, roomID: roomID))
             }
         }
+        .accessibilityIdentifier("room.detail")
+        .recordPhotosPresentation(at: room.map { RecordLocation(buildingID: $0.buildingID, roomID: $0.id) })
         .navigationTitle(room.map { $0.number + "号室" } ?? "部屋")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             if let room {
                 ToolbarItem(placement: .primaryAction) {
                     Button("部屋を編集", systemImage: "square.and.pencil") { editor = .room(room.buildingID, roomID) }
+                        .accessibilityIdentifier("room.edit")
                 }
             }
         }
-        .sheet(item: $editor) { EditorDestinationView(destination: $0) }
+        .editorPresentation($editor)
     }
 }
 
@@ -176,33 +171,50 @@ struct ContractDetailView: View {
 
     var body: some View {
         List {
+            ReminderReport()
             if let contract = room?.contract {
+                if let room {
+                    Section {
+                        Text(store.records.buildings.first { $0.id == room.buildingID }?.name ?? "")
+                        Text(room.number + "号室")
+                    }
+                }
                 Section("現在の契約") {
-                    LabeledContent("契約開始日", value: contract.start.formatted(date: .abbreviated, time: .omitted))
-                    LabeledContent("契約満了日", value: contract.end.formatted(date: .abbreviated, time: .omitted))
+                    LabeledContent("契約開始日", value: contract.start.formatted(ContractDates.format))
+                    LabeledContent("契約満了日", value: contract.end.formatted(ContractDates.format))
                     LabeledContent("家賃", value: yen(contract.monthlyRent))
+                }
+                if let notice = contract.notice, let deadline = notice.deadline(expiry: contract.end, calendar: ContractDates.calendar) {
+                    Section {
+                        LabeledContent("予告期限", value: deadline.formatted(ContractDates.format))
+                        LabeledContent("通知の設定", value: notice.reminderEnabled ? "オン" : "オフ")
+                        if notice.reminderEnabled { LabeledContent("期限当日の通知", value: "午前9時") }
+                        if notice.reminderEnabled, notice.advanceDays > 0 {
+                            LabeledContent("事前通知", value: "\(notice.advanceDays)日前の午前9時")
+                        }
+                    } header: { Text("更新・解約の予告") }
+                      footer: { Text("日付と通知時刻は日本時間が基準です。").accessibilityIdentifier("contract.time-zone") }
+                    ReminderReservationIssue(target: .contract(roomID))
                 }
             } else {
                 ContentUnavailableView("契約は未登録です", systemImage: "doc.text",
                                        description: Text("契約期間と家賃を登録できます。"))
             }
-            Section {
-                Button("契約を編集", systemImage: "square.and.pencil") { editor = .contract(roomID) }
-                if let room {
-                    Button("契約更新の対応を追加", systemImage: "calendar") {
-                        editor = .work(room.buildingID, roomID, nil, .renewal)
+        }
+        .accessibilityIdentifier("contract.detail")
+        .navigationTitle("賃貸借契約")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            if room != nil {
+                ToolbarItem(placement: .primaryAction) {
+                    Button(room?.contract == nil ? "契約を登録" : "契約を編集", systemImage: "square.and.pencil") {
+                        editor = .contract(roomID)
                     }
-                }
-            }
-            Section("契約更新の対応") {
-                ForEach(store.records.work.filter { $0.roomID == roomID && $0.kind == .renewal }) { item in
-                    NavigationLink { WorkDetailView(workID: item.id) } label: { WorkRow(item: item) }
+                    .accessibilityIdentifier("contract.edit")
                 }
             }
         }
-        .navigationTitle("賃貸借契約")
-        .navigationBarTitleDisplayMode(.inline)
-        .sheet(item: $editor) { EditorDestinationView(destination: $0) }
+        .editorPresentation($editor)
     }
 }
 
@@ -229,23 +241,25 @@ struct EquipmentListView: View {
                         if !item.notes.isEmpty { Text(item.notes).foregroundStyle(Color.secondary) }
                     }.padding(.vertical, 4)
                 }
-                .contextMenu { Button("編集") { editor = .equipment(roomID, item.id) } }
-                .swipeActions { Button("編集") { editor = .equipment(roomID, item.id) } }
             }
         }
+        .accessibilityIdentifier("equipment.list")
         .navigationTitle("設備")
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 Button("設備を追加", systemImage: "plus") { editor = .equipment(roomID, nil) }
             }
         }
-        .sheet(item: $editor) { EditorDestinationView(destination: $0) }
+        .editorPresentation($editor)
     }
 }
 
 struct ContactDetailView: View {
     @Environment(RecordsStore.self) private var store
     @State private var editor: EditorDestination?
+    @State private var confirmingDeletion = false
+    @State private var deleting = false
+    @State private var message: String?
     let contactID: UUID
     private var contact: Contact? { store.records.contacts.first { $0.id == contactID } }
 
@@ -254,27 +268,71 @@ struct ContactDetailView: View {
             if let contact {
                 Section("連絡先") {
                     Text(contact.name).font(.title2).bold()
+                    LabeledContent("種類", value: contact.category.title)
+                    if contact.isEmergency {
+                        Label("緊急連絡先", systemImage: "exclamationmark.circle")
+                            .contentAlignedRowSeparator()
+                    }
                     if !contact.company.isEmpty { LabeledContent("会社名", value: contact.company) }
                     if !contact.phone.isEmpty {
-                        if let url = URL(string: "tel:" + contact.phone.filter { $0.isNumber || $0 == "+" }) {
+                        if let url = contact.telephoneURL {
                             Link(destination: url) { LabeledContent("電話", value: contact.phone) }
+                                .accessibilityLabel("電話")
+                                .accessibilityValue(contact.phone)
+                                .accessibilityIdentifier("contact.phone.open")
+                        } else {
+                            LabeledContent("電話", value: contact.phone).textSelection(.enabled)
                         }
                     }
-                    if !contact.email.isEmpty, let url = URL(string: "mailto:" + contact.email) {
-                        Link(destination: url) { LabeledContent("メール", value: contact.email) }
+                    if !contact.email.isEmpty {
+                        if let url = contact.emailURL {
+                            Link(destination: url) { LabeledContent("メール", value: contact.email) }
+                                .accessibilityLabel("メール")
+                                .accessibilityValue(contact.email)
+                                .accessibilityIdentifier("contact.email.open")
+                        } else {
+                            LabeledContent("メール", value: contact.email).textSelection(.enabled)
+                        }
                     }
                     if !contact.notes.isEmpty { Text(contact.notes) }
                 }
-                Section { Text("連絡履歴は対応の詳細から記録できます。").foregroundStyle(Color.secondary) }
+                let buildings = store.records.relatedBuildings(for: contact.id)
+                if !buildings.isEmpty {
+                    Section("関連する物件") {
+                        ForEach(buildings) {
+                            Text($0.name).accessibilityIdentifier("contact.related." + $0.id.uuidString)
+                        }
+                    }
+                }
+                Section {
+                    if let message { Text(message).accessibilityIdentifier("contact.error") }
+                    Button("連絡先を削除", role: .destructive) { confirmingDeletion = true }
+                        .disabled(deleting)
+                }
+            } else {
+                ContentUnavailableView("連絡先は削除されました", systemImage: "person.crop.rectangle.stack")
             }
         }
+        .accessibilityIdentifier("contact.detail")
         .navigationTitle("連絡先")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
-            ToolbarItem(placement: .primaryAction) {
+            if contact != nil { ToolbarItem(placement: .primaryAction) {
                 Button("連絡先を編集", systemImage: "square.and.pencil") { editor = .contact(contactID, .none) }
-            }
+                    .accessibilityIdentifier("contact.edit")
+            } }
         }
-        .sheet(item: $editor) { EditorDestinationView(destination: $0) }
+        .editorPresentation($editor)
+        .alert("連絡先を削除", isPresented: $confirmingDeletion) {
+            Button("削除", role: .destructive) {
+                deleting = true
+                Task {
+                    do { try await store.save { try $0.removingContact(contactID) } }
+                    catch { message = errorMessage(error) }
+                    deleting = false
+                }
+            }
+            Button("キャンセル", role: .cancel) {}
+        } message: { Text("物件への割り当ても解除します。対応のメモと写真は残ります。") }
     }
 }

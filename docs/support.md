@@ -1,38 +1,54 @@
 # App support
 
 The app keeps repair follow-up and property records on your device.
-The iPhone app uses the Japanese name `物件管理くん`.
-The app supports iOS 26 or later and is free to download.
+The iPhone and iPad app uses the Japanese name `物件管理くん`.
+The app supports iOS 26 and iPadOS 26 or later and is free to download.
 
 ## Start a record
 
 Open Properties and add a building and its first room.
-Add residents, contracts, equipment, photographs, and documents from the building or room.
+Add residents, contracts, equipment, and photographs from the building or room.
 Use Actions to record a repair, renewal, or inspection.
 Common-area work belongs to a building without a room.
-Confirm a renewal only after you sign the replacement contract.
-Saving a renewal draft leaves the current contract unchanged.
+The active section precedes the completed section on one searchable screen.
+Open a work item to change its status and add short memos as events happen.
+Open a room's rental contract to edit its terms.
 
-## Amounts and files
+## Contacts
 
-Amounts are optional whole yen from zero through `1,000,000,000,000`.
+Use Contacts for maintenance, management, insurance, fire-safety, and resident contacts.
+Emergency contacts appear first.
+A contact can link to two or more buildings.
+Search names, companies, phone numbers, email addresses, notes, and related building names.
+Deleting a contact clears assignments while retaining work memos and photographs.
+
+## Amounts and photographs
+
+Amounts are optional whole yen.
 The app accepts both half-width and full-width digits.
 Thousands separators must group three digits.
 Clear an invalid amount or enter a valid amount before saving.
-Supported document extensions are `.pdf .txt`.
-Supported photograph extensions are `.jpg .jpeg .png .heic`.
-Each file can contain up to 25 mebibytes.
-The limit in bytes is `26,214,400`.
-The system viewer opens saved documents.
+Choose a photograph from the system library picker or take one with the camera.
+Photographs appear within the record and open at a larger size when tapped.
+Importing normalizes orientation and bounds the image size for local storage.
+Stored documents remain available through the system viewer.
 
 ## Reminders and stored data
 
-Enable notifications when saving a deadline or visit reminder.
+Enable notifications when saving a deadline reminder.
 If you deny permission, the record still saves.
 Open Settings from the notification notice and enable notifications.
 Return to the app to restore future reminders.
 Past dates don't produce a notification.
 If registration fails, use the retry action in the notification notice.
+
+Record a contract notice deadline in the room's rental contract editor.
+Choose a date from the agreement or calculate it from a selected number of months before expiry.
+The app doesn't determine legal notice requirements.
+Contract dates and the 09:00 reminders use Japan time, including during travel.
+Choose an optional advance reminder 7, 30, or 90 days beforehand.
+Open the app after changing device time or notification settings to reconcile future reminders.
+Selecting a notification opens its work item or contract after any open editor closes.
 
 Records aren't synchronized with a server or another device.
 Removing the app deletes its local records, while offloading preserves them.

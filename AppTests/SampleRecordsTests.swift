@@ -10,8 +10,11 @@ import Testing
         for past in [false, true] {
             let records = try SampleRecords.make(now: now, pastVisit: past)
             let visit = try #require(records.work.first?.nextVisit)
+            let deadline = try #require(records.work.first?.dueDate)
             #expect((visit < now) == past)
+            #expect((deadline < now) == past)
             #expect(abs(visit.timeIntervalSince(now)) < 172_800)
+            #expect(abs(deadline.timeIntervalSince(now)) < 172_800)
             #expect(try records.validated() == records)
         }
     }
