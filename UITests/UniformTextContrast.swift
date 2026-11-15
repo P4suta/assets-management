@@ -37,10 +37,16 @@ struct UniformTextContrast {
             if x == 0 || y == 0 || x == image.width - 1 || y == image.height - 1 { border.insert(rgb) }
         }
         let modes = colors.sorted { $0.value == $1.value ? $0.key < $1.key : $0.value > $1.value }
-        guard let dominant = modes.first else { throw TextContrastError.insufficientColors }
+        guard !modes.isEmpty else { throw TextContrastError.insufficientColors }
         let background: [(key: UInt32, value: Int)]
         switch model {
-        case .uniform: background = modes.filter { Self.neighbors($0.key, dominant.key) }
+        case .uniform:
+            let channels = try Self.cornerChannels(pixels, width: image.width, height: image.height)
+            background = modes.filter { sample in
+                [16, 8, 0].enumerated().allSatisfy { channel, shift in
+                    channels[channel].contains(Int((sample.key >> shift) & 255))
+                }
+            }
         case .shaded:
             let palette = try Self.shadedPalette(border)
             background = modes.filter { palette.contains($0.key) }
@@ -73,6 +79,17 @@ struct UniformTextContrast {
         foregroundHeight = lastRow - firstRow + 1
     }
 
+    private static func cornerChannels(_ pixels: [UInt8], width: Int, height: Int) throws -> [ClosedRange<Int>] {
+        let corners = [0, width - 1, (height - 1) * width, width * height - 1]
+        return try (0..<3).map { channel in
+            let values = corners.map { Int(pixels[$0 * 4 + channel]) }
+            let low = values.reduce(255, min)
+            let high = values.reduce(0, max)
+            guard high - low <= 16 else { throw TextContrastError.ambiguousColors }
+            return max(0, low - 1)...min(255, high + 1)
+        }
+    }
+
     private static func shadedPalette(_ border: Set<UInt32>) throws -> Set<UInt32> {
         guard !border.isEmpty, border.count <= 256 else { throw TextContrastError.ambiguousColors }
         for shift in [0, 8, 16] {
@@ -95,12 +112,6 @@ struct UniformTextContrast {
             }
         }
         return palette
-    }
-
-    private static func neighbors(_ first: UInt32, _ second: UInt32) -> Bool {
-        [0, 8, 16].allSatisfy { shift in
-            abs(Int((first >> shift) & 255) - Int((second >> shift) & 255)) <= 1
-        }
     }
 
     private static func luminance(_ rgb: UInt32) -> Double {

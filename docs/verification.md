@@ -38,7 +38,9 @@ The iPadOS 27.2 audit reports insufficient contrast for a selected deadline whos
 The test also measures the current status and deadline screenshots using the sRGB luminance and contrast formula from the [Web Content Accessibility Guidelines (WCAG)](https://www.w3.org/TR/WCAG22/#dfn-relative-luminance).
 The measurement covers captions drawn with a single foreground color on an opaque background.
 Status symbols use [monochrome rendering](https://developer.apple.com/design/human-interface-guidelines/sf-symbols#Rendering-modes).
-The test groups background colors within one 8-bit step per channel and uses the lowest contrast for the group.
+Label measurements derive the background range from the image's four corners, including one 8-bit step per channel for rounding.
+They reject corner differences greater than 16 on the 8-bit scale and use the lowest contrast across the measured background.
+An actual dark progress label verifies that small background differences can't become the selected text color.
 Section headers use the image border to measure an opaque shaded background.
 The measurement rejects border channel differences greater than 16 on the 8-bit scale and requires background colors to cover most pixels.
 Gradient fixtures reject weak text, missing foreground, and unsupported background variation.
@@ -123,10 +125,15 @@ Rendered label measurements require the complete label inside its scroll viewpor
 A [VoiceOver journey](https://developer.apple.com/documentation/xcuiautomation/xcuivoiceoverservice) checks editor labels in both directions and rejects background labels on iOS 27 or later.
 iOS 26 SDK builds [exclude the unavailable service](https://developer.apple.com/documentation/xcode/adding-a-build-configuration-file-to-your-project#Apply-a-setting-conditionally-to-a-platform-or-architecture) and report a skipped VoiceOver test.
 Run the interface suite on iOS 26 and an available later runtime after changing app behavior.
+Use a newly created or erased test Simulator for each complete profile.
+Notification authorization persists across isolated record stores.
+The denial journeys require a fresh system authorization prompt.
+The review demonstration can grant notifications, so a reused destination needs fresh system state before another complete run.
 The on-demand Native acceptance workflow checks an iPhone with iOS 26 and an iPad with iPadOS 27 through `just ui-workflow-test` and `just ui-layout-test`.
 Each target also runs with the largest text size, Dark appearance, and Increase Contrast enabled.
-The workflow group runs all interface tests except the adaptive class and screen tour.
-The layout group runs the adaptive class and screen tour.
+The layout group runs the adaptive class, screen tour, selected-row contrast, selected-work rotation, related record editing, and shared contact journeys.
+The workflow group runs the remaining interface tests.
+The groups distribute the longer native journeys without repeating tests or increasing job concurrency.
 The fast gate rejects missing or overlapping group selectors.
 Use GitHub's [documented standard runners](https://docs.github.com/en/actions/reference/runners/github-hosted-runners) with the installed [Xcode 26](https://github.com/actions/runner-images/blob/main/images/macos/macos-26-Readme.md) and [Xcode 27](https://github.com/actions/runner-images/blob/main/images/macos/xcode-27-arm64-Readme.md) environments.
 Start a same-repository pull request's run by adding the label: `release-acceptance`.

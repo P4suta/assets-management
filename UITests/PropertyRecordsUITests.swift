@@ -1204,6 +1204,14 @@ final class PropertyRecordsUITests: XCTestCase {
         XCTAssertLessThan(try UniformTextContrast(image: shaded(.lightGray), background: .shaded).ratio, 4.5)
         XCTAssertThrowsError(try UniformTextContrast(image: shaded(nil), background: .shaded))
         XCTAssertThrowsError(try UniformTextContrast(image: shaded(.white, end: .black), background: .shaded))
+        XCTAssertThrowsError(try UniformTextContrast(image: shaded(.white, end: .black)))
+    }
+
+    func testTextContrastKeepsNativeBackgroundShadesOutOfTheForeground() throws {
+        let url = try XCTUnwrap(Bundle(for: Self.self).url(forResource: "ProgressStatus", withExtension: "png"))
+        let image = try XCTUnwrap(UIImage(contentsOfFile: url.path)?.cgImage)
+        let measurement = try UniformTextContrast(image: image)
+        XCTAssertGreaterThanOrEqual(measurement.ratio, 4.5)
     }
 
     func testProgressSectionHeadingsRemainReadableTogether() throws {
