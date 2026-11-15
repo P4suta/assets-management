@@ -597,9 +597,9 @@ final class PropertyRecordsUITests: XCTestCase {
         openPhotoMenu(app)
         XCTAssertTrue(app.buttons["photos.library"].waitForExistence(timeout: 5))
         app.buttons["photos.library"].tap()
-        let cancel = app.buttons["Cancel"].firstMatch
-        XCTAssertTrue(cancel.waitForExistence(timeout: 5))
-        cancel.tap()
+        let library = NativePhotoLibrary(app: app)
+        XCTAssertTrue(library.waitForPresentation(), app.debugDescription)
+        library.cancel.tap()
         XCTAssertTrue(app.buttons["work.edit"].waitForExistence(timeout: 5))
         reveal(app.buttons[identifier], app: app)
         XCTAssertEqual(photos.count, 1)
@@ -789,6 +789,22 @@ final class PropertyRecordsUITests: XCTestCase {
         XCTAssertTrue(settings.accepts)
         settings.element.size.height = 100
         XCTAssertFalse(settings.accepts)
+        var roomButton = valid
+        roomButton.version = OperatingSystemVersion(majorVersion: 26, minorVersion: 5, patchVersion: 0)
+        roomButton.screen = "Building"
+        roomButton.label = "部屋を追加"
+        roomButton.element = CGRect(x: 48.666667, y: 569.333333, width: 315, height: 63.333333)
+        XCTAssertTrue(roomButton.accepts)
+        for invalidate in invalid.dropFirst() {
+            var candidate = roomButton
+            invalidate(&candidate)
+            XCTAssertFalse(candidate.accepts)
+        }
+        var laterRoom = roomButton
+        laterRoom.version = OperatingSystemVersion(majorVersion: 27, minorVersion: 2, patchVersion: 0)
+        XCTAssertFalse(laterRoom.accepts)
+        roomButton.element.size.height = 40
+        XCTAssertFalse(roomButton.accepts)
     }
 
     func testNativeCalendarTextScopeRejectsUnlabeledOrDifferentControls() {
@@ -1009,6 +1025,14 @@ final class PropertyRecordsUITests: XCTestCase {
         try audit(app, name: "Property Editor")
         app.buttons["editor.cancel"].tap()
         tap("未来ヶ丘団地", app: app)
+        let roomRow = row("203号室", app: app)
+        let building = app.collectionViews["property.detail"]
+        reveal(roomRow, app: app, in: building, requireFullVisibility: true)
+        if UIAccessibility.isDarkerSystemColorsEnabled {
+            for label in ["203号室", "佐藤 花子"] {
+                try assertRenderedCaptionContrast(roomRow.staticTexts[label].firstMatch, name: "Room metadata: " + label, app: app, in: building)
+            }
+        }
         try audit(app, name: "Building")
         tap("建物を編集", app: app)
         try audit(app, name: "Building Editor")
@@ -1078,8 +1102,8 @@ final class PropertyRecordsUITests: XCTestCase {
         }
         tap("賃貸借契約", app: app)
         XCTAssertTrue(app.staticTexts["契約満了日、2027年3月31日"].firstMatch.waitForExistence(timeout: 5))
-        let footer = app.staticTexts["contract.time-zone"]
-        reveal(footer, app: app, in: app.collectionViews["contract.detail"], requireFullVisibility: true)
+        XCTAssertFalse(app.staticTexts["更新・解約の予告"].exists)
+        XCTAssertFalse(app.staticTexts["contract.time-zone"].exists)
         try audit(app, name: "Contract")
     }
 
@@ -1192,8 +1216,9 @@ final class PropertyRecordsUITests: XCTestCase {
         let app = launch(seeded: true)
         for (title, location) in [("給湯器から水漏れ", "未来ヶ丘団地 · 203号室"), ("共用灯の交換", "青葉コート · 共用部分")] {
             let work = row(title, app: app)
+            reveal(work, app: app, in: app.collectionViews["work.list"])
             XCTAssertFalse(work.isSelected)
-            let heading = work.staticTexts.firstMatch
+            let heading = work.staticTexts[title].firstMatch
             XCTAssertEqual(heading.label, title)
             try assertRenderedCaptionContrast(heading, name: "Unselected work title", app: app)
             let caption = work.staticTexts["work.caption.location"].firstMatch
@@ -1640,7 +1665,10 @@ final class PropertyRecordsUITests: XCTestCase {
         tapIdentifier("contract.edit", app: app)
         configureContractNotice(app, monthsBeforeExpiry: 1)
         app.buttons["editor.save"].tap()
-        XCTAssertTrue(app.staticTexts["更新・解約の予告"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["editor.save"].waitForNonExistence(timeout: 5))
+        let notice = app.staticTexts["更新・解約の予告"]
+        reveal(notice, app: app, in: app.collectionViews["contract.detail"], requireFullVisibility: true)
+        XCTAssertTrue(notice.waitForExistence(timeout: 5))
         captureStoreScreen(app, name: "5-contract-notice")
         selectTab("連絡先", app: app)
         XCTAssertTrue(row("高橋", app: app).waitForExistence(timeout: 5))
@@ -1670,9 +1698,15 @@ final class PropertyRecordsUITests: XCTestCase {
         let notify = app.switches["contract.notice.notify"]
         setToggle(notify, enabled: true, app: app)
         app.buttons["editor.save"].tap()
-        let allow = XCUIApplication(bundleIdentifier: "com.apple.springboard").alerts.buttons["許可"]
+        let permission = XCUIApplication(bundleIdentifier: "com.apple.springboard").alerts.matching(NSPredicate(
+            format: "label CONTAINS %@ AND (label CONTAINS %@ OR label CONTAINS %@)", "物件管理くん", "通知", "Notifications"
+        )).firstMatch
+        let allow = permission.buttons.matching(NSPredicate(format: "label IN %@", ["許可", "Allow"])).firstMatch
         if allow.waitForExistence(timeout: 3) { allow.tap() }
-        XCTAssertTrue(app.staticTexts["家賃、¥82,000"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["editor.save"].waitForNonExistence(timeout: 5))
+        let rent = app.staticTexts["家賃、¥82,000"]
+        reveal(rent, app: app, in: app.collectionViews["contract.detail"], requireFullVisibility: true)
+        XCTAssertTrue(rent.waitForExistence(timeout: 5))
         captureStoreScreen(app, name: "Review contract notice")
         selectTab("連絡先", app: app)
         tapIdentifier("contacts.add", app: app)
@@ -1687,7 +1721,9 @@ final class PropertyRecordsUITests: XCTestCase {
         setToggle(property, enabled: true, app: app)
         app.buttons["editor.save"].tap()
         tap(contact, app: app)
-        XCTAssertTrue(app.staticTexts["夜間の連絡も受付"].waitForExistence(timeout: 5))
+        let contactNotes = app.staticTexts["夜間の連絡も受付"]
+        reveal(contactNotes, app: app, in: app.collectionViews["contact.detail"], requireFullVisibility: true)
+        XCTAssertTrue(contactNotes.waitForExistence(timeout: 5))
         captureStoreScreen(app, name: "Review shared contact")
         selectTab("対応", app: app)
         app.buttons["work.add"].tap()
@@ -1706,19 +1742,23 @@ final class PropertyRecordsUITests: XCTestCase {
         XCTAssertTrue(createdRepair.waitForExistence(timeout: 5))
         createdRepair.tap()
         let detail = app.collectionViews.containing(.button, identifier: "work.status").firstMatch
-        XCTAssertTrue(detail.staticTexts[building + " · 共用部分"].waitForExistence(timeout: 5))
+        let location = detail.staticTexts[building + " · 共用部分"]
+        reveal(location, app: app, in: detail, requireFullVisibility: true)
+        XCTAssertTrue(location.waitForExistence(timeout: 5))
         tapIdentifier("memo.add", app: app)
         enter("現地確認を依頼", into: "history.text", app: app)
         app.buttons["editor.save"].tap()
-        XCTAssertTrue(row("現地確認を依頼", app: app).waitForExistence(timeout: 5))
+        let memo = row("現地確認を依頼", app: app)
+        reveal(memo, app: app, in: detail)
+        XCTAssertTrue(memo.waitForExistence(timeout: 5))
         setWorkStatus("対応中", app: app)
         app.buttons["work.edit"].tap()
         XCTAssertTrue(app.buttons["editor.save"].waitForExistence(timeout: 5))
         waitForEditorLayout(field("work.title", app: app), app: app)
         for orientation in [UIDeviceOrientation.landscapeLeft, .portrait] {
             XCUIDevice.shared.orientation = orientation
-            XCTAssertTrue(field("work.title", app: app).waitForExistence(timeout: 5))
             waitForEditorLayout(field("work.title", app: app), app: app)
+            XCTAssertTrue(field("work.title", app: app).waitForExistence(timeout: 5))
             XCTAssertEqual(inputText("work.title", app: app), "共用灯の交換")
             XCTAssertTrue(app.buttons["editor.save"].isHittable)
         }
@@ -1900,6 +1940,8 @@ final class PropertyRecordsUITests: XCTestCase {
     }
 
     private func waitForEditorLayout(_ input: XCUIElement, app: XCUIApplication) {
+        waitForEditorViewport(app)
+        reveal(input, app: app, in: app.collectionViews["editor.form"])
         let identifier = input.identifier
         let label = input.label
         let elementType = input.elementType
@@ -2013,7 +2055,8 @@ final class PropertyRecordsUITests: XCTestCase {
     }
 
     private func setToggle(_ toggle: XCUIElement, enabled: Bool, app: XCUIApplication) {
-        reveal(toggle, app: app)
+        reveal(toggle, app: app, requireFullVisibility: true)
+        XCTAssertTrue(app.windows.firstMatch.frame.containsWithRoundingTolerance(toggle.frame))
         let value = enabled ? "1" : "0"
         if toggle.value as? String != value {
             toggle.coordinate(withNormalizedOffset: CGVector(dx: 1, dy: 0.5))
@@ -2029,7 +2072,11 @@ final class PropertyRecordsUITests: XCTestCase {
         XCTAssertTrue(status.waitForExistence(timeout: 5))
         status.tap()
         app.buttons[value].firstMatch.tap()
-        let changed = XCTNSPredicateExpectation(predicate: NSPredicate(format: "value == %@", value), object: status)
+        let committed = NSPredicate { _, _ in
+            let current = app.buttons["work.status"]
+            return current.exists && current.value as? String == value
+        }
+        let changed = XCTNSPredicateExpectation(predicate: committed, object: nil)
         XCTAssertEqual(XCTWaiter.wait(for: [changed], timeout: 5), .completed)
     }
 
@@ -2324,25 +2371,20 @@ final class PropertyRecordsUITests: XCTestCase {
         for mask in 0..<(1 << categories.count) {
             let selected = categories.enumerated().filter { mask & (1 << $0.offset) != 0 }
                 .reduce(into: XCUIAccessibilityAuditType()) { $0.formUnion($1.element) }
-            for nativeAmount in [false, true] {
-                let groups = auditGroups(selected, nativeAmount: nativeAmount)
-                XCTAssertEqual(groups.reduce(into: XCUIAccessibilityAuditType()) { $0.formUnion($1) }, selected)
-                XCTAssertTrue(groups.allSatisfy { !$0.isEmpty })
-                for (index, group) in groups.enumerated() {
-                    XCTAssertTrue(groups.dropFirst(index + 1).allSatisfy { $0.intersection(group).isEmpty })
-                }
-                for font: XCUIAccessibilityAuditType in [.dynamicType, .textClipped] where nativeAmount && selected.contains(font) {
-                    XCTAssertTrue(groups.contains(font), "Each font check must have its own native audit pass.")
-                }
+            let groups = auditGroups(selected)
+            XCTAssertEqual(groups.reduce(into: XCUIAccessibilityAuditType()) { $0.formUnion($1) }, selected)
+            XCTAssertTrue(groups.allSatisfy { !$0.isEmpty })
+            for (index, group) in groups.enumerated() {
+                XCTAssertTrue(groups.dropFirst(index + 1).allSatisfy { $0.intersection(group).isEmpty })
+            }
+            for font: XCUIAccessibilityAuditType in [.dynamicType, .textClipped] where selected.contains(font) {
+                XCTAssertTrue(groups.contains(font), "Each font check must have its own native audit pass.")
             }
         }
     }
 
-    private func auditGroups(_ types: XCUIAccessibilityAuditType, nativeAmount: Bool) -> [XCUIAccessibilityAuditType] {
-        let groups = nativeAmount
-            ? [types.subtracting([.dynamicType, .textClipped]), types.intersection(.dynamicType), types.intersection(.textClipped)]
-            : [types]
-        return groups
+    private func auditGroups(_ types: XCUIAccessibilityAuditType) -> [XCUIAccessibilityAuditType] {
+        [types.subtracting([.dynamicType, .textClipped]), types.intersection(.dynamicType), types.intersection(.textClipped)]
             .filter { !$0.isEmpty }
     }
 
@@ -2376,10 +2418,7 @@ final class PropertyRecordsUITests: XCTestCase {
         let previousFailurePolicy = continueAfterFailure
         continueAfterFailure = true
         defer { continueAfterFailure = previousFailurePolicy }
-        let form = app.collectionViews["editor.form"]
-        let nativeAmount = form.exists && form.textFields.matching(NSPredicate(format: "identifier IN %@",
-            ["work.estimate", "contract.rent", "renewal.rent"])).firstMatch.exists
-        for group in auditGroups(types, nativeAmount: nativeAmount) {
+        for group in auditGroups(types) {
             try app.performAccessibilityAudit(for: group) { nativeIssue in
                 let issue = AccessibilityAuditReport(nativeIssue)
                 print("Accessibility audit: \(name): \(issue.detailedDescription): \(issue.element?.debugDescription ?? "no element")")
@@ -2465,6 +2504,11 @@ final class PropertyRecordsUITests: XCTestCase {
             guard footer.exists else { return [:] }
             captions = [footer]
             style = .footnote
+        case "Building":
+            listID = "property.detail"
+            captions = app.collectionViews[listID].staticTexts.matching(NSPredicate(format: "label == %@", "写真")).allElementsBoundByIndex
+            XCTAssertEqual(captions.count, 1)
+            style = .subheadline
         default: return [:]
         }
         let list = app.collectionViews[listID]
@@ -2472,6 +2516,7 @@ final class PropertyRecordsUITests: XCTestCase {
         let minimum = standard.withSize(standard.pointSize * 2)
         var measurements: [String: NativeListTextMeasurement] = [:]
         for caption in captions {
+            let identity = screen == "Building" ? "property.photos.header" : caption.identifier
             reveal(caption, app: app, in: list, requireFullVisibility: true)
             let frame = caption.frame
             XCTAssertTrue(app.windows.firstMatch.frame.containsWithRoundingTolerance(frame))
@@ -2492,16 +2537,16 @@ final class PropertyRecordsUITests: XCTestCase {
                 (caption.label as NSString).draw(in: bounds, withAttributes: [.font: minimum, .foregroundColor: UIColor.black])
             }
             let expected = try UniformTextContrast(image: XCTUnwrap(reference.cgImage))
-            let details = XCTAttachment(string: "\(caption.identifier): \(frame)\nRendered height: \(rendered.foregroundHeight)\nMinimum height: \(expected.foregroundHeight)")
+            let details = XCTAttachment(string: "\(identity): \(frame)\nRendered height: \(rendered.foregroundHeight)\nMinimum height: \(expected.foregroundHeight)")
             details.name = "Native list text size"
             details.lifetime = .keepAlways
             add(details)
             let capture = XCTAttachment(screenshot: actual)
-            capture.name = "Measured list text " + caption.identifier
+            capture.name = "Measured list text " + identity
             capture.lifetime = .keepAlways
             add(capture)
             XCTAssertGreaterThanOrEqual(rendered.foregroundHeight, expected.foregroundHeight)
-            measurements[caption.identifier] = NativeListTextMeasurement(label: caption.label, frame: frame,
+            measurements[identity] = NativeListTextMeasurement(label: caption.label, frame: frame,
                 renderedHeight: rendered.foregroundHeight, minimumHeight: expected.foregroundHeight)
         }
         return measurements
@@ -2509,14 +2554,16 @@ final class PropertyRecordsUITests: XCTestCase {
 
     private func verifiedNativeListTextSize(_ issue: AccessibilityAuditReport, app: XCUIApplication,
         screen: String, measurements: [String: NativeListTextMeasurement], reportIndex: Int) -> String? {
-        guard issue.auditType == .dynamicType, issue.element == nil, screen == "Contact", !measurements.isEmpty else { return nil }
-        let lists = app.collectionViews.matching(identifier: "contact.detail")
+        guard issue.auditType == .dynamicType, ["Contact", "Building"].contains(screen), !measurements.isEmpty else { return nil }
+        let lists = app.collectionViews.matching(identifier: screen == "Contact" ? "contact.detail" : "property.detail")
         guard lists.count == 1 else { return nil }
         let list = lists.firstMatch
         let bars = (app.navigationBars.allElementsBoundByIndex + app.tabBars.allElementsBoundByIndex).filter(\.isHittable).map(\.frame)
         guard let visible = ListViewport(list: list.frame, window: app.windows.firstMatch.frame, target: list.frame, bars: bars) else { return nil }
         let matching = measurements.allSatisfy { identifier, measurement in
-            let captions = list.staticTexts.matching(identifier: identifier)
+            let captions = screen == "Building"
+                ? list.staticTexts.matching(NSPredicate(format: "label == %@", measurement.label))
+                : list.staticTexts.matching(identifier: identifier)
             return captions.count == 1 && captions.firstMatch.label == measurement.label
                 && captions.firstMatch.frame == measurement.frame && visible.bounds.containsWithRoundingTolerance(measurement.frame)
         }
@@ -2525,7 +2572,8 @@ final class PropertyRecordsUITests: XCTestCase {
             compactDescription: issue.compactDescription, detail: issue.detailedDescription, hasElement: issue.element != nil,
             textSize: UIApplication.shared.preferredContentSizeCategory, listIdentity: list.identifier,
             matchingCaptions: matching, measurements: measurements, list: list.frame,
-            window: app.windows.firstMatch.frame, reportIndex: reportIndex)
+            window: app.windows.firstMatch.frame, reportIndex: reportIndex,
+            reportedCaption: issue.element.map { NativeListLocatedCaption(type: $0.elementType, label: $0.label, frame: $0.frame) })
         guard scope.accepts else { return nil }
         return "The native comparison reproduces partial support; the current caption exceeds twice the standard rendered height."
     }
@@ -2625,7 +2673,13 @@ final class PropertyRecordsUITests: XCTestCase {
         guard issue.auditType == .textClipped, let element = issue.element,
               NativeCaptionClippingScope.fontStyle(screen: screen, label: element.label) != nil,
               let scale = renderingScale else { return nil }
-        let listIdentity = screen == "Contact" ? "contact.detail" : screen == "Repair" ? "work.detail" : "editor.form"
+        let listIdentity: String
+        switch screen {
+        case "Contact": listIdentity = "contact.detail"
+        case "Repair": listIdentity = "work.detail"
+        case "Building": listIdentity = "property.detail"
+        default: listIdentity = "editor.form"
+        }
         let viewport = app.collectionViews[listIdentity]
         func diagnostic(_ reason: String) {
             let detail = XCTAttachment(string: reason)
@@ -2852,7 +2906,7 @@ final class PropertyRecordsUITests: XCTestCase {
             if !window.containsWithRoundingTolerance(frame) || bars.contains(where: { $0.isHittable && $0.frame.intersects(frame) }) {
                 return "Text crosses a native scroll edge; unobscured semantic secondary text measured 5.97:1."
             }
-        } else if ["Actions", "Repair", "Contractor", "Documents", "Properties", "Building", "Room", "Long property name", "App information"].contains(screen) {
+        } else if ["Actions", "Repair", "Contact", "Contacts", "Documents", "Properties", "Building", "Room", "Long property name", "App information"].contains(screen) {
             // Exposing every authored merged row left the same iOS 26 scroll-edge reports without an element.
             return "Unlocated iOS 26 scroll-edge sample; reproduced in Settings and checked in screenshots."
         }

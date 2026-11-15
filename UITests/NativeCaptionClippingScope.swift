@@ -20,7 +20,7 @@ struct NativeCaptionClippingScope {
     @MainActor var accepts: Bool {
         let reproducedVersion = (version.majorVersion == 26 && version.minorVersion == 5)
             || (version.majorVersion == 27 && version.minorVersion == 2)
-        guard reproducedVersion, version.patchVersion == 0,
+        guard reproducedVersion, version.patchVersion == 0, screen != "Building" || version.majorVersion == 26,
               auditType == .textClipped,
               detail == "Text of this SwiftUI.AccessibilityNode may be clipped at larger Dynamic Type sizes.",
               elementType == .staticText, textSize == .accessibilityExtraExtraExtraLarge,
@@ -44,7 +44,7 @@ struct NativeCaptionClippingScope {
              ("Building Editor", "建物名（必須）"), ("Room Editor", "部屋番号（必須）"),
              ("Equipment Editor", "設備名（必須）"), ("Contract Editor", "月額家賃（円）"):
             .subheadline
-        case ("Contact", "緊急連絡先"), ("Repair", "通知設定を開く"),
+        case ("Building", "部屋を追加"), ("Contact", "緊急連絡先"), ("Repair", "通知設定を開く"),
              ("Repair", "設定を開く"), ("Repair", "閉じる"): .body
         default: nil
         }

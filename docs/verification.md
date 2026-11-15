@@ -4,8 +4,9 @@ The fast gate runs semantic lint, secret scanning, Swift 6 type checking, determ
 Xcode builds turn off compilation caching to reduce temporary disk use during checks.
 The interface suite exercises saved records through native controls and audits accessibility.
 Native test schemes use Japanese and Japan to match the app's typography.
-Forms with native amount inputs give Dynamic Type and clipped-text checks their own audit calls.
+Dynamic Type and clipped-text checks use separate audit calls on every screen.
 The same repair form can produce unlocated reports when font checks run in one batch.
+An offscreen amount input can be absent from the native hierarchy.
 Every selected audit category remains required.
 An English test process can measure Japanese fallback fonts differently from the Japanese app.
 The caption fixtures and rendered measurement test reject that mismatch.
@@ -76,11 +77,17 @@ The related property section reproduces the report, while the captured text exce
 Settings' settled General screen also reports partial support for its system title.
 The contact qualifier requires the exact runtime, screen, report, owning list, and one freshly measured related property caption.
 The caption's identity, label, frame, and visibility must still match when the audit runs.
-An unscaled font, absent measurement, full unsupported report, located issue, changed frame, or repeated report fails verification.
+An unscaled font, absent measurement, full unsupported report, changed frame, or repeated report fails verification.
+Located reports remain failures except for the photo section header reproduced on iOS 26.5 in an independent standard list.
+The header qualifier requires the exact report, screen, native element, owning list, current frame, and freshly measured text at least twice its standard height.
+Hosted image tests recognize the complete photo header and Add Room caption at widths of 320, 420, and 1,032 points in Light and Dark appearance.
+Both captions must reach twice their standard rendered character height at AX5.
+Rejecting fixtures cover a forced standard font, missing characters, duplicate captions, and separated text fragments.
 Editor sheets use Apple's [page presentation sizing](https://developer.apple.com/documentation/swiftui/view/presentationsizing(_:)) to keep the available space at AX5.
 The repair journey audits the initial form and the amount field after scrolling.
 Full unsupported Dynamic Type reports remain failures.
 On iOS 26.5 and 27.2, a Japanese development region reproduces clipped-text predictions for complete captions in an independent SwiftUI form.
+The standard list also reproduces the Add Room prediction on iOS 26.5.
 The caption qualifier requires the exact runtime, report, screen, label, text style, and largest text size.
 It checks a unique matching native element, an unobscured viewport, fresh rendered foreground pixels, and the complete text's bounds using the system font.
 Its tolerance is one display pixel.

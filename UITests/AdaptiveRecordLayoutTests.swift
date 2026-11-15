@@ -25,6 +25,12 @@ import XCTest
         XCTAssertFalse(compact.contains(obscured, requireFullVisibility: false))
         XCTAssertFalse(compact.contains(.zero, requireFullVisibility: false))
         XCTAssertFalse(compact.contains(.infinite, requireFullVisibility: false))
+        let clippedToggle = CGRect(x: 16, y: 823, width: 370, height: 93.3)
+        let form = try XCTUnwrap(ListViewport(list: CGRect(x: 0, y: 62, width: 402, height: 812),
+            window: CGRect(x: 0, y: 0, width: 402, height: 874), target: clippedToggle,
+            bars: [CGRect(x: 0, y: 62, width: 402, height: 60)]))
+        XCTAssertTrue(form.contains(clippedToggle, requireFullVisibility: false))
+        XCTAssertFalse(form.contains(clippedToggle, requireFullVisibility: true))
         XCTAssertNil(ListViewport(list: .zero, window: phone, target: obscured, bars: []))
         XCTAssertNil(ListViewport(list: phone, window: phone, target: obscured, bars: [.infinite]))
     }
@@ -123,6 +129,11 @@ import XCTest
         app.buttons["work.status"].tap()
         app.buttons["返答待ち"].firstMatch.tap()
         assertStatus("返答待ち", app: app)
+        app.terminate()
+        app.launch()
+        XCTAssertTrue(app.buttons["work.add"].waitForExistence(timeout: 10))
+        openRepair(app)
+        assertStatus("返答待ち", app: app)
     }
 
     func testImportedPhotoRendersInlineAfterRelaunch() throws {
@@ -182,22 +193,25 @@ import XCTest
     }
 
     private func chooseLibraryPhoto(_ app: XCUIApplication) {
-        let cancel = app.buttons["Cancel"].firstMatch
-        XCTAssertTrue(cancel.waitForExistence(timeout: 5))
-        let onboarding = app.otherElements["PXGSingleViewContainerView_AX"].buttons["閉じる"].firstMatch
+        let nativeLibrary = NativePhotoLibrary(app: app)
+        XCTAssertTrue(nativeLibrary.waitForPresentation(), app.debugDescription)
+        let onboarding = nativeLibrary.introduction
         let library = app.scrollViews["photosView_content_scroll_view"]
-        let asset = library.images.matching(identifier: "PXGGridLayout-Info").firstMatch
-        let loaded = NSPredicate { _, _ in onboarding.exists || asset.exists }
-        XCTAssertEqual(XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: loaded, object: nil)], timeout: 30), .completed)
-        if onboarding.exists && onboarding.isHittable { onboarding.tap() }
-        XCTAssertTrue(asset.waitForExistence(timeout: 30), app.debugDescription)
+        let assets = library.images.matching(identifier: "PXGGridLayout-Info")
+        XCTAssertTrue(assets.firstMatch.waitForExistence(timeout: 30), app.debugDescription)
         let window = app.windows.firstMatch
+        var asset: XCUIElement?
         var previous: CGRect?
         let visible = NSPredicate { _, _ in
-            guard asset.exists, library.exists, !onboarding.exists else { return false }
-            let frame = asset.frame
+            guard library.exists, !onboarding.exists else { return false }
+            guard let viewport = ListViewport(list: library.frame, window: window.frame, target: library.frame, bars: []) else { return false }
+            guard let candidate = assets.allElementsBoundByIndex.first(where: {
+                viewport.contains($0.frame, requireFullVisibility: false)
+            }) else { return false }
+            let frame = candidate.frame
+            asset = candidate
             defer { previous = frame }
-            return !frame.isEmpty && library.frame.intersection(window.frame).contains(frame) && frame == previous
+            return frame == previous
         }
         let readiness = XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: visible, object: nil)], timeout: 30)
         let picker = XCTAttachment(string: app.debugDescription)
@@ -205,11 +219,14 @@ import XCTest
         picker.lifetime = .keepAlways
         add(picker)
         capture(app, name: "Native photo library")
-        XCTAssertEqual(readiness, .completed)
+        guard readiness == .completed, let asset else {
+            XCTFail("A stable native photo tile must have its center inside the library viewport before selection.")
+            return
+        }
         let frame = asset.frame
         let origin = window.coordinate(withNormalizedOffset: .zero)
         origin.withOffset(CGVector(dx: frame.midX - window.frame.minX, dy: frame.midY - window.frame.minY)).tap()
-        XCTAssertTrue(cancel.waitForNonExistence(timeout: 5))
+        XCTAssertTrue(nativeLibrary.cancel.waitForNonExistence(timeout: 5))
     }
 
     func testVisibleReminderToggleMeetsIncreasedContrast() throws {
@@ -376,9 +393,12 @@ import XCTest
     }
 
     private func assertStatus(_ title: String, app: XCUIApplication) {
-        let control = app.buttons["work.status"]
-        let value = NSPredicate(format: "value == %@", title)
-        XCTAssertEqual(XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: value, object: control)], timeout: 5), .completed)
+        let value = NSPredicate { _, _ in
+            let control = app.buttons["work.status"]
+            return control.exists && control.value as? String == title
+        }
+        XCTAssertEqual(XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: value, object: nil)], timeout: 5), .completed,
+                       app.debugDescription)
         XCTAssertEqual(app.alerts.count, 0)
     }
 

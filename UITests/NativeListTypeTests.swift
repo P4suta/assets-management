@@ -2,6 +2,39 @@ import UIKit
 import XCTest
 
 @MainActor final class NativeListTypeTests: XCTestCase {
+    func testPartialHeaderTypeScopeRequiresTheCurrentMeasuredNativeCaption() {
+        let frame = CGRect(x: 16, y: 665, width: 370, height: 83.333333)
+        let identity = "property.photos.header"
+        let native = NativeListTypeScope(version: OperatingSystemVersion(majorVersion: 26, minorVersion: 5, patchVersion: 0),
+            idiom: .phone, screen: "Building", auditType: .dynamicType,
+            compactDescription: "Dynamic Type font sizes are partially unsupported",
+            detail: "User will not be able to change the font size of this SwiftUI.AccessibilityNode",
+            hasElement: true, textSize: .accessibilityExtraExtraExtraLarge, listIdentity: "property.detail", matchingCaptions: true,
+            measurements: [identity: NativeListTextMeasurement(label: "写真", frame: frame, renderedHeight: 120, minimumHeight: 80)],
+            list: CGRect(x: 0, y: 0, width: 402, height: 874), window: CGRect(x: 0, y: 0, width: 402, height: 874),
+            reportedCaption: NativeListLocatedCaption(type: .staticText, label: "写真", frame: frame))
+        XCTAssertTrue(native.accepts)
+        let rejected: [(inout NativeListTypeScope) -> Void] = [
+            { $0.version.majorVersion = 27 }, { $0.version.minorVersion = 4 }, { $0.version.patchVersion = 1 },
+            { $0.idiom = .pad }, { $0.screen = "Contact" }, { $0.auditType = .textClipped },
+            { $0.compactDescription = "Dynamic Type font sizes are unsupported" },
+            { $0.detail = "Unknown report" }, { $0.hasElement = false }, { $0.textSize = .large },
+            { $0.listIdentity = "room.detail" }, { $0.matchingCaptions = false }, { $0.reportedCaption = nil },
+            { $0.reportedCaption?.type = .button }, { $0.reportedCaption?.label = "部屋" },
+            { $0.reportedCaption?.frame.origin.y += 1 }, { $0.measurements = [:] },
+            { $0.measurements["unknown"] = $0.measurements.removeValue(forKey: identity) },
+            { $0.measurements[identity]?.label = "部屋" }, { $0.measurements[identity]?.renderedHeight = 79 },
+            { $0.measurements[identity]?.minimumHeight = 0 }, { $0.measurements[identity]?.frame = .zero },
+            { $0.measurements[identity]?.frame.origin.x = .nan }, { $0.measurements[identity]?.frame.origin.y = 900 },
+            { $0.list = .zero }, { $0.list.size.width = 403 }, { $0.window = .zero }, { $0.reportIndex = 0 }, { $0.reportIndex = 2 }
+        ]
+        for reject in rejected {
+            var candidate = native
+            reject(&candidate)
+            XCTAssertFalse(candidate.accepts)
+        }
+    }
+
     func testPartialListTypeScopeRejectsUnverifiedOrUnsupportedReports() {
         let identity = "contact.related.sample"
         let native = NativeListTypeScope(version: OperatingSystemVersion(majorVersion: 27, minorVersion: 2, patchVersion: 0),
