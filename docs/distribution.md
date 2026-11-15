@@ -37,6 +37,8 @@ The support email is `hi@sakashita.email`.
 The Japanese description addresses rental property managers who need to find earlier repairs and keep scattered notes and photographs together.
 Its examples describe short memos, inline photographs, progress search, deadline reminders, contracts, equipment, and common-area work.
 The promotional text describes the notes, photographs, and progress users can keep.
+The screenshot sets include a large iPhone display, a medium iPhone display, and a 13-inch iPad under Apple's [screenshot specifications](https://developer.apple.com/help/app-store-connect/reference/app-information/screenshot-specifications).
+Dedicated iPhone Duo screenshots become required in April 2027 for submissions built with the iOS 27.1 SDK or later.
 The marketing URL points to the app-specific landing page at its subdomain root.
 The page meets Apple's [marketing URL definition](https://developer.apple.com/help/app-store-connect/reference/app-information/platform-version-information/).
 The CLI reports its general root-path heuristic for the dedicated marketing page: `legal.url.site_root`.
