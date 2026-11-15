@@ -14,7 +14,7 @@ concurrency:
 
 jobs:
   journeys:
-    name: ${{ matrix.device }} / ${{ matrix.profile }}
+    name: ${{ matrix.device }} / ${{ matrix.profile }} / ${{ matrix.journey }}
     if: >-
       github.repository_id == '1455076889' &&
       (github.event_name == 'workflow_dispatch' ||
@@ -26,8 +26,9 @@ jobs:
       fail-fast: false
       max-parallel: 2
       matrix:
-        device: [iPhone-iOS26, iPad-iPadOS27]
-        profile: [standard, accessibility]
+        device: [iPad-iPadOS27, iPhone-iOS26]
+        profile: [accessibility, standard]
+        journey: [workflow, layout]
         include:
           - device: iPhone-iOS26
             runner: macos-26
@@ -47,6 +48,10 @@ jobs:
             content-size: accessibility-extra-extra-extra-large
             appearance: dark
             contrast: enabled
+          - journey: workflow
+            recipe: ui-workflow-test
+          - journey: layout
+            recipe: ui-layout-test
     env:
       DEVELOPER_DIR: ${{ matrix.developer }}
     steps:
@@ -91,14 +96,16 @@ jobs:
           xcrun simctl io "$SIMULATOR_UDID" screenshot .results/native-bootstrap.png
       - id: tests
         timeout-minutes: 110
-        run: mise x xcodegen just -- just ui-test
+        env:
+          NATIVE_TEST_RECIPE: ${{ matrix.recipe }}
+        run: mise x xcodegen just -- just "$NATIVE_TEST_RECIPE"
       - name: Preserve native test results and captures
         if: >-
           ${{ !cancelled() &&
               (steps.tests.outcome != 'skipped' || steps.host-tests.outcome != 'skipped') }}
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: native-results-${{ matrix.device }}-${{ matrix.profile }}-${{ github.event.pull_request.head.sha || github.sha }}-${{ github.run_attempt }}
+          name: native-results-${{ matrix.device }}-${{ matrix.profile }}-${{ matrix.journey }}-${{ github.event.pull_request.head.sha || github.sha }}-${{ github.run_attempt }}
           path: |
             .derivedData/Logs/Test/*.xcresult
             .results/native-bootstrap.png
@@ -109,7 +116,7 @@ jobs:
         if: ${{ failure() && steps.tests.outcome == 'failure' }}
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: native-products-${{ matrix.device }}-${{ matrix.profile }}-${{ github.event.pull_request.head.sha || github.sha }}-${{ github.run_attempt }}
+          name: native-products-${{ matrix.device }}-${{ matrix.profile }}-${{ matrix.journey }}-${{ github.event.pull_request.head.sha || github.sha }}-${{ github.run_attempt }}
           path: .derivedData/Build/Products
           include-hidden-files: true
           if-no-files-found: error
@@ -118,7 +125,7 @@ jobs:
         if: ${{ failure() && steps.tests.outcome == 'skipped' }}
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: native-bootstrap-${{ matrix.device }}-${{ matrix.profile }}-${{ github.event.pull_request.head.sha || github.sha }}-${{ github.run_attempt }}
+          name: native-bootstrap-${{ matrix.device }}-${{ matrix.profile }}-${{ matrix.journey }}-${{ github.event.pull_request.head.sha || github.sha }}-${{ github.run_attempt }}
           path: .results/native-bootstrap.png
           include-hidden-files: true
           if-no-files-found: ignore

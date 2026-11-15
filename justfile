@@ -45,6 +45,12 @@ app-test: generate
 ui-test: generate
     xcodebuild -project PropertyRecords.xcodeproj -scheme PropertyRecordsInterface -destination '{{ destination }}' -derivedDataPath .derivedData CODE_SIGNING_ALLOWED=NO -parallel-testing-enabled NO '-skip-testing:PropertyRecordsUITests/PropertyRecordsUITests/testSystemSettingsAuditProbe()' test
 
+ui-workflow-test: generate
+    xcodebuild -project PropertyRecords.xcodeproj -scheme PropertyRecordsInterface -destination '{{ destination }}' -derivedDataPath .derivedData CODE_SIGNING_ALLOWED=NO -parallel-testing-enabled NO '-skip-testing:PropertyRecordsUITests/PropertyRecordsUITests/testSystemSettingsAuditProbe()' '-skip-testing:PropertyRecordsUITests/AdaptiveRecordLayoutTests' '-skip-testing:PropertyRecordsUITests/PropertyRecordsUITests/testScreenTourAccessibility()' test
+
+ui-layout-test: generate
+    xcodebuild -project PropertyRecords.xcodeproj -scheme PropertyRecordsInterface -destination '{{ destination }}' -derivedDataPath .derivedData CODE_SIGNING_ALLOWED=NO -parallel-testing-enabled NO '-only-testing:PropertyRecordsUITests/AdaptiveRecordLayoutTests' '-only-testing:PropertyRecordsUITests/PropertyRecordsUITests/testScreenTourAccessibility()' test
+
 ui-tour: generate
     xcodebuild -project PropertyRecords.xcodeproj -scheme PropertyRecordsInterface -destination '{{ destination }}' -derivedDataPath .derivedData CODE_SIGNING_ALLOWED=NO -parallel-testing-enabled NO '-only-testing:PropertyRecordsUITests/PropertyRecordsUITests/testScreenTourAccessibility()' test -quiet
 

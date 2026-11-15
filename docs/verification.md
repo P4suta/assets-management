@@ -112,8 +112,11 @@ Rendered label measurements require the complete label inside its scroll viewpor
 A [VoiceOver journey](https://developer.apple.com/documentation/xcuiautomation/xcuivoiceoverservice) checks editor labels in both directions and rejects background labels on iOS 27 or later.
 iOS 26 SDK builds [exclude the unavailable service](https://developer.apple.com/documentation/xcode/adding-a-build-configuration-file-to-your-project#Apply-a-setting-conditionally-to-a-platform-or-architecture) and report a skipped VoiceOver test.
 Run the interface suite on iOS 26 and an available later runtime after changing app behavior.
-The on-demand Native acceptance workflow checks an iPhone with iOS 26 and an iPad with iPadOS 27 through `just ui-test`.
+The on-demand Native acceptance workflow checks an iPhone with iOS 26 and an iPad with iPadOS 27 through `just ui-workflow-test` and `just ui-layout-test`.
 Each target also runs with the largest text size, Dark appearance, and Increase Contrast enabled.
+The workflow group runs all interface tests except the adaptive class and screen tour.
+The layout group runs the adaptive class and screen tour.
+The fast gate rejects missing or overlapping group selectors.
 Use GitHub's [documented standard runners](https://docs.github.com/en/actions/reference/runners/github-hosted-runners) with the installed [Xcode 26](https://github.com/actions/runner-images/blob/main/images/macos/macos-26-Readme.md) and [Xcode 27](https://github.com/actions/runner-images/blob/main/images/macos/xcode-27-arm64-Readme.md) environments.
 Start a same-repository pull request's run by adding the label: `release-acceptance`.
 Remove and reapply the label to check a later head.
@@ -186,7 +189,7 @@ The configuration limits concurrency to two, individual tests to 15 seconds, and
 Each run rebuilds a clean sandbox and doesn't reuse mutation verdicts.
 Run mutation analysis from a detached Git working tree of the committed source.
 Keep the Git socket outside the copied checkout: `fsmonitor--daemon.ipc`.
-Keep the package manifest, sources, tests, and app files used by source policy tests together.
+Keep the package manifest, sources, tests, app files, and justfile used by source policy tests together.
 Verify the configuration file matches the selected commit before trusting it: `mise.toml`.
 
 The native report must contain no surviving or uncovered change, timeout, or integrity warning before accepting a campaign.
