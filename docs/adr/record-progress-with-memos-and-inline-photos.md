@@ -7,7 +7,7 @@ status: proposed
 
 ## Context
 
-The requested experience shows unfinished and completed work together and records short memos and photos.
+The requested experience combines unfinished and completed work with memos and photos.
 Separate completed lists and contact workflows add unwanted navigation.
 
 ## Decision
@@ -28,7 +28,7 @@ Original-resolution image decoding increases memory use during scrolling and imp
 
 ## Consequences
 
-Preserve the storage format.
+The snapshot migration preserves existing records and fields.
 Existing document attachments remain viewable, and new attachment controls accept photos.
 Photo normalization trades original resolution for bounded storage and decoding.
 Reconsider document import or original-resolution storage when users need to keep source files.

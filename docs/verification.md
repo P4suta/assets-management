@@ -48,6 +48,13 @@ Information text and related property rows sample the image border across native
 The palette must cover most pixels, and every sampled background color participates in the lowest contrast calculation.
 Actual AX5 storage and related property captions check the rounded rows, while gradient fixtures reject weak and missing text.
 Unsupported or ambiguous images fail verification.
+The measurement samples flat foreground paint from `3×3` neighborhoods.
+Each neighboring pixel differs by at most 1 channel step from the sample.
+Separate foreground components with at least 8 pixels contribute their modal colors when they lack the dominant ink.
+Every sampled paint contributes its lowest ratio across the backgrounds.
+Connected and separate two-color fixtures check unequal areas, weak gray text, and legible blue text.
+Mixed Japanese text at 13, 17, and 53 points checks faint text in Light and Dark appearance.
+The [WCAG contrast explanation](https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum.html) distinguishes authored text colors from blended edges.
 The audit filter requires the affected OS, issue type, label, element type, selection, matching frame, and a fresh measured ratio of at least 4.5:1.
 The filter also verifies work titles and the combined progress headers from current screenshots.
 Contact captions and section headers receive the same checks.
@@ -155,8 +162,12 @@ Compatible Vision journeys use `XCUIElement.swipeUp()` and `swipeDown()` to scro
 Text replacement waits for the native selection menu and recognizes its observed pagination labels.
 
 Calendar journeys check selection, discarded drafts, saving, relaunch, and accessibility.
+Contract rendering fixtures construct dates in the editor's Tokyo calendar.
 The floating system calendar on iPadOS 27.2 can report unlocated text despite exposing a full date and weekday for each date control.
 The qualifier requires the exact text report, calendar screen, floating bounds, 28 to 42 unique labeled day controls, and a reachable Done control.
+It parses the displayed year and month and requires every day of that month.
+Fixtures remove each day from 28-, 29-, 30-, and 31-day months and reject duplicate and invalid labels.
+Scroll restoration measures the anchor's signed displacement and limits each drag to the available form span.
 Located issues, incomplete labels, unexpected geometry, and repeated reports remain failures.
 Date clipping reports fail verification.
 Complementary Light and Dark AX5 journeys check long property names, visible keyboards, discard, save retry, bounded repair estimates, and contract amounts.
@@ -174,6 +185,8 @@ The layout group runs the adaptive class, screen tour, selected-row contrast, se
 The workflow group runs the remaining interface tests.
 The groups distribute the longer native journeys without repeating tests or increasing job concurrency.
 Set `PROPERTY_RECORDS_DERIVED_DATA` to a separate directory for each concurrent local campaign.
+When results omit added tests or reference an earlier helper, isolate the derived data and reinstall the test runner.
+Confirm that the result bundle contains every selected method.
 The default remains `.derivedData` for hosted artifact collection.
 The fast gate rejects missing or overlapping group selectors.
 Use GitHub's [documented standard runners](https://docs.github.com/en/actions/reference/runners/github-hosted-runners) with the installed [Xcode 26](https://github.com/actions/runner-images/blob/main/images/macos/macos-26-Readme.md) and [Xcode 27](https://github.com/actions/runner-images/blob/main/images/macos/xcode-27-arm64-Readme.md) environments.
@@ -239,6 +252,11 @@ Property screens keep property editing in their own tab.
 Photographs render within their records, and stored documents remain readable without a new file-import action.
 Image I/O tests cover orientation, bounded dimensions, invalid input, source size limits, and rejected symbolic links.
 Normalized photographs omit source location metadata.
+Camera encoding runs outside the main actor and returns its completion on the main actor.
+Cancellation discards pending results and completes once.
+Run `just camera-sanitize /absolute/path/result.xcresult` with an iOS Simulator destination for native image processing under Thread Sanitizer.
+The command requires all 7 image tests with no failures or skips.
+The tests interrupt capture before encoding starts and while encoding runs.
 External URL tests cover cancellation, exact destination handoff, native telephone confirmation, and document-preview delegation.
 Sheet journeys keep the presenting screen open after cancellation and return to it after a confirmed browser handoff.
 
