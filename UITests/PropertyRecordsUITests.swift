@@ -1068,6 +1068,17 @@ final class PropertyRecordsUITests: XCTestCase {
         app.buttons["editor.cancel"].tap()
     }
 
+    func testTextReplacementClearsJapaneseWordsAndMultipleLines() {
+        let app = launch(seeded: true)
+        tapWork("給湯器から水漏れ", app: app)
+        app.buttons["work.edit"].tap()
+        replace("配管修繕の現地確認", in: "work.title", app: app)
+        XCTAssertEqual(inputText("work.title", app: app), "配管修繕の現地確認")
+        enter("\n現地写真を確認\n見積もりを依頼", into: "work.notes", app: app)
+        replace("現地確認を依頼", in: "work.notes", app: app)
+        XCTAssertEqual(inputText("work.notes", app: app), "現地確認を依頼")
+    }
+
     func testSelectedWorkAndUnsavedEditSurviveRotation() throws {
         defer { XCUIDevice.shared.orientation = .portrait }
         let app = launch(seeded: true)
@@ -2006,17 +2017,41 @@ final class PropertyRecordsUITests: XCTestCase {
         element.tap()
         waitForEditorLayout(element, app: app)
         let clear = app.buttons[identifier + ".clear"]
-        if clear.exists {
+        let usesClearControl = clear.exists
+        if usesClearControl {
             reveal(clear, app: app)
             clear.tap()
             XCTAssertEqual(element.value as? String ?? "", "")
             reveal(element, app: app)
             element.tap()
         } else {
-            element.tap(withNumberOfTaps: 3, numberOfTouches: 1)
+            element.press(forDuration: 1.1)
+            let selectAll = app.descendants(matching: .any).matching(NSPredicate(format: "label IN %@ AND elementType IN %@",
+                ["すべてを選択", "Select All"], [XCUIElement.ElementType.menuItem.rawValue, XCUIElement.ElementType.button.rawValue])).firstMatch
+            if !selectAll.exists && app.menuItems["選択"].exists {
+                let selected = app.menuItems["選択"].frame
+                let next = app.buttons.matching(NSPredicate(format: "label == %@", "進む")).allElementsBoundByIndex.filter {
+                    $0.isHittable && $0.frame.midX > selected.maxX && abs($0.frame.midY - selected.midY) < selected.height / 2
+                }
+                guard next.count == 1 else {
+                    XCTFail("The native edit menu must expose its next page.\n" + app.debugDescription)
+                    return
+                }
+                let frame = next[0].frame
+                let window = app.windows.firstMatch
+                XCTAssertTrue(window.frame.containsWithRoundingTolerance(frame))
+                window.coordinate(withNormalizedOffset: .zero).withOffset(CGVector(
+                    dx: frame.midX - window.frame.minX, dy: frame.midY - window.frame.minY)).tap()
+            }
+            guard selectAll.waitForExistence(timeout: 5) else {
+                XCTFail("The native edit menu must offer complete text selection.\n" + app.debugDescription)
+                return
+            }
+            selectAll.tap()
         }
         app.typeText(value)
         waitForEditorLayout(element, app: app)
+        if !usesClearControl { XCTAssertEqual(inputText(identifier, app: app), value) }
     }
 
     private func field(_ identifier: String, app: XCUIApplication) -> XCUIElement {
@@ -2055,14 +2090,22 @@ final class PropertyRecordsUITests: XCTestCase {
     }
 
     private func setToggle(_ toggle: XCUIElement, enabled: Bool, app: XCUIApplication) {
+        waitForEditorViewport(app)
         reveal(toggle, app: app, requireFullVisibility: true)
         XCTAssertTrue(app.windows.firstMatch.frame.containsWithRoundingTolerance(toggle.frame))
+        let identity = toggle.identifier
+        let query = app.switches.matching(NSPredicate(format: identity.isEmpty ? "label == %@" : "identifier == %@",
+            identity.isEmpty ? toggle.label : identity))
+        XCTAssertEqual(query.count, 1)
         let value = enabled ? "1" : "0"
-        if toggle.value as? String != value {
-            toggle.coordinate(withNormalizedOffset: CGVector(dx: 1, dy: 0.5))
-                .withOffset(CGVector(dx: -22, dy: 0)).tap()
+        if query.firstMatch.value as? String != value {
+            let frame = query.firstMatch.frame
+            let window = app.windows.firstMatch
+            window.coordinate(withNormalizedOffset: .zero).withOffset(CGVector(
+                dx: frame.maxX - window.frame.minX - 22, dy: frame.midY - window.frame.minY)).tap()
         }
-        let changed = XCTNSPredicateExpectation(predicate: NSPredicate(format: "value == %@", value), object: toggle)
+        let committed = NSPredicate { _, _ in query.count == 1 && query.firstMatch.value as? String == value }
+        let changed = XCTNSPredicateExpectation(predicate: committed, object: nil)
         XCTAssertEqual(XCTWaiter.wait(for: [changed], timeout: 5), .completed)
     }
 
