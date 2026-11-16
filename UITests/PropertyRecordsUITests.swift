@@ -1929,13 +1929,6 @@ final class PropertyRecordsUITests: XCTestCase {
         app.buttons["work.edit"].tap()
         XCTAssertTrue(app.buttons["editor.save"].waitForExistence(timeout: 5))
         waitForEditorLayout(field("work.title", app: app), app: app)
-        for orientation in [UIDeviceOrientation.landscapeLeft, .portrait] {
-            XCUIDevice.shared.orientation = orientation
-            waitForEditorLayout(field("work.title", app: app), app: app)
-            XCTAssertTrue(field("work.title", app: app).waitForExistence(timeout: 5))
-            XCTAssertEqual(inputText("work.title", app: app), "共用灯の交換")
-            XCTAssertTrue(app.buttons["editor.save"].isHittable)
-        }
         app.buttons["editor.cancel"].tap()
         setWorkStatus("完了", app: app)
         captureStoreScreen(app, name: "Review completed repair")
@@ -1946,6 +1939,17 @@ final class PropertyRecordsUITests: XCTestCase {
         XCTAssertTrue(heading.waitForExistence(timeout: 5))
         XCTAssertFalse(heading.frame.intersects(createdRepair.frame))
         captureStoreScreen(app, name: "Review progress overview")
+        createdRepair.tap()
+        app.buttons["work.edit"].tap()
+        XCTAssertTrue(app.buttons["editor.save"].waitForExistence(timeout: 5))
+        waitForEditorLayout(field("work.title", app: app), app: app)
+        for orientation in [UIDeviceOrientation.landscapeLeft, .portrait] {
+            XCUIDevice.shared.orientation = orientation
+            waitForEditorLayout(field("work.title", app: app), app: app)
+            XCTAssertTrue(field("work.title", app: app).waitForExistence(timeout: 5))
+            XCTAssertEqual(inputText("work.title", app: app), "共用灯の交換")
+            XCTAssertTrue(app.buttons["editor.save"].isHittable)
+        }
     }
 
     func testReviewBuildingSearchReturnsToThePropertyList() {

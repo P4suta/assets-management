@@ -310,4 +310,6 @@ Remove the paths on the host for the app, runner, and test bundle.
 Turn off the app's Main Thread Checker.
 Run the prepared file with `mise x -- just review-journey-test /absolute/path/installed-app.xctestrun`.
 The journey has a ten-minute limit for native controls, record creation, and rotation checks.
+Complete the normal workflow before rotating the final editor.
+Run the orientation checks last to keep later UI actions outside the system's post-rotation animation waits.
 The recipe rejects test-run files that could install another app over the TestFlight build.
