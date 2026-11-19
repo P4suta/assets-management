@@ -27,7 +27,7 @@ import UIKit
     @Test func applicationBundleHasTheDeclaredReleaseAndPrivacyValues() throws {
         let bundle = Bundle.main
         #expect(bundle.bundleIdentifier == "com.p4suta.PropertyRecords")
-        #expect(bundle.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String == "1.0.0")
+        #expect(bundle.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String == "1.1.0")
         let build = try #require(bundle.object(forInfoDictionaryKey: "CFBundleVersion") as? String)
         #expect(Int(build).map { $0 > 0 } == true)
         #expect(bundle.object(forInfoDictionaryKey: "MinimumOSVersion") as? String == "26.0")

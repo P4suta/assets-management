@@ -7,21 +7,33 @@ struct WorkEditor: View {
     @Bindable var session: EditorSession<WorkFields>
     let workID: UUID?
 
+    private var rooms: [Room] {
+        store.records.rooms.filter { $0.buildingID == session.value.item.buildingID }
+    }
+
+    private var needsRoom: Bool {
+        session.value.item.kind == .renewal && !rooms.contains { $0.id == session.value.item.roomID }
+    }
+
     var body: some View {
         EditorSheet(feedback: session.feedback, title: session.value.item.kind.title + (workID == nil ? "を追加" : "を編集"),
-                    dirty: session.dirty, canSave: session.value.estimate.isValid, save: save) {
+                    dirty: session.dirty, canSave: session.value.estimate.isValid && !needsRoom, save: save) {
             Section("対象") {
                 SelectionField(title: "建物", value: store.records.buildings.first { $0.id == session.value.item.buildingID }?.name ?? "未選択",
                                selection: $session.value.item.buildingID) {
                     ForEach(store.records.buildings) { Text($0.name).tag($0.id) }
                 }.accessibilityIdentifier("work.building")
-                SelectionField(title: "部屋", value: store.records.rooms.first { $0.id == session.value.item.roomID }.map { $0.number + "号室" } ?? "共用部分",
+                SelectionField(title: "部屋", value: rooms.first { $0.id == session.value.item.roomID }.map { $0.number + "号室" }
+                               ?? (session.value.item.kind == .renewal ? "未選択" : "共用部分"),
                                selection: $session.value.item.roomID) {
                     Text("共用部分").tag(UUID?.none).disabled(session.value.item.kind == .renewal)
-                    ForEach(store.records.rooms.filter { $0.buildingID == session.value.item.buildingID }) {
+                    ForEach(rooms) {
                         Text($0.number + "号室").tag(Optional($0.id))
                     }
                 }.accessibilityIdentifier("work.room")
+                if needsRoom {
+                    Text(rooms.isEmpty ? "物件タブで部屋を追加してください。" : "契約を更新する部屋を選択してください。")
+                }
             }
             Section("内容") {
                 SelectionField(title: "種類", value: session.value.item.kind.title, selection: $session.value.item.kind) {
@@ -44,11 +56,11 @@ struct WorkEditor: View {
                     Toggle("期限を通知", isOn: $session.value.item.reminderEnabled)
                 }
             }
+            savedDetails
         }
         .onChange(of: session.value.item.buildingID) { _, _ in
-            if let id = session.value.item.roomID,
-               !store.records.rooms.contains(where: { $0.id == id && $0.buildingID == session.value.item.buildingID }) {
-                session.value.item.roomID = nil
+            if !rooms.contains(where: { $0.id == session.value.item.roomID }) {
+                session.value.item.roomID = session.value.item.kind == .renewal ? rooms.first?.id : nil
             }
         }
         .onChange(of: session.value.item.kind) { _, kind in
@@ -70,19 +82,55 @@ struct WorkEditor: View {
         }
     }
 
+    @ViewBuilder private var savedDetails: some View {
+        if let date = session.baseline.item.nextVisit {
+            Section("次の予定") {
+                LabeledContent("日時", value: date.formatted(date: .abbreviated, time: .shortened))
+                Toggle("予定を残す", isOn: Binding(get: { session.value.item.nextVisit != nil },
+                                                set: { session.value.item.nextVisit = $0 ? date : nil }))
+                    .accessibilityIdentifier("work.visit.keep")
+            }
+        }
+        if let draft = session.baseline.item.renewalDraft {
+            Section("更新後の契約（下書き）") {
+                LabeledContent("契約開始日", value: draft.start.formatted(ContractDates.format))
+                LabeledContent("契約満了日", value: draft.end.formatted(ContractDates.format))
+                LabeledContent("家賃", value: yen(draft.monthlyRent))
+                Toggle("下書きを残す", isOn: Binding(get: { session.value.item.renewalDraft != nil },
+                                                  set: { session.value.item.renewalDraft = $0 ? draft : nil }))
+                    .accessibilityIdentifier("work.renewal.keep")
+            }
+        }
+        if let id = session.baseline.item.contractorID, let contact = store.records.contacts.first(where: { $0.id == id }) {
+            Section("業者") {
+                LabeledContent("連絡先", value: contact.name)
+                Toggle("関連付けを残す", isOn: Binding(get: { session.value.item.contractorID != nil },
+                                                    set: { session.value.item.contractorID = $0 ? id : nil }))
+                    .accessibilityIdentifier("work.contractor.keep")
+            }
+        }
+    }
+
     private func save() async throws {
         var item = session.value.item
         item.estimate = try session.value.estimate.value()
         if item.kind != .renewal { item.renewalDraft = nil }
         if item.dueDate == nil { item.reminderEnabled = false }
+        if item.nextVisit == nil { item.visitReminderEnabled = false }
         if item.buildingID != session.baseline.item.buildingID || item.roomID != session.baseline.item.roomID { item.renewalDraft = nil }
-        try await store.save { try $0.savingWork(item) }
+        try await store.save { records in
+            if let workID {
+                try session.requireCurrent(records.work.first { $0.id == workID }.map(WorkFields.init))
+            }
+            return try records.savingWork(item)
+        }
         await notices.synchronize(store.records, reporting: item.id)
     }
 }
 
 struct HistoryEditor: View {
     @Environment(RecordsStore.self) private var store
+    @Environment(\.dismiss) private var dismiss
     @Bindable var session: EditorSession<HistoryEntry>
     let entryID: UUID?
 
@@ -90,6 +138,7 @@ struct HistoryEditor: View {
         EditorSheet(feedback: session.feedback, title: entryID == nil ? "メモを追加" : "メモを編集", dirty: session.dirty, save: {
             try await store.save { records in
                 var records = records
+                if let entryID { try session.requireCurrent(records.history.first { $0.id == entryID }) }
                 records.history.upsert(session.value)
                 return records
             }
@@ -97,8 +146,23 @@ struct HistoryEditor: View {
             Section {
                 InputField(title: "メモ（必須）", text: $session.value.text, identifier: "history.text", multiline: true)
             }
+            if let id = session.baseline.contactID, let contact = store.records.contacts.first(where: { $0.id == id }) {
+                Section("連絡先") {
+                    Text(contact.name)
+                    Toggle("関連付けを残す", isOn: Binding(get: { session.value.contactID != nil },
+                                                        set: { session.value.contactID = $0 ? id : nil }))
+                        .accessibilityIdentifier("memo.contact.keep")
+                }
+            }
+            if let entryID {
+                Section {
+                    RecordDeletionButton(target: .memo(entryID), title: "メモを削除",
+                                         identifier: "memo.delete", discardsDraft: session.dirty)
+                }
+            }
         }
         .onAppear { session.prepare { store.records.history.first { $0.id == entryID } ?? session.value } }
+        .recordDeletion { _ in dismiss() }
     }
 }
 

@@ -11,6 +11,7 @@ public enum RecordsEvent: Equatable, Sendable {
     case saved(operationID: UUID)
     case saveFailed(operationID: UUID, errorType: String)
     case attachmentRollbackFailed(errorType: String)
+    case attachmentCleanupFailed(errorType: String)
 }
 
 public struct AttachmentRollbackError: Error {
@@ -33,6 +34,7 @@ public struct RecordLocation: Hashable, Sendable {
 @MainActor @Observable
 public final class RecordsStore {
     public private(set) var records = Records()
+    public private(set) var attachmentCleanupPending = false
     private enum Phase {
         case unloaded, loading, ready, saving, failed(any Error)
     }
@@ -62,6 +64,7 @@ public final class RecordsStore {
             let loaded = try await repository.load().validatedAfterLoading()
             try Task.checkCancellation()
             records = loaded
+            await cleanAttachmentFiles()
             phase = .ready
         } catch {
             phase = .failed(error)
@@ -77,13 +80,27 @@ public final class RecordsStore {
         do {
             let proposed = try transform(records).validated()
             try Task.checkCancellation()
+            let remainingNames = Set(proposed.attachments.map(\.storedName))
+            let lostFileReferences = records.attachments.contains { !remainingNames.contains($0.storedName) }
             try await repository.save(proposed)
             records = proposed
             trace(.saved(operationID: operationID))
+            if lostFileReferences { await cleanAttachmentFiles() }
         } catch {
             trace(.saveFailed(operationID: operationID, errorType: String(reflecting: type(of: error))))
             throw error
         }
+    }
+
+    public func delete(_ plan: RecordDeletionPlan) async throws {
+        try await save { try $0.deleting(plan) }
+    }
+
+    public func reconcileAttachmentFiles() async {
+        guard case .ready = phase else { return }
+        phase = .saving
+        defer { phase = .ready }
+        await cleanAttachmentFiles()
     }
 
     public func importAttachment(_ data: Data, name: String, extension fileExtension: String,
@@ -115,6 +132,16 @@ public final class RecordsStore {
 
     public func attachmentURL(_ attachment: Attachment) async throws -> URL {
         try await repository.attachmentURL(named: attachment.storedName)
+    }
+
+    private func cleanAttachmentFiles() async {
+        do {
+            try await repository.reconcileAttachmentFiles()
+            attachmentCleanupPending = false
+        } catch {
+            attachmentCleanupPending = true
+            trace(.attachmentCleanupFailed(errorType: String(reflecting: type(of: error))))
+        }
     }
 
     private func beginSaving() throws {

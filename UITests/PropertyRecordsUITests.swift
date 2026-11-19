@@ -369,6 +369,93 @@ final class PropertyRecordsUITests: XCTestCase {
         tap("203号室", app: app)
     }
 
+    func testBuildingDeletionCanCancelRetryAndStayDeletedAfterRelaunch() {
+        let app = launch(seeded: true, failFirstSave: true)
+        selectTab("物件", app: app)
+        tap("未来ヶ丘団地", app: app)
+        tapIdentifier("property.delete", app: app)
+        XCTAssertTrue(app.navigationBars["建物を削除"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["未来ヶ丘団地"].firstMatch.exists)
+        XCTAssertTrue(app.staticTexts["一緒に削除する記録"].firstMatch.exists)
+        app.buttons["deletion.cancel"].tap()
+        XCTAssertTrue(app.buttons["property.edit"].firstMatch.wait(for: \.isHittable, toEqual: true, timeout: 5))
+        tapIdentifier("property.delete", app: app)
+        app.buttons["deletion.confirm"].tap()
+        let error = app.descendants(matching: .any)["deletion.error"].firstMatch
+        XCTAssertTrue(error.waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["deletion.confirm"].isEnabled)
+        app.buttons["deletion.confirm"].tap()
+        XCTAssertTrue(row("青葉コート", app: app).wait(for: \.isHittable, toEqual: true, timeout: 5))
+        XCTAssertFalse(row("未来ヶ丘団地", app: app).exists)
+        tap("青葉コート", app: app)
+        tapIdentifier("property.delete", app: app)
+        app.buttons["deletion.confirm"].tap()
+        XCTAssertTrue(app.buttons["property.firstAdd"].waitForExistence(timeout: 5))
+        app.terminate()
+        app.launch()
+        XCTAssertTrue(app.buttons["property.firstAdd"].waitForExistence(timeout: 5))
+        selectTab("連絡先", app: app)
+        tap("青葉管理", app: app)
+        XCTAssertTrue(app.buttons["contact.edit"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.staticTexts["関連する物件"].exists)
+    }
+
+    func testDeletingContractEquipmentAndRoomKeepsTheBuilding() {
+        let app = launch(seeded: true)
+        openSampleRoom(app)
+        tap("賃貸借契約", app: app)
+        tapIdentifier("contract.delete", app: app)
+        confirmIndividualDeletion("契約を削除", app: app)
+        XCTAssertTrue(app.staticTexts["契約は未登録です"].waitForExistence(timeout: 5))
+        back(app)
+        tap("設備", app: app)
+        tap("給湯器", app: app)
+        tapIdentifier("equipment.delete", app: app)
+        confirmIndividualDeletion("設備を削除", app: app)
+        XCTAssertTrue(row("エアコン", app: app).wait(for: \.isHittable, toEqual: true, timeout: 5))
+        XCTAssertFalse(row("給湯器", app: app).exists)
+        back(app)
+        tapIdentifier("room.delete", app: app)
+        XCTAssertTrue(app.navigationBars["部屋を削除"].waitForExistence(timeout: 5))
+        app.buttons["deletion.confirm"].tap()
+        XCTAssertTrue(row("101号室", app: app).wait(for: \.isHittable, toEqual: true, timeout: 5))
+        XCTAssertFalse(row("203号室", app: app).exists)
+        selectTab("対応", app: app)
+        XCTAssertTrue(row("契約更新の確認", app: app).waitForExistence(timeout: 5))
+        XCTAssertFalse(row("給湯器から水漏れ", app: app).exists)
+    }
+
+    func testDeletingMemoAndAttachmentsKeepsWorkUntilConfirmed() {
+        let app = launch(seeded: true, legacyDocuments: true)
+        tapWork("給湯器から水漏れ", app: app)
+        tap("給湯器の水漏れを受付", app: app)
+        tapIdentifier("memo.delete", app: app)
+        confirmIndividualDeletion("メモを削除", app: app)
+        XCTAssertTrue(app.buttons["work.edit"].firstMatch.wait(for: \.isHittable, toEqual: true, timeout: 5))
+        XCTAssertFalse(row("給湯器の水漏れを受付", app: app).exists)
+        for (menu, deletion, rowTitle) in [("書類の操作", "書類を削除", "見積書.pdf"), ("写真の操作", "写真を削除", "写真")] {
+            let options = app.buttons[menu].firstMatch
+            reveal(options, app: app, in: app.collectionViews["work.detail"], requireFullVisibility: true)
+            XCTAssertTrue(options.isHittable)
+            options.tap()
+            app.buttons[deletion].firstMatch.tap()
+            confirmIndividualDeletion(deletion, app: app)
+            XCTAssertFalse(app.buttons[rowTitle].wait(for: \.exists, toEqual: true, timeout: 1))
+        }
+        setWorkStatus("完了", app: app)
+        tapIdentifier("work.delete", app: app)
+        XCTAssertTrue(app.navigationBars["対応を削除"].waitForExistence(timeout: 5))
+        app.buttons["deletion.confirm"].tap()
+        XCTAssertTrue(row("契約更新の確認", app: app).wait(for: \.isHittable, toEqual: true, timeout: 5))
+        XCTAssertFalse(row("給湯器から水漏れ", app: app).exists)
+    }
+
+    private func confirmIndividualDeletion(_ title: String, app: XCUIApplication) {
+        let alert = app.alerts[title]
+        XCTAssertTrue(alert.waitForExistence(timeout: 5))
+        alert.buttons["削除"].tap()
+    }
+
     func testManagementAssignmentCanBeClearedWithoutDeletingTheContact() {
         let app = launch(seeded: true)
         selectTab("物件", app: app)
@@ -1867,32 +1954,37 @@ final class PropertyRecordsUITests: XCTestCase {
         tap("203号室", app: app)
         tap("賃貸借契約", app: app)
         tapIdentifier("contract.edit", app: app)
-        enter("82000", into: "contract.rent", app: app)
         configureContractNotice(app)
         let notify = app.switches["contract.notice.notify"]
         setToggle(notify, enabled: true, app: app)
+        enter("82000", into: "contract.rent", app: app)
         app.buttons["editor.save"].tap()
         let permission = XCUIApplication(bundleIdentifier: "com.apple.springboard").alerts.matching(NSPredicate(
             format: "label CONTAINS %@ AND (label CONTAINS %@ OR label CONTAINS %@)", "物件管理くん", "通知", "Notifications"
         )).firstMatch
         let allow = permission.buttons.matching(NSPredicate(format: "label IN %@", ["許可", "Allow"])).firstMatch
         if allow.waitForExistence(timeout: 3) { allow.tap() }
-        XCTAssertTrue(app.buttons["editor.save"].waitForNonExistence(timeout: 5))
+        let editor = app.collectionViews["editor.form"]
+        let window = app.windows.firstMatch
+        let dismissed = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
+            !editor.exists || !editor.frame.intersects(window.frame)
+        }, object: app)
+        XCTAssertEqual(XCTWaiter.wait(for: [dismissed], timeout: 5), .completed, app.debugDescription)
         let rent = app.staticTexts["家賃、¥82,000"]
         reveal(rent, app: app, in: app.collectionViews["contract.detail"], requireFullVisibility: true)
         XCTAssertTrue(rent.waitForExistence(timeout: 5))
         captureStoreScreen(app, name: "Review contract notice")
         selectTab("連絡先", app: app)
         tapIdentifier("contacts.add", app: app)
-        enter(contact, into: "contact.name", app: app)
-        enter("朝焼設備", into: "contact.company", app: app)
-        enter("夜間の連絡も受付", into: "contact.notes", app: app)
         tapIdentifier("contact.category", app: app)
         app.buttons["メンテナンス"].tap()
         let emergency = app.switches["contact.emergency"]
         setToggle(emergency, enabled: true, app: app)
         let property = app.switches[building]
         setToggle(property, enabled: true, app: app)
+        enter(contact, into: "contact.name", app: app)
+        enter("朝焼設備", into: "contact.company", app: app)
+        enter("夜間の連絡も受付", into: "contact.notes", app: app)
         app.buttons["editor.save"].tap()
         tap(contact, app: app)
         let contactNotes = app.staticTexts["夜間の連絡も受付"]
@@ -1977,8 +2069,8 @@ final class PropertyRecordsUITests: XCTestCase {
                 search.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: name.count) + "\n")
                 let cancel = app.navigationBars.buttons.matching(NSPredicate(format: "label IN %@", ["キャンセル", "閉じる"])).firstMatch
                 if cancel.exists && cancel.isHittable { cancel.tap() }
-                let hideKeyboard = app.keyboards.buttons["キーボードを非表示"]
-                if hideKeyboard.exists && hideKeyboard.isHittable { hideKeyboard.tap() }
+                let hideKeyboard = app.buttons.matching(NSPredicate(format: "label == %@", "キーボードを非表示")).firstMatch
+                if keyboardFrame(app) != nil, hideKeyboard.wait(for: \.isHittable, toEqual: true, timeout: 5) { hideKeyboard.tap() }
                 let keyboardHidden = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
                     self.keyboardFrame(app).map { !$0.intersects(app.windows.firstMatch.frame) } ?? true
                 }, object: app)
@@ -2047,16 +2139,7 @@ final class PropertyRecordsUITests: XCTestCase {
     }
 
     private func selectTab(_ title: String, app: XCUIApplication) {
-        let standard = app.tabBars.buttons[title]
-        if standard.exists {
-            standard.tap()
-        } else {
-            let symbol = title == "物件" ? "building.2.fill" : title == "連絡先" ? "person.crop.rectangle.stack.fill" : "checklist"
-            let predicate = NSPredicate(format: "identifier == %@ AND label == %@", symbol, title)
-            let adaptive = app.descendants(matching: .any).matching(predicate).firstMatch
-            XCTAssertTrue(adaptive.waitForExistence(timeout: 5))
-            adaptive.tap()
-        }
+        selectRecordTab(title, app: app)
     }
 
     private func enter(_ value: String, into identifier: String, app: XCUIApplication) {
@@ -2080,16 +2163,22 @@ final class PropertyRecordsUITests: XCTestCase {
         [snapshot] + snapshot.children.flatMap(snapshotDescendants)
     }
 
+    private func editorWindowSnapshot(_ app: XCUIApplication) -> (any XCUIElementSnapshot)? {
+        let windows = app.windows.containing(.collectionView, identifier: "editor.form")
+        guard windows.count == 1 else { return nil }
+        return try? windows.firstMatch.snapshot()
+    }
+
     private func waitForEditorViewport(_ app: XCUIApplication) {
         var previous: [CGRect]?
         var observed: [CGRect]?
         var snapshotWindow: CGRect?
         var candidates: [String: [CGRect]] = [:]
         let settled = NSPredicate { _, _ in
-            guard let root = try? app.snapshot() else { return false }
+            guard let root = self.editorWindowSnapshot(app) else { return false }
             let elements = self.snapshotDescendants(root)
-            snapshotWindow = elements.first(where: { $0.elementType == .window })?.frame
-            guard let window = snapshotWindow else { return false }
+            let window = root.frame
+            snapshotWindow = window
             var frames = [window]
             for identifier in ["editor.form", "editor.save", "editor.cancel"] {
                 let matching = elements.filter { $0.identifier == identifier && !$0.frame.isEmpty }
@@ -2151,7 +2240,7 @@ final class PropertyRecordsUITests: XCTestCase {
     }
 
     private func editorLayout(identifier: String, label: String, elementType: XCUIElement.ElementType, app: XCUIApplication) -> EditorLayout? {
-        guard let root = try? app.snapshot() else { return nil }
+        guard let root = editorWindowSnapshot(app) else { return nil }
         let elements = snapshotDescendants(root)
         func frame(_ identifier: String) -> CGRect? {
             let matching = elements.filter { $0.identifier == identifier && !$0.frame.isEmpty }
@@ -2160,11 +2249,10 @@ final class PropertyRecordsUITests: XCTestCase {
         let inputs = elements.filter {
             !$0.frame.isEmpty && (identifier.isEmpty ? $0.elementType == elementType && $0.label == label : $0.identifier == identifier)
         }
-        guard let window = elements.first(where: { $0.elementType == .window })?.frame,
-              inputs.count == 1, let input = inputs.first?.frame,
+        guard inputs.count == 1, let input = inputs.first?.frame,
               let save = frame("editor.save"), let cancel = frame("editor.cancel") else { return nil }
         let keyboard = keyboardFrame(app)
-        return EditorLayout(window: window, input: input, keyboard: keyboard,
+        return EditorLayout(window: root.frame, input: input, keyboard: keyboard,
                             save: save, cancel: cancel)
     }
 

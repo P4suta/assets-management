@@ -84,6 +84,7 @@ private actor FaultRepository: RecordsRepository {
     }
     func attachmentURL(named name: String) async throws -> URL { try await backing.attachmentURL(named: name) }
     func removeAttachment(named name: String) async throws { try await backing.removeAttachment(named: name) }
+    func reconcileAttachmentFiles() async throws { try await backing.reconcileAttachmentFiles() }
 }
 
 @Test @MainActor func failedSaveKeepsPublishedRecordsAndAllowsRetry() async throws {
@@ -132,4 +133,130 @@ private actor FaultRepository: RecordsRepository {
     let reloaded = try await FileRecordsRepository(directory: directory).load()
     #expect(reloaded.attachments.filter { $0.kind == .document }.count == 1)
     #expect(reloaded.attachments.filter { $0.kind == .photo }.count == 1)
+}
+
+@Test @MainActor func sharedFileSurvivesDeletionUntilItsLastReferenceIsRemoved() async throws {
+    let directory = temporaryDirectory()
+    defer { try? FileManager.default.removeItem(at: directory) }
+    let repository = FileRecordsRepository(directory: directory)
+    let bytes = Data("shared".utf8)
+    let name = try await repository.writeAttachment(bytes, extension: "jpg")
+    var records = try fixtureRecords()
+    let building = records.buildings[0]
+    let photo = Attachment(buildingID: building.id, kind: .photo, name: "photo", storedName: name)
+    let shared = Attachment(buildingID: building.id, roomID: records.rooms[0].id, kind: .photo, name: "copy", storedName: name)
+    records.attachments = [photo, shared]
+    try await repository.save(records)
+    let store = RecordsStore(repository: repository)
+    await store.load()
+    try await store.delete(records.deletionPlan(for: .attachment(photo.id)))
+    #expect(store.records.attachments == [shared])
+    let url = try await store.attachmentURL(shared)
+    #expect(try Data(contentsOf: url) == bytes)
+    try await store.delete(store.records.deletionPlan(for: .attachment(shared.id)))
+    await #expect(throws: StorageError.missingAttachment) { try await repository.attachmentURL(named: name) }
+    #expect(!store.attachmentCleanupPending)
+}
+
+@Test @MainActor func relaunchFinishesFileCleanupAfterAnInterruptedDeletion() async throws {
+    let directory = temporaryDirectory()
+    defer { try? FileManager.default.removeItem(at: directory) }
+    let repository = FileRecordsRepository(directory: directory)
+    let name = try await repository.writeAttachment(Data("document".utf8), extension: "pdf")
+    var records = try fixtureRecords()
+    let id = records.buildings[0].id
+    records.attachments = [Attachment(buildingID: id, kind: .document, name: "document", storedName: name)]
+    try await repository.save(records)
+    try await repository.save(records.deleting(records.deletionPlan(for: .building(id))))
+    _ = try await repository.attachmentURL(named: name)
+    let reopened = RecordsStore(repository: FileRecordsRepository(directory: directory))
+    await reopened.load()
+    #expect(reopened.records == Records())
+    await #expect(throws: StorageError.missingAttachment) { try await repository.attachmentURL(named: name) }
+}
+
+@Test func cleanupRequiresAValidSnapshotAndSkipsOtherFileTypes() async throws {
+    let directory = temporaryDirectory()
+    defer { try? FileManager.default.removeItem(at: directory) }
+    let repository = FileRecordsRepository(directory: directory)
+    let name = try await repository.writeAttachment(Data("file".utf8), extension: "txt")
+    try await repository.reconcileAttachmentFiles()
+    let orphan = try await repository.attachmentURL(named: name)
+    let snapshot = directory.appendingPathComponent("records.json")
+    try Data("invalid".utf8).write(to: snapshot)
+    await #expect(throws: StorageError.corrupted) { try await repository.reconcileAttachmentFiles() }
+    #expect(FileManager.default.fileExists(atPath: orphan.path))
+    let unmanaged = orphan.deletingLastPathComponent().appendingPathComponent("manual.pdf")
+    try Data("unmanaged".utf8).write(to: unmanaged)
+    let link = orphan.deletingLastPathComponent().appendingPathComponent(UUID().uuidString + ".pdf")
+    try FileManager.default.createSymbolicLink(at: link, withDestinationURL: unmanaged)
+    try await repository.save(Records())
+    try await repository.reconcileAttachmentFiles()
+    #expect(!FileManager.default.fileExists(atPath: orphan.path))
+    #expect(try Data(contentsOf: link) == Data("unmanaged".utf8))
+}
+
+private final class CleanupFileManager: FileManager, @unchecked Sendable {
+    enum Fault {
+        case list(CocoaError.Code)
+        case disappeared(String, CocoaError.Code)
+        case removalDenied(String)
+    }
+
+    private let fault: Fault
+
+    init(_ fault: Fault) { self.fault = fault }
+
+    override func contentsOfDirectory(at url: URL, includingPropertiesForKeys keys: [URLResourceKey]?,
+                                      options: DirectoryEnumerationOptions) throws -> [URL] {
+        if case .list(let code) = fault { throw CocoaError(code) }
+        return try super.contentsOfDirectory(at: url, includingPropertiesForKeys: keys, options: options)
+    }
+
+    override func removeItem(at url: URL) throws {
+        if case .removalDenied(let name) = fault, url.lastPathComponent == name {
+            throw CocoaError(.fileWriteNoPermission)
+        }
+        try super.removeItem(at: url)
+        if case .disappeared(let name, let code) = fault, url.lastPathComponent == name {
+            throw CocoaError(code)
+        }
+    }
+}
+
+@Test(arguments: [CocoaError.Code.fileReadNoSuchFile, .fileNoSuchFile])
+func cleanupAcceptsMissingAttachmentDirectoriesAndFiles(_ code: CocoaError.Code) async throws {
+    let directory = temporaryDirectory()
+    defer { try? FileManager.default.removeItem(at: directory) }
+    let missingDirectory = FileRecordsRepository(directory: directory, fileManager: CleanupFileManager(.list(code)))
+    try await missingDirectory.save(Records())
+    try await missingDirectory.reconcileAttachmentFiles()
+
+    let repository = FileRecordsRepository(directory: directory)
+    let name = try await repository.writeAttachment(Data("disappeared".utf8), extension: "txt")
+    let otherName = try await repository.writeAttachment(Data("orphan".utf8), extension: "txt")
+    let missingFile = FileRecordsRepository(directory: directory, fileManager: CleanupFileManager(.disappeared(name, code)))
+    try await missingFile.reconcileAttachmentFiles()
+    for removedName in [name, otherName] {
+        await #expect(throws: StorageError.missingAttachment) { try await repository.attachmentURL(named: removedName) }
+    }
+}
+
+@Test func cleanupReportsInaccessibleFilesAndStillRemovesOtherOrphans() async throws {
+    let directory = temporaryDirectory()
+    defer { try? FileManager.default.removeItem(at: directory) }
+    let repository = FileRecordsRepository(directory: directory)
+    try await repository.save(Records())
+    let bytes = Data("pending cleanup".utf8)
+    let name = try await repository.writeAttachment(bytes, extension: "txt")
+    let otherName = try await repository.writeAttachment(bytes, extension: "txt")
+    let deniedList = FileRecordsRepository(directory: directory, fileManager: CleanupFileManager(.list(.fileReadNoPermission)))
+    await #expect(throws: StorageError.unwritable) { try await deniedList.reconcileAttachmentFiles() }
+    let deniedRemoval = FileRecordsRepository(directory: directory, fileManager: CleanupFileManager(.removalDenied(name)))
+    await #expect(throws: StorageError.unwritable) { try await deniedRemoval.reconcileAttachmentFiles() }
+    let remaining = try await repository.attachmentURL(named: name)
+    #expect(try Data(contentsOf: remaining) == bytes)
+    await #expect(throws: StorageError.missingAttachment) { try await repository.attachmentURL(named: otherName) }
+    try await repository.reconcileAttachmentFiles()
+    #expect(!FileManager.default.fileExists(atPath: remaining.path))
 }

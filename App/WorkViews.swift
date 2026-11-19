@@ -108,6 +108,9 @@ struct WorkDetailView: View {
                 }
                 WorkMemosSection(item: item) { editor = .history(item.id, $0) }
                 RecordPhotosSection(location: RecordLocation(buildingID: item.buildingID, roomID: item.roomID, workID: item.id))
+                Section {
+                    RecordDeletionButton(target: .work(item.id), title: "対応を削除", identifier: "work.delete")
+                }
             } else {
                 ContentUnavailableView("記録が見つかりません", systemImage: "exclamationmark.circle")
             }
@@ -127,6 +130,7 @@ struct WorkDetailView: View {
             }
         }
         .editorPresentation($editor)
+        .recordDeletion()
         .alert("保存できませんでした", isPresented: Binding(get: { failure != nil }, set: { if !$0 { failure = nil } })) {
             Button("閉じる", role: .cancel) {}
         } message: { Text(failure ?? "") }

@@ -9,10 +9,15 @@ Each call logs its category before and after execution so a timeout identifies t
 Grouping fixtures cover all 128 selections of the seven iOS categories and preserve unknown requested bits.
 The same repair form can produce unlocated reports when font checks run in one batch.
 An offscreen amount input can be absent from the native hierarchy.
+After the test types into the contact editor's telephone field on iPadOS 27.2, a snapshot of the entire app can omit the visible form.
+Editor readiness takes a [snapshot](https://developer.apple.com/documentation/xcuiautomation/xcuielementsnapshotproviding) of the unique window containing the form and waits for stable frames.
 Every selected audit category remains required.
 An English test process can measure Japanese fallback fonts differently from the Japanese app.
 The caption fixtures and rendered measurement test reject that mismatch.
-Run the rotation checks on iPad and iPhone Duo simulators with `mise x -- just adaptive-ui-test`.
+Run the editor and selection rotation journeys on iPad and iPhone Duo simulators with `mise x -- just adaptive-ui-test`.
+On iPhone Duo with iOS 27.2, the tab buttons expose their labels and put symbol identifiers on child images.
+The shared tab selector checks both attributes for the side-mounted tab bar.
+In the native layout group, the deletion journey checks that both confirmation actions remain reachable in the current window after changing the [device orientation](https://developer.apple.com/documentation/xcuiautomation/xcuidevice/orientation).
 Run window resizing with the selected record and an open editor, and verify the same title, draft value, and reachable save action afterward.
 Keep physical-device acceptance and the App Review recording separate from simulator results.
 Selected-row tests audit foreground contrast within the visible selection in both appearances.
@@ -237,6 +242,8 @@ Controlled continuations test overlapping storage and notification operations wi
 Real temporary files test atomic replacement, file size boundaries, corrupted snapshots, and rejected symbolic links.
 Snapshots in format 1 decode into format 2 without rewriting the original file until a successful save.
 Contact tests cover categories, emergency ordering, normalized search, shared building links, and reference cleanup on deletion.
+Deletion tests cover every record type, work status, stale confirmations, failed commits, and recovery of unreferenced files after relaunch.
+Native journeys verify that cancellation and failed saves keep the records, and reopening an empty saved store keeps it empty.
 Contract notice tests cover explicit dates, calendar-month calculations, leap years, daylight saving, advance notices, and changed deadlines.
 Travel tests keep contract calculations in Japan time while work deadlines use the supplied calendar.
 Contact destination tests preserve full-width telephone digits and encode mailbox characters without adding message headers.

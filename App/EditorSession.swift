@@ -2,6 +2,10 @@ import Foundation
 import Observation
 import PropertyCore
 
+enum EditorError: Error, Equatable {
+    case recordChanged
+}
+
 @MainActor @Observable final class EditorFeedback {
     var discard = false
     var saving = false
@@ -28,6 +32,10 @@ import PropertyCore
         baseline = initial
         prepared = true
     }
+
+    func requireCurrent(_ current: Value?) throws {
+        guard prepared, current == baseline else { throw EditorError.recordChanged }
+    }
 }
 
 struct WorkFields: Equatable {
@@ -45,6 +53,7 @@ struct ContractFields: Equatable {
     var end: Date
     var rent = AmountInput()
     var notice: ContractNotice?
+    var original: Contract?
 }
 
 struct ScheduleFields: Equatable {

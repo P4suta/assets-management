@@ -30,6 +30,7 @@ struct BuildingEditor: View {
         EditorSheet(feedback: session.feedback, title: "建物を編集", dirty: session.dirty, save: {
             try await store.save { records in
                 var records = records
+                try session.requireCurrent(records.buildings.first { $0.id == original.id })
                 records.buildings.upsert(session.value)
                 return records
             }
@@ -65,7 +66,18 @@ struct RoomEditor: View {
         EditorSheet(feedback: session.feedback, title: roomID == nil ? "部屋を追加" : "部屋を編集", dirty: session.dirty, save: {
             try await store.save { records in
                 var records = records
-                records.rooms.upsert(session.value)
+                if let roomID {
+                    guard session.prepared, let index = records.rooms.firstIndex(where: { $0.id == roomID }) else {
+                        throw EditorError.recordChanged
+                    }
+                    let draft = session.value
+                    let baseline = session.baseline
+                    if draft.number != baseline.number { records.rooms[index].number = draft.number }
+                    if draft.residentID != baseline.residentID { records.rooms[index].residentID = draft.residentID }
+                    if draft.notes != baseline.notes { records.rooms[index].notes = draft.notes }
+                } else {
+                    records.rooms.append(session.value)
+                }
                 return records
             }
         }) {
@@ -142,6 +154,7 @@ struct ContactEditor: View {
         let draft = session.value
         try await store.save { records in
             var records = records
+            if let contactID { try session.requireCurrent(records.contacts.first { $0.id == contactID }) }
             records.contacts.upsert(draft)
             switch assignment {
             case .none: break
@@ -172,7 +185,8 @@ struct ContractEditor: View {
             let contract = Contract(start: fields.start, end: fields.end, monthlyRent: try fields.rent.value(), notice: fields.notice)
             try await store.save { records in
                 var records = records
-                guard let index = records.rooms.firstIndex(where: { $0.id == roomID }) else { throw DomainError.invalidReference }
+                guard session.prepared, let index = records.rooms.firstIndex(where: { $0.id == roomID }),
+                      records.rooms[index].contract == session.baseline.original else { throw EditorError.recordChanged }
                 records.rooms[index].contract = contract
                 return records
             }
@@ -191,7 +205,8 @@ struct ContractEditor: View {
             session.prepare {
                 guard let contract = store.records.rooms.first(where: { $0.id == roomID })?.contract else { return session.value }
                 return ContractFields(start: contract.start, end: contract.end,
-                                      rent: AmountInput(contract.monthlyRent.map(String.init) ?? ""), notice: contract.notice)
+                                      rent: AmountInput(contract.monthlyRent.map(String.init) ?? ""),
+                                      notice: contract.notice, original: contract)
             }
         }
     }
@@ -257,6 +272,7 @@ private struct ContractNoticeFields: View {
 
 struct EquipmentEditor: View {
     @Environment(RecordsStore.self) private var store
+    @Environment(\.dismiss) private var dismiss
     @Bindable var session: EditorSession<Equipment>
     let roomID: UUID
     let equipmentID: UUID?
@@ -266,6 +282,9 @@ struct EquipmentEditor: View {
             try await store.save { records in
                 var records = records
                 guard let index = records.rooms.firstIndex(where: { $0.id == roomID }) else { throw DomainError.invalidReference }
+                if let equipmentID {
+                    try session.requireCurrent(records.rooms[index].equipment.first { $0.id == equipmentID })
+                }
                 records.rooms[index].equipment.upsert(session.value)
                 return records
             }
@@ -281,11 +300,18 @@ struct EquipmentEditor: View {
                 }
                 InputField(title: "メモ", text: $session.value.notes, multiline: true)
             }
+            if let equipmentID {
+                Section {
+                    RecordDeletionButton(target: .equipment(roomID: roomID, id: equipmentID), title: "設備を削除",
+                                         identifier: "equipment.delete", discardsDraft: session.dirty)
+                }
+            }
         }
         .onAppear {
             session.prepare {
                 store.records.rooms.first(where: { $0.id == roomID })?.equipment.first(where: { $0.id == equipmentID }) ?? session.value
             }
         }
+        .recordDeletion { _ in dismiss() }
     }
 }

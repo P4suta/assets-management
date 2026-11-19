@@ -6,8 +6,7 @@ The App Store name is `物件管理くん`.
 The price is free, with no accounts, advertising, tracking, or purchases.
 The bundle identifier is `com.p4suta.PropertyRecords`.
 The Apple Developer team is `XMBQLW82L9`.
-The initial version is `1.0.0`.
-The current build number is `6`.
+The project declares version `1.1.0` and build `7`.
 
 Mac and Apple Vision Pro use the compatible iOS build.
 App Store Connect [calculates macOS compatibility](https://developer.apple.com/help/app-store-connect/manage-your-apps-availability/manage-availability-of-iphone-and-ipad-apps-on-macs-with-apple-silicon) from the iOS deployment target and explicit OS selections.

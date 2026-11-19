@@ -3,11 +3,13 @@ import SwiftUI
 
 struct WorkNavigationView: View {
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @Environment(RecordsStore.self) private var store
     @State private var selection: UUID?
+    @State private var compactColumn: NavigationSplitViewColumn = .sidebar
     let onRegister: () -> Void
 
     var body: some View {
-        NavigationSplitView {
+        NavigationSplitView(preferredCompactColumn: $compactColumn) {
             WorkListView(selection: $selection, onRegister: onRegister,
                          showsReminder: horizontalSizeClass == .compact || selection == nil)
         } detail: {
@@ -22,14 +24,22 @@ struct WorkNavigationView: View {
             .id(selection)
         }
         .navigationSplitViewStyle(.balanced)
+        .onChange(of: store.records.work.map(\.id)) { _, ids in
+            if let selection, !ids.contains(selection) {
+                self.selection = nil
+                compactColumn = .sidebar
+            }
+        }
     }
 }
 
 struct BuildingNavigationView: View {
+    @Environment(RecordsStore.self) private var store
     @State private var selection: UUID?
+    @State private var compactColumn: NavigationSplitViewColumn = .sidebar
 
     var body: some View {
-        NavigationSplitView {
+        NavigationSplitView(preferredCompactColumn: $compactColumn) {
             BuildingListView(selection: $selection)
         } detail: {
             NavigationStack {
@@ -43,6 +53,12 @@ struct BuildingNavigationView: View {
             .id(selection)
         }
         .navigationSplitViewStyle(.balanced)
+        .onChange(of: store.records.buildings.map(\.id)) { _, ids in
+            if let selection, !ids.contains(selection) {
+                self.selection = nil
+                compactColumn = .sidebar
+            }
+        }
     }
 }
 
@@ -139,7 +155,7 @@ struct EditorDestinationView: View {
         switch destination.content {
         case .registration(let session): PropertyEditor(session: session)
         case .building(let id, let session):
-            if let value = store.records.buildings.first(where: { $0.id == id }) { BuildingEditor(session: session, original: value) }
+            BuildingEditor(session: session, original: store.records.buildings.first { $0.id == id } ?? session.value)
         case .room(let id, let session): RoomEditor(session: session, roomID: id)
         case .work(let id, let session): WorkEditor(session: session, workID: id)
         case .contact(let id, let assignment, let session): ContactEditor(session: session, contactID: id, assignment: assignment)

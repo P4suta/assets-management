@@ -4,6 +4,19 @@ import Testing
 @testable import PropertyRecords
 
 @Suite @MainActor struct EditorSessionTests {
+    @Test func staleOrDeletedRecordsCannotPassTheSaveCheck() throws {
+        let building = Building(name: "建物")
+        let session = EditorSession(building)
+        session.prepare { building }
+        session.value.name = "編集中"
+        try session.requireCurrent(building)
+        #expect(throws: EditorError.recordChanged) { try session.requireCurrent(nil) }
+        var changed = building
+        changed.name = "更新済み"
+        #expect(throws: EditorError.recordChanged) { try session.requireCurrent(changed) }
+        #expect(session.value.name == "編集中")
+    }
+
     @Test func preparationCannotReplaceAnEditedDraftOrItsBaseline() {
         let session = EditorSession(RegistrationDraft())
         let initial = RegistrationDraft(name: "建物", roomNumber: "101")
