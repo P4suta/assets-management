@@ -4,7 +4,7 @@ import Testing
 @testable import PropertyCore
 
 enum RepositoryOperation: Hashable, Sendable {
-  case load, save, write, remove
+  case load, save, write, remove, cleanup
 }
 
 actor ControlledRepository: RecordsRepository {
@@ -53,6 +53,12 @@ actor ControlledRepository: RecordsRepository {
     files.removeValue(forKey: name)
   }
 
+  func reconcileAttachmentFiles() async throws {
+    try await checkpoint(.cleanup)
+    let referenced = Set(stored.attachments.map(\.storedName))
+    files = files.filter { referenced.contains($0.key) }
+  }
+
   func waitFor(_ operation: RepositoryOperation) async {
     if counts[operation, default: 0] > 0 { return }
     await withCheckedContinuation { arrivals[operation, default: []].append($0) }
@@ -64,6 +70,7 @@ actor ControlledRepository: RecordsRepository {
   }
 
   func clearFailures() { failures = [:] }
+  func fail(_ operation: RepositoryOperation, with error: StorageError) { failures[operation] = error }
   func count(_ operation: RepositoryOperation) -> Int { counts[operation, default: 0] }
 
   private func checkpoint(_ operation: RepositoryOperation) async throws {
@@ -77,6 +84,66 @@ actor ControlledRepository: RecordsRepository {
 }
 
 @Suite @MainActor struct StoreConcurrencyTests {
+  @Test func deletionWriteFailureKeepsTheRecordAndItsFileUntilRetry() async throws {
+    let original = try fixtureRecords()
+    let repository = ControlledRepository(original)
+    let store = RecordsStore(repository: repository)
+    await store.load()
+    try await store.importAttachment(Data("file".utf8), name: "photo.jpg", extension: "jpg", kind: .photo,
+                                     location: RecordLocation(buildingID: original.buildings[0].id))
+    let attachment = try #require(store.records.attachments.first)
+    let planned = try store.records.deletionPlan(for: .building(original.buildings[0].id))
+    await repository.fail(.save, with: .unwritable)
+    await #expect(throws: StorageError.unwritable) { try await store.delete(planned) }
+    #expect(store.records.attachments == [attachment])
+    #expect(await repository.files[attachment.storedName] != nil)
+    #expect(await repository.count(.cleanup) == 1)
+    await repository.clearFailures()
+    try await store.delete(planned)
+    #expect(store.records == Records())
+    #expect(await repository.stored == Records())
+    #expect(await repository.files.isEmpty)
+  }
+
+  @Test func postCommitFailureLeavesCleanupPendingAndRetryDoesNotWriteRecords() async throws {
+    let original = try fixtureRecords()
+    let repository = ControlledRepository(original)
+    let store = RecordsStore(repository: repository)
+    await store.load()
+    try await store.importAttachment(Data("file".utf8), name: "file.pdf", extension: "pdf", kind: .document,
+                                     location: RecordLocation(buildingID: original.buildings[0].id))
+    let attachment = try #require(store.records.attachments.first)
+    let plan = try store.records.deletionPlan(for: .attachment(attachment.id))
+    await repository.fail(.cleanup, with: .unwritable)
+    try await store.delete(plan)
+    #expect(store.records == original)
+    #expect(await repository.stored == original)
+    #expect(store.attachmentCleanupPending)
+    #expect(await repository.files.count == 1)
+    await repository.clearFailures()
+    await store.reconcileAttachmentFiles()
+    #expect(!store.attachmentCleanupPending)
+    #expect(await repository.files.isEmpty)
+    #expect(await repository.count(.save) == 2)
+  }
+
+  @Test func pendingDeletionExcludesConcurrentWritesAndPublishesAfterCommit() async throws {
+    let original = try fixtureRecords()
+    let repository = ControlledRepository(original, suspended: [.save])
+    let store = RecordsStore(repository: repository)
+    await store.load()
+    let plan = try original.deletionPlan(for: .room(original.rooms[0].id))
+    let deletion = Task { try await store.delete(plan) }
+    await repository.waitFor(.save)
+    #expect(store.records == original)
+    await #expect(throws: StoreError.busy) { try await store.save { $0 } }
+    await repository.release(.save)
+    try await deletion.value
+    #expect(store.records.rooms.isEmpty)
+    #expect(store.records.work.isEmpty)
+    #expect(await repository.stored == store.records)
+  }
+
   @Test func writesRequireASuccessfulLoad() async throws {
     let original = try fixtureRecords()
     let repository = ControlledRepository(original)

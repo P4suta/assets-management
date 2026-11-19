@@ -10,6 +10,7 @@ public protocol RecordsRepository: Sendable {
     func writeAttachment(_ data: Data, extension fileExtension: String) async throws -> String
     func attachmentURL(named: String) async throws -> URL
     func removeAttachment(named: String) async throws
+    func reconcileAttachmentFiles() async throws
 }
 
 public actor FileRecordsRepository: RecordsRepository {
@@ -20,7 +21,9 @@ public actor FileRecordsRepository: RecordsRepository {
 
     public init(directory: URL) { self.directory = directory.standardizedFileURL.resolvingSymlinksInPath() }
 
-    public func load() throws -> Records {
+    public func load() throws -> Records { try loadSnapshot() ?? Records() }
+
+    public func loadSnapshot() throws -> Records? {
         guard unredirected(directory) else { throw StorageError.unreadable }
         let data: Data
         do {
@@ -28,7 +31,7 @@ public actor FileRecordsRepository: RecordsRepository {
             guard values.isRegularFile == true, values.isSymbolicLink != true else { throw StorageError.unreadable }
             data = try Data(contentsOf: snapshotURL)
         }
-        catch let error as CocoaError where error.code == .fileReadNoSuchFile { return Records() }
+        catch let error as CocoaError where error.code == .fileReadNoSuchFile { return nil }
         catch { throw StorageError.unreadable }
         let records: Records
         do { records = try JSONDecoder().decode(Records.self, from: data) }
@@ -77,6 +80,34 @@ public actor FileRecordsRepository: RecordsRepository {
         let url = try attachmentURL(named: name)
         do { try FileManager.default.removeItem(at: url) }
         catch { throw StorageError.unwritable }
+    }
+
+    public func reconcileAttachmentFiles() throws {
+        guard let snapshot = try loadSnapshot() else { return }
+        let referencedNames = Set(snapshot.attachments.map { $0.storedName.lowercased() })
+        guard unredirected(attachmentDirectory) else { throw StorageError.unwritable }
+        let fileManager = FileManager.default
+        let keys: Set<URLResourceKey> = [.isRegularFileKey, .isSymbolicLinkKey]
+        let files: [URL]
+        do {
+            files = try fileManager.contentsOfDirectory(at: attachmentDirectory, includingPropertiesForKeys: Array(keys))
+        } catch let error as CocoaError where error.code == .fileReadNoSuchFile || error.code == .fileNoSuchFile {
+            return
+        } catch { throw StorageError.unwritable }
+
+        var failed = false
+        for file in files {
+            let name = file.lastPathComponent
+            guard Records.safeStoredName(name), !referencedNames.contains(name.lowercased()) else { continue }
+            do {
+                let values = try file.resourceValues(forKeys: keys)
+                guard values.isRegularFile == true, values.isSymbolicLink != true else { continue }
+                try fileManager.removeItem(at: file)
+            } catch let error as CocoaError where error.code == .fileReadNoSuchFile || error.code == .fileNoSuchFile {
+                continue
+            } catch { failed = true }
+        }
+        if failed { throw StorageError.unwritable }
     }
 
     private func protectedWrite(_ data: Data, to url: URL) throws {

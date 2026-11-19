@@ -80,7 +80,7 @@ ui-tour: generate
     xcodebuild -project PropertyRecords.xcodeproj -scheme PropertyRecordsInterface -destination '{{ destination }}' -derivedDataPath '{{ derived_data }}' CODE_SIGNING_ALLOWED=NO -parallel-testing-enabled NO '-only-testing:PropertyRecordsUITests/PropertyRecordsUITests/testScreenTourAccessibility()' test -quiet
 
 adaptive-ui-test: generate
-    xcodebuild -project PropertyRecords.xcodeproj -scheme PropertyRecordsInterface -destination '{{ destination }}' -derivedDataPath '{{ derived_data }}' CODE_SIGNING_ALLOWED=NO -parallel-testing-enabled NO '-only-testing:PropertyRecordsUITests/PropertyRecordsUITests/testSelectedWorkAndUnsavedEditSurviveRotation()' '-only-testing:PropertyRecordsUITests/PropertyRecordsUITests/testSelectedPropertyAndRoomSurviveRotation()' test -quiet
+    xcodebuild -project PropertyRecords.xcodeproj -scheme PropertyRecordsInterface -destination '{{ destination }}' -derivedDataPath '{{ derived_data }}' CODE_SIGNING_ALLOWED=NO -parallel-testing-enabled NO '-only-testing:PropertyRecordsUITests/AdaptiveRecordLayoutTests/testDeletionConfirmationSurvivesRotation()' '-only-testing:PropertyRecordsUITests/PropertyRecordsUITests/testSelectedWorkAndUnsavedEditSurviveRotation()' '-only-testing:PropertyRecordsUITests/PropertyRecordsUITests/testSelectedPropertyAndRoomSurviveRotation()' test -quiet
 
 store-screenshot-test: generate
     xcodebuild -project PropertyRecords.xcodeproj -scheme PropertyRecordsInterface -destination '{{ destination }}' -derivedDataPath '{{ derived_data }}' CODE_SIGNING_ALLOWED=NO -parallel-testing-enabled NO '-only-testing:PropertyRecordsUITests/PropertyRecordsUITests/testStoreScreenshots()' test -quiet

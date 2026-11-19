@@ -41,6 +41,7 @@
 		54A5DF70CDB29CC9740DDA37 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = E57BB64E93A03BF3FCE35122 /* Assets.xcassets */; };
 		56BB5355C045DF4F1BEC8314 /* RecordPhotosSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 512CC4C9DC0FD93EAA6CECC5 /* RecordPhotosSection.swift */; };
 		5EB662B99E8F861F9C63873C /* UniformTextContrast.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F7F9A1F14EF57BBA9406647 /* UniformTextContrast.swift */; };
+		60F1FFF4C744CC3C24471F83 /* RecordDeletionPresentation.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5A2E5154058C6FAE828A227 /* RecordDeletionPresentation.swift */; };
 		62F3C63359481EB1563708CC /* Navigation.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA0A48CF92416B98AEA619FC /* Navigation.swift */; };
 		6B57A6284ED7EE7D9B353062 /* NativeOffscreenReminderScope.swift in Sources */ = {isa = PBXBuildFile; fileRef = BEBC645502D46DDF0321612C /* NativeOffscreenReminderScope.swift */; };
 		701551B7FB850780CEECBA78 /* ReminderPresentationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC9D0615882B727B65BE67E9 /* ReminderPresentationTests.swift */; };
@@ -167,6 +168,7 @@
 		CB04BEC00CAF21101156D518 /* SamplePDF.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SamplePDF.swift; sourceTree = "<group>"; };
 		D3099075EF0F6D0A4D688A1C /* SelectedStatusLabel.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = SelectedStatusLabel.png; sourceTree = "<group>"; };
 		D31184F9098AC80725C966CC /* PropertyViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PropertyViews.swift; sourceTree = "<group>"; };
+		D5A2E5154058C6FAE828A227 /* RecordDeletionPresentation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordDeletionPresentation.swift; sourceTree = "<group>"; };
 		D6FF32AEBFA2B176D67B2523 /* EditorSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorSession.swift; sourceTree = "<group>"; };
 		DB53F1935933ABBCE2974BF1 /* PhotoProcessorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoProcessorTests.swift; sourceTree = "<group>"; };
 		E57BB64E93A03BF3FCE35122 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -310,6 +312,7 @@
 				D31184F9098AC80725C966CC /* PropertyViews.swift */,
 				4941BBE6A17AD009D8FCD72C /* RecordCaption.swift */,
 				5C8D9FF32808A78ADD60C0BB /* RecordCaptionRole.swift */,
+				D5A2E5154058C6FAE828A227 /* RecordDeletionPresentation.swift */,
 				5C4C31B2638BDF8110B1033B /* RecordPhotoPresentation.swift */,
 				512CC4C9DC0FD93EAA6CECC5 /* RecordPhotosSection.swift */,
 				4EC90FD1E07B1C0F6907C896 /* ReminderService.swift */,
@@ -554,6 +557,7 @@
 				9AF80082F4C7FB5347CA28DA /* PropertyViews.swift in Sources */,
 				153B6143DD204414AB2553B5 /* RecordCaption.swift in Sources */,
 				3E997F2F94360E804B77C4F5 /* RecordCaptionRole.swift in Sources */,
+				60F1FFF4C744CC3C24471F83 /* RecordDeletionPresentation.swift in Sources */,
 				7755FFD95593675E070558FB /* RecordPhotoPresentation.swift in Sources */,
 				56BB5355C045DF4F1BEC8314 /* RecordPhotosSection.swift in Sources */,
 				77319AD5EF5729A83E90799A /* ReminderService.swift in Sources */,

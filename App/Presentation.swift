@@ -76,6 +76,8 @@ func errorMessage(_ error: any Error) -> String {
     case DomainError.invalidNotice: return "予告期限と事前通知の日数を確認してください。"
     case DomainError.invalidAmount: return "金額は0円から1兆円までの整数で入力してください。"
     case DomainError.missingRenewal: return "更新する部屋と契約内容を入力してください。"
+    case DomainError.invalidReference, EditorError.recordChanged:
+        return "対象の記録が更新または削除されました。画面を開き直して確認してください。"
     case StorageError.attachmentTooLarge: return "25 MiB以下のファイルを選択してください。"
     case StorageError.missingAttachment: return "ファイルが見つかりません。保存元の写真やバックアップを確認してください。"
     case StorageError.unreadable, StorageError.corrupted, DomainError.unsupportedFormat:

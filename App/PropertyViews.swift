@@ -98,6 +98,11 @@ struct BuildingDetailView: View {
                     }
                 }
                 RecordPhotosSection(location: RecordLocation(buildingID: buildingID))
+                Section {
+                    RecordDeletionButton(target: .building(buildingID), title: "建物を削除", identifier: "property.delete")
+                }
+            } else {
+                ContentUnavailableView("建物が見つかりません", systemImage: "building.2")
             }
         }
         .accessibilityIdentifier("property.detail")
@@ -113,11 +118,13 @@ struct BuildingDetailView: View {
             }
         }
         .editorPresentation($editor)
+        .recordDeletion()
     }
 }
 
 struct RoomDetailView: View {
     @Environment(RecordsStore.self) private var store
+    @Environment(\.dismiss) private var dismiss
     @State private var editor: EditorDestination?
     let roomID: UUID
     private var room: Room? { store.records.rooms.first { $0.id == roomID } }
@@ -145,6 +152,11 @@ struct RoomDetailView: View {
                     if !room.notes.isEmpty { Text(room.notes) }
                 }
                 RecordPhotosSection(location: RecordLocation(buildingID: room.buildingID, roomID: roomID))
+                Section {
+                    RecordDeletionButton(target: .room(roomID), title: "部屋を削除", identifier: "room.delete")
+                }
+            } else {
+                ContentUnavailableView("部屋が見つかりません", systemImage: "door.closed")
             }
         }
         .accessibilityIdentifier("room.detail")
@@ -160,6 +172,9 @@ struct RoomDetailView: View {
             }
         }
         .editorPresentation($editor)
+        .recordDeletion { target in
+            if target == .room(roomID) { dismiss() }
+        }
     }
 }
 
@@ -196,6 +211,9 @@ struct ContractDetailView: View {
                       footer: { Text("日付と通知時刻は日本時間が基準です。").accessibilityIdentifier("contract.time-zone") }
                     ReminderReservationIssue(target: .contract(roomID))
                 }
+                Section {
+                    RecordDeletionButton(target: .contract(roomID: roomID), title: "契約を削除", identifier: "contract.delete")
+                }
             } else {
                 ContentUnavailableView("契約は未登録です", systemImage: "doc.text",
                                        description: Text("契約期間と家賃を登録できます。"))
@@ -215,6 +233,7 @@ struct ContractDetailView: View {
             }
         }
         .editorPresentation($editor)
+        .recordDeletion()
     }
 }
 
@@ -257,9 +276,6 @@ struct EquipmentListView: View {
 struct ContactDetailView: View {
     @Environment(RecordsStore.self) private var store
     @State private var editor: EditorDestination?
-    @State private var confirmingDeletion = false
-    @State private var deleting = false
-    @State private var message: String?
     let contactID: UUID
     private var contact: Contact? { store.records.contacts.first { $0.id == contactID } }
 
@@ -305,9 +321,7 @@ struct ContactDetailView: View {
                     }
                 }
                 Section {
-                    if let message { Text(message).accessibilityIdentifier("contact.error") }
-                    Button("連絡先を削除", role: .destructive) { confirmingDeletion = true }
-                        .disabled(deleting)
+                    RecordDeletionButton(target: .contact(contactID), title: "連絡先を削除", identifier: "contact.delete")
                 }
             } else {
                 ContentUnavailableView("連絡先は削除されました", systemImage: "person.crop.rectangle.stack")
@@ -323,16 +337,6 @@ struct ContactDetailView: View {
             } }
         }
         .editorPresentation($editor)
-        .alert("連絡先を削除", isPresented: $confirmingDeletion) {
-            Button("削除", role: .destructive) {
-                deleting = true
-                Task {
-                    do { try await store.save { try $0.removingContact(contactID) } }
-                    catch { message = errorMessage(error) }
-                    deleting = false
-                }
-            }
-            Button("キャンセル", role: .cancel) {}
-        } message: { Text("物件への割り当ても解除します。対応のメモと写真は残ります。") }
+        .recordDeletion()
     }
 }

@@ -34,8 +34,8 @@ private actor TestRepository: RecordsRepository {
         self.failFirstSave = failFirstSave
     }
     func load() async throws -> Records {
-        let records = try await backing.load()
-        guard records.buildings.isEmpty, seeded else { return records }
+        if let records = try await backing.loadSnapshot() { return records }
+        guard seeded else { return Records() }
         var fixture = try SampleRecords.make(pastVisit: pastVisit)
         if let item = fixture.work.first {
             guard let data = await SamplePDF.photoData() else { throw StorageError.missingAttachment }
@@ -65,6 +65,7 @@ private actor TestRepository: RecordsRepository {
     }
     func attachmentURL(named name: String) async throws -> URL { try await backing.attachmentURL(named: name) }
     func removeAttachment(named name: String) async throws { try await backing.removeAttachment(named: name) }
+    func reconcileAttachmentFiles() async throws { try await backing.reconcileAttachmentFiles() }
 }
 
 enum SampleRecords {
