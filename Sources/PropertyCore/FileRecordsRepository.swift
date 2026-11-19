@@ -16,10 +16,16 @@ public protocol RecordsRepository: Sendable {
 public actor FileRecordsRepository: RecordsRepository {
     public static let maximumAttachmentBytes = 25 * 1_024 * 1_024
     private let directory: URL
+    private let fileManager: FileManager
     private var snapshotURL: URL { directory.appendingPathComponent("records.json") }
     private var attachmentDirectory: URL { directory.appending(component: "Attachments", directoryHint: .isDirectory) }
 
-    public init(directory: URL) { self.directory = directory.standardizedFileURL.resolvingSymlinksInPath() }
+    public init(directory: URL) { self.init(directory: directory, fileManager: .default) }
+
+    init(directory: URL, fileManager: FileManager) {
+        self.directory = directory.standardizedFileURL.resolvingSymlinksInPath()
+        self.fileManager = fileManager
+    }
 
     public func load() throws -> Records { try loadSnapshot() ?? Records() }
 
@@ -45,7 +51,7 @@ public actor FileRecordsRepository: RecordsRepository {
         try Task.checkCancellation()
         do {
             guard unredirected(directory) else { throw StorageError.unwritable }
-            try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+            try fileManager.createDirectory(at: directory, withIntermediateDirectories: true)
             let encoder = JSONEncoder()
             encoder.outputFormatting = [.sortedKeys]
             try protectedWrite(encoder.encode(records), to: snapshotURL)
@@ -59,7 +65,7 @@ public actor FileRecordsRepository: RecordsRepository {
         try Task.checkCancellation()
         do {
             guard unredirected(attachmentDirectory) else { throw StorageError.unwritable }
-            try FileManager.default.createDirectory(at: attachmentDirectory, withIntermediateDirectories: true)
+            try fileManager.createDirectory(at: attachmentDirectory, withIntermediateDirectories: true)
             try protectedWrite(data, to: attachmentDirectory.appendingPathComponent(name))
         } catch { throw StorageError.unwritable }
         return name
@@ -78,7 +84,7 @@ public actor FileRecordsRepository: RecordsRepository {
 
     public func removeAttachment(named name: String) throws {
         let url = try attachmentURL(named: name)
-        do { try FileManager.default.removeItem(at: url) }
+        do { try fileManager.removeItem(at: url) }
         catch { throw StorageError.unwritable }
     }
 
@@ -86,7 +92,6 @@ public actor FileRecordsRepository: RecordsRepository {
         guard let snapshot = try loadSnapshot() else { return }
         let referencedNames = Set(snapshot.attachments.map { $0.storedName.lowercased() })
         guard unredirected(attachmentDirectory) else { throw StorageError.unwritable }
-        let fileManager = FileManager.default
         let keys: Set<URLResourceKey> = [.isRegularFileKey, .isSymbolicLinkKey]
         let files: [URL]
         do {

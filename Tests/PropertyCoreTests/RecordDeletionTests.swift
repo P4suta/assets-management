@@ -3,6 +3,10 @@ import Testing
 @testable import PropertyCore
 
 @Suite struct RecordDeletionTests {
+    enum ContactAssignment: CaseIterable {
+        case agency, resident, contractor, memo
+    }
+
     @Test func deletingABuildingRemovesAllItsRecordsAndKeepsSharedContacts() throws {
         let records = try deletionFixture()
         let building = records.buildings[0]
@@ -50,14 +54,18 @@ import Testing
     @Test func individualDeletionUsesTheSameIntegrityRules() throws {
         let records = try deletionFixture()
         let room = records.rooms[0]
-        let contract = try records.deleting(records.deletionPlan(for: .contract(roomID: room.id)))
+        let contractPlan = try records.deletionPlan(for: .contract(roomID: room.id))
+        #expect(contractPlan.affectsReminders)
+        let contract = try records.deleting(contractPlan)
         #expect(contract.rooms[0].contract == nil)
         #expect(contract.work == records.work)
         #expect(contract.attachments == records.attachments)
         let equipment = try records.deleting(records.deletionPlan(for: .equipment(roomID: room.id, id: room.equipment[0].id)))
         #expect(equipment.rooms[0].equipment.isEmpty)
         #expect(equipment.rooms[0].contract == room.contract)
-        let memo = try records.deleting(records.deletionPlan(for: .memo(records.history[0].id)))
+        let memoPlan = try records.deletionPlan(for: .memo(records.history[0].id))
+        #expect(!memoPlan.affectsReminders)
+        let memo = try records.deleting(memoPlan)
         #expect(memo.history.isEmpty)
         #expect(memo.work == records.work)
         for attachment in records.attachments {
@@ -89,6 +97,29 @@ import Testing
         changed.rooms[0].contract?.monthlyRent = 90_000
         let current = try changed.deletionPlan(for: plan.target)
         #expect(throws: RecordDeletionError.changed(current)) { try changed.deleting(plan) }
+    }
+
+    @Test(arguments: ContactAssignment.allCases)
+    func newContactAssignmentRequiresConfirmation(_ assignment: ContactAssignment) throws {
+        let records = try deletionFixture()
+        let contactID = records.contacts[0].id
+        let plan = try records.deletionPlan(for: .contact(contactID))
+        let buildingID = records.buildings[0].id
+        var changed = records
+        switch assignment {
+        case .agency:
+            changed.buildings.append(Building(name: "別の物件", agencyContactID: contactID))
+        case .resident:
+            changed.rooms.append(Room(buildingID: buildingID, number: "301", residentID: contactID))
+        case .contractor:
+            changed.work.append(WorkItem(buildingID: buildingID, title: "共用部の修繕", contractorID: contactID))
+        case .memo:
+            changed.history.append(HistoryEntry(workID: records.work[0].id, contactID: contactID, text: "折り返し待ち"))
+        }
+        _ = try changed.validated()
+        let current = try changed.deletionPlan(for: plan.target)
+        #expect(throws: RecordDeletionError.changed(current)) { try changed.deleting(plan) }
+        #expect(try changed.deleting(current) == changed.removingContact(contactID))
     }
 
     private func deletionFixture() throws -> Records {

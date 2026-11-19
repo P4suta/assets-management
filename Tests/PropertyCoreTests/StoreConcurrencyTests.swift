@@ -108,7 +108,9 @@ actor ControlledRepository: RecordsRepository {
   @Test func postCommitFailureLeavesCleanupPendingAndRetryDoesNotWriteRecords() async throws {
     let original = try fixtureRecords()
     let repository = ControlledRepository(original)
-    let store = RecordsStore(repository: repository)
+    var events: [RecordsEvent] = []
+    let store = RecordsStore(repository: repository) { events.append($0) }
+    #expect(!store.attachmentCleanupPending)
     await store.load()
     try await store.importAttachment(Data("file".utf8), name: "file.pdf", extension: "pdf", kind: .document,
                                      location: RecordLocation(buildingID: original.buildings[0].id))
@@ -120,6 +122,7 @@ actor ControlledRepository: RecordsRepository {
     #expect(await repository.stored == original)
     #expect(store.attachmentCleanupPending)
     #expect(await repository.files.count == 1)
+    #expect(events.last == .attachmentCleanupFailed(errorType: String(reflecting: StorageError.self)))
     await repository.clearFailures()
     await store.reconcileAttachmentFiles()
     #expect(!store.attachmentCleanupPending)
