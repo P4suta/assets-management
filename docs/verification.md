@@ -14,10 +14,10 @@ Editor readiness takes a [snapshot](https://developer.apple.com/documentation/xc
 Every selected audit category remains required.
 An English test process can measure Japanese fallback fonts differently from the Japanese app.
 The caption fixtures and rendered measurement test reject that mismatch.
-Run the rotation checks on iPad and iPhone Duo simulators with `mise x -- just adaptive-ui-test`.
+Run the editor and selection rotation journeys on iPad and iPhone Duo simulators with `mise x -- just adaptive-ui-test`.
 On iPhone Duo with iOS 27.2, the tab buttons expose their labels and put symbol identifiers on child images.
 The shared tab selector checks both attributes for the side-mounted tab bar.
-The deletion confirmation checks that both actions stay reachable within the actual window after changing the [device orientation](https://developer.apple.com/documentation/xcuiautomation/xcuidevice/orientation).
+In the native layout group, the deletion journey checks that both confirmation actions remain reachable in the current window after changing the [device orientation](https://developer.apple.com/documentation/xcuiautomation/xcuidevice/orientation).
 Run window resizing with the selected record and an open editor, and verify the same title, draft value, and reachable save action afterward.
 Keep physical-device acceptance and the App Review recording separate from simulator results.
 Selected-row tests audit foreground contrast within the visible selection in both appearances.
