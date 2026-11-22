@@ -5,7 +5,7 @@ WRANGLER_SEND_METRICS = "false"
 WRANGLER_SEND_ERROR_REPORTS = "false"
 
 [tools]
-xcodegen = "2.46.0"
+xcodegen = "2.48.0"
 swiftlint = "0.65.1"
 gitleaks = "8.30.1"
 just = "1.59.0"
@@ -13,4 +13,4 @@ just = "1.59.0"
 "github:rorkai/App-Store-Connect-CLI" = { version = "6.6.1", bin = "asc" }
 jactionlint = "2.6.0"
 zizmor = "1.32.0"
-jaq = "3.1.2"
+jaq = "3.2.0"
