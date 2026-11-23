@@ -18,7 +18,7 @@ jobs:
   verify:
     name: Verify the website candidate
     if: github.repository_id == '1455076889'
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 10
     permissions:
       contents: read
@@ -64,7 +64,7 @@ jobs:
     name: Publish the verified website
     needs: verify
     if: github.ref == 'refs/heads/main'
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 10
     environment:
       name: website-production
@@ -122,7 +122,7 @@ jobs:
   acceptance:
     name: Check the public website
     needs: publish
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 10
     permissions:
       contents: read
