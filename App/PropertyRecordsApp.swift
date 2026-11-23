@@ -38,7 +38,10 @@ struct PropertyRecordsApp: App {
                     }
                 }
                 .onChange(of: scenePhase) { _, phase in
-                    Task { await notices.sceneChanged(to: phase, store: store) }
+                    Task {
+                        if phase == .active { await store.reconcileAttachmentFiles() }
+                        await notices.sceneChanged(to: phase, store: store)
+                    }
                 }
         }
     }
@@ -49,6 +52,7 @@ private struct RootView: View {
     @Environment(AppNotices.self) private var notices
     @State private var selectedTab = 0
     @State private var editor: EditorDestination?
+    @State private var attachmentCleanupWarning = false
 
     var body: some View {
         Group {
@@ -88,6 +92,18 @@ private struct RootView: View {
         .onChange(of: store.isLoading) { _, loading in
             if !loading, store.records.buildings.isEmpty { selectedTab = 1 }
         }
+        .onChange(of: store.attachmentCleanupPending, initial: true) { _, pending in
+            attachmentCleanupWarning = pending
+        }
+        .alert("添付ファイルの削除に失敗しました", isPresented: $attachmentCleanupWarning) {
+            Button("再試行") {
+                Task {
+                    await store.reconcileAttachmentFiles()
+                    attachmentCleanupWarning = store.attachmentCleanupPending
+                }
+            }
+            Button("閉じる", role: .cancel) {}
+        } message: { Text("記録は削除済みです。端末内の添付ファイルを再度削除できます。") }
     }
 }
 

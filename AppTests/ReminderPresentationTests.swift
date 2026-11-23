@@ -28,6 +28,30 @@ private actor PresentationNotificationCenter: ReminderNotificationCenter {
 }
 
 @Suite @MainActor struct ReminderPresentationTests {
+    @Test func deletingARoomCancelsItsWorkAndContractRequests() async throws {
+        let directory = URL.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let repository = FileRecordsRepository(directory: directory)
+        var original = try records()
+        let end = Date().addingTimeInterval(90 * 86_400)
+        original.rooms[0].contract = Contract(start: Date(), end: end,
+                                               notice: ContractNotice(timing: .date(end), reminderEnabled: true))
+        try await repository.save(original)
+        let store = RecordsStore(repository: repository)
+        await store.load()
+        let center = PresentationNotificationCenter()
+        await center.setPermission(.authorized)
+        let notices = AppNotices(center: center)
+        await notices.synchronize(original)
+        let kinds = await center.requests.values.map(\.kind)
+        #expect(Set(kinds) == [.visit, .contractAdvance, .contractDeadline])
+        try await notices.delete(original.deletionPlan(for: .room(original.rooms[0].id)), store: store)
+        #expect(store.records.rooms.isEmpty)
+        #expect(store.records.work.isEmpty)
+        #expect(await center.requests.isEmpty)
+        #expect(await center.permissionRequests == 0)
+    }
+
     private func records() throws -> Records {
         var records = try Records().registering(RegistrationDraft(name: "検査用の建物", roomNumber: "101"))
         records.work = [WorkItem(buildingID: records.buildings[0].id, roomID: records.rooms[0].id,

@@ -379,6 +379,35 @@ import XCTest
         }
     }
 
+    func testDeletionConfirmationSurvivesRotation() {
+        defer { XCUIDevice.shared.orientation = .portrait }
+        let app = launch()
+        selectTab("物件", app: app)
+        let building = record("未来ヶ丘団地", app: app)
+        XCTAssertTrue(building.waitForExistence(timeout: 5))
+        building.tap()
+        let deletion = app.buttons["property.delete"]
+        reveal(deletion, in: app.collectionViews["property.detail"], app: app)
+        deletion.tap()
+        let confirmation = app.navigationBars["建物を削除"]
+        XCTAssertTrue(confirmation.waitForExistence(timeout: 5))
+        let confirm = app.buttons["deletion.confirm"]
+        let cancel = app.buttons["deletion.cancel"]
+        for orientation in [UIDeviceOrientation.landscapeLeft, .portrait] {
+            XCUIDevice.shared.orientation = orientation
+            XCTAssertEqual(XCUIDevice.shared.orientation, orientation)
+            XCTAssertTrue(confirmation.exists)
+            XCTAssertTrue(app.staticTexts["未来ヶ丘団地"].firstMatch.exists)
+            for action in [confirm, cancel] {
+                XCTAssertTrue(action.wait(for: \.isHittable, toEqual: true, timeout: 10), app.debugDescription)
+                XCTAssertTrue(app.windows.firstMatch.frame.containsWithRoundingTolerance(action.frame), app.debugDescription)
+            }
+            capture(app, name: orientation.isLandscape ? "Deletion confirmation in landscape pose" : "Deletion confirmation in portrait pose")
+        }
+        cancel.tap()
+        XCTAssertTrue(app.buttons["property.edit"].firstMatch.wait(for: \.isHittable, toEqual: true, timeout: 5))
+    }
+
     private func launch(failFirstSave: Bool = false) -> XCUIApplication {
         XCUIDevice.shared.orientation = .portrait
         let app = XCUIApplication()
@@ -532,14 +561,7 @@ import XCTest
     }
 
     private func selectTab(_ title: String, app: XCUIApplication) {
-        let standard = app.tabBars.buttons[title]
-        if standard.exists { standard.tap() }
-        else {
-            let symbol = title == "物件" ? "building.2.fill" : "checklist"
-            let tab = app.descendants(matching: .any).matching(NSPredicate(format: "identifier == %@ AND label == %@", symbol, title)).firstMatch
-            XCTAssertTrue(tab.waitForExistence(timeout: 5))
-            tab.tap()
-        }
+        selectRecordTab(title, app: app)
     }
 
     private func capture(_ app: XCUIApplication, name: String) {
@@ -548,4 +570,24 @@ import XCTest
         attachment.lifetime = .keepAlways
         add(attachment)
     }
+}
+
+@MainActor func selectRecordTab(_ title: String, app: XCUIApplication) {
+    let standard = app.tabBars.buttons[title]
+    if standard.exists {
+        standard.tap()
+        return
+    }
+    let symbol: String = switch title {
+    case "物件": "building.2.fill"
+    case "連絡先": "person.crop.rectangle.stack.fill"
+    default: "checklist"
+    }
+    let identified = app.descendants(matching: .any)
+        .matching(NSPredicate(format: "identifier == %@ AND label == %@", symbol, title)).firstMatch
+    let withIcon = app.buttons.matching(NSPredicate(format: "label == %@", title))
+        .containing(.image, identifier: symbol).firstMatch
+    let tab = identified.exists ? identified : withIcon
+    XCTAssertTrue(tab.waitForExistence(timeout: 5), app.debugDescription)
+    if tab.exists { tab.tap() }
 }

@@ -29,6 +29,11 @@ final class AppNotices {
         await synchronize(store.records, reporting: id)
     }
 
+    func delete(_ plan: RecordDeletionPlan, store: RecordsStore) async throws {
+        try await store.delete(plan)
+        if plan.affectsReminders { await synchronize(store.records) }
+    }
+
     func synchronize(_ records: Records, reporting id: UUID? = nil) async {
         await synchronize(records, reporting: id.map(ReminderTarget.work))
     }

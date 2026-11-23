@@ -16,11 +16,13 @@ struct RecordPhotosSection: View {
         Group {
             Section("写真") {
                 ForEach(attachments.filter { $0.kind == .photo }) { attachment in
-                    Button { open(attachment) } label: { InlinePhoto(attachment: attachment) }
-                        .buttonStyle(.plain)
-                        .accessibilityLabel("写真")
-                        .accessibilityValue(attachment.createdAt.formatted(date: .abbreviated, time: .shortened))
-                        .accessibilityIdentifier("photo." + attachment.id.uuidString)
+                    attachmentRow(attachment) {
+                        Button { open(attachment) } label: { InlinePhoto(attachment: attachment) }
+                            .buttonStyle(.plain)
+                            .accessibilityLabel("写真")
+                            .accessibilityValue(attachment.createdAt.formatted(date: .abbreviated, time: .shortened))
+                            .accessibilityIdentifier("photo." + attachment.id.uuidString)
+                    }
                 }
                 if actions.importing { ProgressView("写真を保存中") }
                 Menu {
@@ -42,11 +44,41 @@ struct RecordPhotosSection: View {
             if attachments.contains(where: { $0.kind == .document }) {
                 Section("保存済みの書類") {
                     ForEach(attachments.filter { $0.kind == .document }) { attachment in
-                        Button { open(attachment) } label: { Label(attachment.name, systemImage: "doc.text") }
+                        attachmentRow(attachment) {
+                            Button { open(attachment) } label: { Label(attachment.name, systemImage: "doc.text") }
+                                .buttonStyle(.borderless)
+                        }
                     }
                 }
             }
         }
+    }
+
+    private func attachmentRow<Preview: View>(_ attachment: Attachment, @ViewBuilder preview: () -> Preview) -> some View {
+        let photo = attachment.kind == .photo
+        return HStack(alignment: .center) {
+            preview()
+            Spacer(minLength: 0)
+            Menu {
+                deleteButton(for: attachment)
+            } label: {
+                Image(systemName: "ellipsis.circle")
+                    .frame(width: 44, height: 44)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(photo ? "写真の操作" : "書類の操作")
+            .accessibilityValue(photo ? attachment.createdAt.formatted(date: .abbreviated, time: .shortened) : attachment.name)
+            .accessibilityIdentifier("attachment.options." + attachment.id.uuidString)
+        }
+        .contextMenu { deleteButton(for: attachment) }
+        .swipeActions(allowsFullSwipe: false) { deleteButton(for: attachment) }
+    }
+
+    private func deleteButton(for attachment: Attachment) -> some View {
+        RecordDeletionButton(target: .attachment(attachment.id),
+                             title: attachment.kind == .photo ? "写真を削除" : "書類を削除",
+                             identifier: "attachment.delete." + attachment.id.uuidString)
     }
 
     private func open(_ attachment: Attachment) {

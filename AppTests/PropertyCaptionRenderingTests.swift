@@ -132,19 +132,20 @@ extension NativePresentationTests {
         window.isHidden = false
         defer { window.isHidden = true; window.rootViewController = nil }
         var collection: UICollectionView?
+        let photoSection = 2
         let deadline = ContinuousClock.now.advanced(by: .seconds(5))
         repeat {
             controller.view.layoutIfNeeded()
             collection = propertyCaptionDescendants(controller.view).compactMap { $0 as? UICollectionView }
-                .first { $0.numberOfSections == 3 && $0.numberOfItems(inSection: 2) > 0 }
+                .first { $0.numberOfSections > photoSection && $0.numberOfItems(inSection: photoSection) > 0 }
             if collection != nil { break }
             try await Task.sleep(for: .milliseconds(10))
         } while ContinuousClock.now < deadline
         let list = try #require(collection)
-        list.scrollToItem(at: IndexPath(item: 0, section: 2), at: .centeredVertically, animated: false)
+        list.scrollToItem(at: IndexPath(item: 0, section: photoSection), at: .centeredVertically, animated: false)
         list.layoutIfNeeded()
         let roomCell = try #require(list.cellForItem(at: IndexPath(item: list.numberOfItems(inSection: 1) - 1, section: 1)))
-        let photoCell = try #require(list.cellForItem(at: IndexPath(item: 0, section: 2)))
+        let photoCell = try #require(list.cellForItem(at: IndexPath(item: 0, section: photoSection)))
         let buttons = propertyCaptionDescendants(photoCell).compactMap { $0 as? UIButton }
         #expect(buttons.count == 1)
         let button = try #require(buttons.first)
