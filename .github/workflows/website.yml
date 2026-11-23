@@ -18,7 +18,7 @@ jobs:
   verify:
     name: Verify the website candidate
     if: github.repository_id == '1455076889'
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 10
     permissions:
       contents: read
@@ -28,9 +28,9 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: jdx/mise-action@d5574b52816a478f9d4e6529a3f6ff17a8a36785 # v5.2.8
+      - uses: jdx/mise-action@90f833d396d0cc3674b631d2d225e306476c303a # v5.2.10
         with:
-          version: "2026.11.7"
+          version: "2026.11.10"
           working_directory: website
           install_args: node aqua:pnpm/pnpm just
       - run: mise x just -- just website-check
@@ -64,7 +64,7 @@ jobs:
     name: Publish the verified website
     needs: verify
     if: github.ref == 'refs/heads/main'
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 10
     environment:
       name: website-production
@@ -83,9 +83,9 @@ jobs:
             website/pnpm-lock.yaml
             website/pnpm-workspace.yaml
             website/wrangler.jsonc
-      - uses: jdx/mise-action@d5574b52816a478f9d4e6529a3f6ff17a8a36785 # v5.2.8
+      - uses: jdx/mise-action@90f833d396d0cc3674b631d2d225e306476c303a # v5.2.10
         with:
-          version: "2026.11.7"
+          version: "2026.11.10"
           working_directory: website
           install_args: node aqua:pnpm/pnpm
       - name: Install the pinned provider tool
@@ -122,7 +122,7 @@ jobs:
   acceptance:
     name: Check the public website
     needs: publish
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 10
     permissions:
       contents: read
@@ -130,9 +130,9 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: jdx/mise-action@d5574b52816a478f9d4e6529a3f6ff17a8a36785 # v5.2.8
+      - uses: jdx/mise-action@90f833d396d0cc3674b631d2d225e306476c303a # v5.2.10
         with:
-          version: "2026.11.7"
+          version: "2026.11.10"
           working_directory: website
           install_args: node aqua:pnpm/pnpm just
       - run: mise x just -- just website-check
